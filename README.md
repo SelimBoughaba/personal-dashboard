@@ -3,9 +3,10 @@
 Lokales Dashboard für Aufgaben, Kalender, Mail und Rechnungen – läuft nur im
 eigenen Heimnetz, kein öffentliches Hosting.
 
-**Stand:** Etappe 4 – Setup, Passwort-Login, Aufgaben-Modul, Design-System,
-Kalender-Sync (CalDAV/iCloud), Mail-Modul (IONOS via IMAP), Rechnungs-
-Automatisierung (PDF-Erkennung). Nur noch PWA-Feinschliff steht aus.
+**Stand:** Etappe 5 (letzte Etappe) – Setup, Passwort-Login, Aufgaben-Modul,
+Design-System, Kalender-Sync (CalDAV/iCloud), Mail-Modul (IONOS via IMAP),
+Rechnungs-Automatisierung (PDF-Erkennung), PWA (installierbar, offline-fähig).
+Alle Module aus der ursprünglichen Anleitung sind umgesetzt.
 
 ## Projektstruktur
 
@@ -119,12 +120,32 @@ Rechnungserkennung nutzt dieselbe Postfach-Verbindung.
 4. Nutzt dieselbe `MAIL_AREA_RULES`-Zuordnung wie das Mail-Modul für die
    automatische Bereichs-Zuordnung.
 
+## Als App aufs iPhone installieren (PWA)
+
+Voraussetzung: Backend läuft im **Produktionsmodus** (liefert das gebaute
+Frontend mit aus), sonst fehlt der Service Worker im Dev-Modus von Vite:
+
+```bash
+cd frontend && npm run build
+cd ../backend && npm start
+```
+
+1. Auf dem iPhone im selben WLAN mit **Safari** (nicht Chrome – „Zum
+   Home-Bildschirm" für PWAs funktioniert auf iOS nur in Safari) die Adresse
+   `http://<Mac-IP>:4000` öffnen und anmelden.
+2. Teilen-Symbol (Quadrat mit Pfeil nach oben) → „Zum Home-Bildschirm".
+3. Icon erscheint auf dem Home-Bildschirm und startet die App im
+   Vollbildmodus ohne Safari-Oberfläche.
+
+**Offline-Verhalten:** Bereits geladene Daten (Aufgaben, Termine, Mails,
+Rechnungen) bleiben bei fehlendem Netz sichtbar (letzter bekannter Stand,
+gecacht via Service Worker). Neue Daten anlegen/bearbeiten braucht weiterhin
+eine Verbindung zum Server im Heimnetz. Nach Codeänderungen am Frontend
+(`npm run build` + Server neu starten) aktualisiert sich die App auf dem
+iPhone automatisch beim nächsten Öffnen.
+
 ## Sicherheit
 
 - `.env`-Dateien enthalten Zugangsdaten und werden nie committet.
 - Passwort wird nur als bcrypt-Hash gespeichert.
 - Zugriff nur mit gültigem JWT (30 Tage gültig, dann erneut anmelden).
-
-## Nächste Etappen
-
-5. PWA-Feinschliff (Installierbarkeit auf iPhone, Offline-Fähigkeit)
