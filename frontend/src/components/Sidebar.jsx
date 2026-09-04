@@ -90,6 +90,7 @@ const NAV_ITEMS = [
 ];
 
 const MORE_ITEMS = [
+  { label: "E-Mail", path: "/mail", enabled: true },
   { label: "Verträge & Abos", path: "/vertraege", enabled: true },
   { label: "Gesundheit", path: "/gesundheit", enabled: true },
   { label: "Notizen", path: "/notizen", enabled: true },

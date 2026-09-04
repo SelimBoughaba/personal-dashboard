@@ -8,9 +8,10 @@ const DEFAULT_WIDGET_ORDER = ["termine", "aufgaben", "rechnungen", "mails"];
 
 function greeting() {
   const h = new Date().getHours();
-  if (h < 11) return "Guten Morgen";
-  if (h < 18) return "Guten Tag";
-  return "Guten Abend";
+  if (h >= 5 && h < 12) return "Guten Morgen";
+  if (h >= 12 && h < 18) return "Guten Tag";
+  if (h >= 18 && h < 22) return "Guten Abend";
+  return "Gute Nacht";
 }
 
 function fmtEuro(v) {

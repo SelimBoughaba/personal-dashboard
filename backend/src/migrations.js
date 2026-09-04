@@ -206,6 +206,17 @@ const MIGRATIONS = [
       `);
     },
   },
+  {
+    id: "0010_add_privat_universitaet_areas",
+    up(db) {
+      const maxOrder = db.prepare("SELECT COALESCE(MAX(sort_order), -1) AS m FROM areas").get().m;
+      const insert = db.prepare(
+        "INSERT OR IGNORE INTO areas (id, label, color, sort_order, is_default) VALUES (?, ?, ?, ?, 0)",
+      );
+      insert.run("privat", "Privat", "#8aa9c9", maxOrder + 1);
+      insert.run("universitaet", "Universität", "#c98a6b", maxOrder + 2);
+    },
+  },
 ];
 
 export function runMigrations(db) {

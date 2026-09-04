@@ -6,7 +6,7 @@ import { Input, Select, Label, Textarea } from "../components/ui/Field";
 import { AreaBadge } from "../components/ui/AreaBadge";
 import { useAreas } from "../context/AreasContext";
 
-const EMPTY_FORM = { title: "", description: "", area: "", target_date: "", status: "aktiv" };
+const EMPTY_FORM = { title: "", description: "", area: "", target_date: "", status: "aktiv", progress: "0" };
 const STATUS_LABELS = { aktiv: "Aktiv", erreicht: "Erreicht", abgebrochen: "Abgebrochen" };
 
 function ProgressBar({ value }) {
@@ -58,8 +58,8 @@ function MilestoneChecklist({ goal, onChange }) {
           placeholder="Meilenstein hinzufügen…"
           className="!py-1.5 text-sm"
         />
-        <Button variant="ghost" className="!px-2 !py-1 text-xs" onClick={add}>
-          +
+        <Button type="button" variant="ghost" className="!px-3 !py-1.5 text-xs" onClick={add}>
+          Hinzufügen
         </Button>
       </div>
     </div>
@@ -100,6 +100,8 @@ export function Ziele() {
       area: g.area,
       target_date: g.target_date || "",
       status: g.status,
+      progress: String(g.progress ?? 0),
+      _hasMilestones: g.milestones.length > 0,
     });
     setShowForm(true);
   }
@@ -224,6 +226,22 @@ export function Ziele() {
                   </option>
                 ))}
               </Select>
+            </div>
+            <div className="sm:col-span-2">
+              <Label>Fortschritt (%)</Label>
+              <Input
+                type="number"
+                min="0"
+                max="100"
+                value={form.progress}
+                disabled={!!form._hasMilestones}
+                onChange={(e) => setForm({ ...form, progress: e.target.value })}
+              />
+              <p className="mt-1 text-xs text-ivory/40">
+                {form._hasMilestones
+                  ? "Dieses Ziel hat bereits Meilensteine – der Fortschritt richtet sich danach und lässt sich hier nicht manuell überschreiben. Meilensteine unten auf der Zielkarte entfernen, um wieder manuell zu steuern."
+                  : "Nur wirksam, solange dieses Ziel keine Meilensteine hat. Sobald welche hinzugefügt werden, übernehmen die den Fortschritt automatisch."}
+              </p>
             </div>
             <div className="sm:col-span-2">
               <Button type="submit">{editingId ? "Speichern" : "Anlegen"}</Button>
