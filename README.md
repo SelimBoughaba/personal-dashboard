@@ -5,15 +5,15 @@ eigenen Heimnetz, kein öffentliches Hosting, keine Pflicht-Cloud-Dienste.
 Design orientiert sich an der Evermont-Markenidentität (Waldgrün, Ivory,
 Lime-Akzente, Manrope).
 
-**Stand:** Etappe 10 – Ziele. Zusätzlich zur lokalen Grundlage aus Etappe 7,
-dem Dokumente-Modul aus Etappe 8 und Verträge & Abos aus Etappe 9 gibt es
-jetzt ein Ziele-Modul mit Meilensteinen (Checkliste je Ziel) und
-automatisch aus abgehakten Meilensteinen berechnetem Fortschritt.
+**Stand:** Etappe 11 – Notizen. Zusätzlich zur lokalen Grundlage aus
+Etappe 7, dem Dokumente-Modul aus Etappe 8, Verträge & Abos aus Etappe 9
+und den Zielen aus Etappe 10 gibt es jetzt ein Notizen-Modul mit
+Anpinnen, Tags und Volltextsuche über Titel und Inhalt.
 
 **Noch als „bald" markiert** (klar erkennbar in der Navigation, keine
-Fake-Funktionalität dahinter): Gesundheit, Notizen, globale Suche/
-Kommandopalette, erweiterte Kalender-/Aufgabenansichten. Diese folgen in
-den nächsten Etappen.
+Fake-Funktionalität dahinter): Gesundheit, globale Suche/Kommandopalette,
+erweiterte Kalender-/Aufgabenansichten. Diese folgen in den nächsten
+Etappen.
 
 ## Projektstruktur
 
@@ -266,6 +266,18 @@ Unter „Ziele" in der Sidebar:
   sind eine eigene, einfache Liste je Ziel, keine echten Aufgaben-
   Datensätze) – das wäre eine mögliche spätere Erweiterung.
 
+## Notizen
+
+Unter „Mehr" → „Notizen" in der Sidebar:
+
+- Notiz anlegen mit Titel (optional), Inhalt, Bereich und mit Komma
+  getrennten Tags.
+- Angepinnte Notizen (Stern-Symbol) erscheinen immer zuerst, unabhängig
+  vom Bereichsfilter.
+- Volltextsuche über Titel und Inhalt, zusätzlich nach Bereich filterbar.
+- Keine Formatierung (kein Markdown/Rich-Text) – reiner Text, mit
+  erhaltenen Zeilenumbrüchen.
+
 ## Kalender-Sync einrichten (iCloud)
 
 1. App-spezifisches Passwort erzeugen: auf [appleid.apple.com](https://appleid.apple.com)
@@ -366,9 +378,10 @@ iPhone automatisch beim nächsten Öffnen.
   optimal für Screenreader beschriftet. Geplante schrittweise Behebung.
 - Kein Verschlüsselungs-Layer für die in der Datenbank gespeicherten
   Zugangsdaten (siehe oben).
-- Gesundheit, Notizen, globale Suche/Kommandopalette und erweiterte
-  Kalender-/Aufgabenansichten sind noch nicht umgesetzt (klar als „bald"
-  markiert in der Navigation).
+- Gesundheit, globale Suche/Kommandopalette und erweiterte Kalender-/
+  Aufgabenansichten sind noch nicht umgesetzt (klar als „bald" markiert
+  in der Navigation).
+- Notizen: kein Markdown/Rich-Text, reiner Text.
 - Ziele: Meilensteine sind eine eigene Checkliste, keine Verknüpfung mit
   echten Aufgaben-Datensätzen.
 - Dokumente: keine Inhalts-Vorschau/kein Viewer in der App, kein
@@ -382,7 +395,6 @@ iPhone automatisch beim nächsten Öffnen.
 
 ## Nächste Etappen
 
-- Notizen
 - Gesundheit
 - Globale Suche / Kommandopalette
 - Erweiterte Kalender-/Aufgabenansichten (Monats-/Agenda-Ansicht, Kanban,

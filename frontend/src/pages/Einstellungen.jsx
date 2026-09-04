@@ -1101,7 +1101,7 @@ function SicherungSection() {
               Backup vom {preview.exported_at ? new Date(preview.exported_at).toLocaleString("de-DE") : "unbekannt"}:{" "}
               {preview.counts.tasks} Aufgabe(n), {preview.counts.invoices} Rechnung(en), {preview.counts.areas}{" "}
               Bereich(e), {preview.counts.documents || 0} Dokument(e), {preview.counts.contracts || 0} Vertrag/Verträge,{" "}
-              {preview.counts.goals || 0} Ziel(e).
+              {preview.counts.goals || 0} Ziel(e), {preview.counts.notes || 0} Notiz(en).
             </p>
             <p className="mb-3 text-sm text-status-hoch">
               Alle aktuellen Daten werden dabei unwiderruflich überschrieben.

@@ -168,6 +168,25 @@ const MIGRATIONS = [
       `);
     },
   },
+  {
+    id: "0008_notes_table",
+    up(db) {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS notes (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          title TEXT NOT NULL DEFAULT '',
+          content TEXT NOT NULL DEFAULT '',
+          area TEXT NOT NULL DEFAULT 'allgemein',
+          tags TEXT NOT NULL DEFAULT '[]',
+          pinned INTEGER NOT NULL DEFAULT 0,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_notes_area ON notes(area);
+        CREATE INDEX IF NOT EXISTS idx_notes_pinned ON notes(pinned);
+      `);
+    },
+  },
 ];
 
 export function runMigrations(db) {
