@@ -13,6 +13,8 @@ import { Vertraege } from "./pages/Vertraege";
 import { Ziele } from "./pages/Ziele";
 import { Notizen } from "./pages/Notizen";
 import { Gesundheit } from "./pages/Gesundheit";
+import { PromptBibliothek } from "./pages/PromptBibliothek";
+import { LinkedIn } from "./pages/LinkedIn";
 import { Onboarding } from "./pages/Onboarding";
 import { Layout } from "./components/Layout";
 
@@ -118,13 +120,27 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      {/* Mail ist kein Hauptnavigationspunkt mehr, bleibt aber erreichbar
-          (u. a. für den "Wichtige E-Mails"-Widget-Link auf der Übersicht). */}
       <Route
         path="/mail"
         element={
           <ProtectedRoute>
             <Mail />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/prompts"
+        element={
+          <ProtectedRoute>
+            <PromptBibliothek />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/linkedin"
+        element={
+          <ProtectedRoute>
+            <LinkedIn />
           </ProtectedRoute>
         }
       />

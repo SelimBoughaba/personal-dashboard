@@ -69,5 +69,31 @@ searchRouter.get("/", (req, res) => {
       }),
     );
 
+  db.prepare("SELECT id, title, content FROM prompts WHERE title LIKE ? OR content LIKE ? LIMIT ?")
+    .all(like, like, LIMIT_PER_CATEGORY)
+    .forEach((r) =>
+      results.push({
+        type: "prompt",
+        typeLabel: "Prompt",
+        id: r.id,
+        title: r.title,
+        subtitle: (r.content || "").slice(0, 80),
+        path: "/prompts",
+      }),
+    );
+
+  db.prepare("SELECT id, content FROM linkedin_posts WHERE content LIKE ? LIMIT ?")
+    .all(like, LIMIT_PER_CATEGORY)
+    .forEach((r) =>
+      results.push({
+        type: "linkedin",
+        typeLabel: "LinkedIn-Beitrag",
+        id: r.id,
+        title: (r.content || "").slice(0, 60) || "(leerer Beitrag)",
+        subtitle: "",
+        path: "/linkedin",
+      }),
+    );
+
   res.json(results);
 });

@@ -217,6 +217,41 @@ const MIGRATIONS = [
       insert.run("universitaet", "Universität", "#c98a6b", maxOrder + 2);
     },
   },
+  {
+    id: "0011_prompts_table",
+    up(db) {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS prompts (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          title TEXT NOT NULL DEFAULT '',
+          content TEXT NOT NULL DEFAULT '',
+          area TEXT NOT NULL DEFAULT 'allgemein',
+          tags TEXT NOT NULL DEFAULT '[]',
+          pinned INTEGER NOT NULL DEFAULT 0,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_prompts_area ON prompts(area);
+      `);
+    },
+  },
+  {
+    id: "0012_linkedin_posts_table",
+    up(db) {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS linkedin_posts (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          content TEXT NOT NULL DEFAULT '',
+          area TEXT NOT NULL DEFAULT 'allgemein',
+          status TEXT NOT NULL DEFAULT 'entwurf',
+          scheduled_date TEXT,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_linkedin_posts_status ON linkedin_posts(status);
+      `);
+    },
+  },
 ];
 
 export function runMigrations(db) {

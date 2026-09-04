@@ -1102,7 +1102,8 @@ function SicherungSection() {
               {preview.counts.tasks} Aufgabe(n), {preview.counts.invoices} Rechnung(en), {preview.counts.areas}{" "}
               Bereich(e), {preview.counts.documents || 0} Dokument(e), {preview.counts.contracts || 0} Vertrag/Verträge,{" "}
               {preview.counts.goals || 0} Ziel(e), {preview.counts.notes || 0} Notiz(en),{" "}
-              {preview.counts.health_entries || 0} Gesundheitseintrag/-einträge.
+              {preview.counts.health_entries || 0} Gesundheitseintrag/-einträge,{" "}
+              {preview.counts.prompts || 0} Prompt(s), {preview.counts.linkedin_posts || 0} LinkedIn-Beitrag/-Beiträge.
             </p>
             <p className="mb-3 text-sm text-status-hoch">
               Alle aktuellen Daten werden dabei unwiderruflich überschrieben.

@@ -3,18 +3,20 @@ import { db } from "../db.js";
 
 export const backupRouter = Router();
 
-const BACKUP_VERSION = 6;
+const BACKUP_VERSION = 8;
 // Ältere Backup-Versionen kannten neuere Tabellen (documents, contracts, ...)
 // noch nicht. Beim Wiederherstellen eines älteren Backups bleibt die
 // jeweils fehlende Tabelle dann einfach unangetastet, statt gelöscht zu
 // werden – so bleiben ältere Backups kompatibel, ohne Daten zu verlieren.
-const SUPPORTED_VERSIONS = [1, 2, 3, 4, 5, 6];
+const SUPPORTED_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8];
 const OPTIONAL_TABLES = [
   { key: "documents", sinceVersion: 2 },
   { key: "contracts", sinceVersion: 3 },
   { key: "goals", sinceVersion: 4 },
   { key: "notes", sinceVersion: 5 },
   { key: "health_entries", sinceVersion: 6 },
+  { key: "prompts", sinceVersion: 7 },
+  { key: "linkedin_posts", sinceVersion: 8 },
 ];
 
 function buildBackup() {
@@ -32,6 +34,8 @@ function buildBackup() {
     goals: db.prepare("SELECT * FROM goals").all(),
     notes: db.prepare("SELECT * FROM notes").all(),
     health_entries: db.prepare("SELECT * FROM health_entries").all(),
+    prompts: db.prepare("SELECT * FROM prompts").all(),
+    linkedin_posts: db.prepare("SELECT * FROM linkedin_posts").all(),
     settings: Object.fromEntries(
       db.prepare("SELECT key, value FROM settings").all().map((r) => [r.key, r.value]),
     ),
@@ -90,6 +94,8 @@ backupRouter.post("/preview", (req, res) => {
       goals: Array.isArray(data.goals) ? data.goals.length : 0,
       notes: Array.isArray(data.notes) ? data.notes.length : 0,
       health_entries: Array.isArray(data.health_entries) ? data.health_entries.length : 0,
+      prompts: Array.isArray(data.prompts) ? data.prompts.length : 0,
+      linkedin_posts: Array.isArray(data.linkedin_posts) ? data.linkedin_posts.length : 0,
       settings: Object.keys(data.settings).length,
     },
   });
@@ -113,6 +119,8 @@ backupRouter.post("/restore", (req, res) => {
     if (Array.isArray(data.goals)) db.exec("DELETE FROM goals;");
     if (Array.isArray(data.notes)) db.exec("DELETE FROM notes;");
     if (Array.isArray(data.health_entries)) db.exec("DELETE FROM health_entries;");
+    if (Array.isArray(data.prompts)) db.exec("DELETE FROM prompts;");
+    if (Array.isArray(data.linkedin_posts)) db.exec("DELETE FROM linkedin_posts;");
 
     const insertArea = db.prepare(
       "INSERT INTO areas (id, label, color, sort_order, is_default, archived, created_at, updated_at) VALUES (@id, @label, @color, @sort_order, @is_default, @archived, @created_at, @updated_at)",
@@ -174,6 +182,24 @@ backupRouter.post("/restore", (req, res) => {
          VALUES (@id, @entry_date, @type, @value, @unit, @note, @created_at, @updated_at)`,
       );
       for (const entry of data.health_entries) insertHealthEntry.run(entry);
+    }
+
+    if (Array.isArray(data.prompts)) {
+      const insertPrompt = db.prepare(
+        `INSERT INTO prompts (id, title, content, area, tags, pinned, created_at, updated_at)
+         VALUES (@id, @title, @content, @area, @tags, @pinned, @created_at, @updated_at)`,
+      );
+      for (const prompt of data.prompts) {
+        insertPrompt.run({ ...prompt, tags: typeof prompt.tags === "string" ? prompt.tags : JSON.stringify(prompt.tags || []) });
+      }
+    }
+
+    if (Array.isArray(data.linkedin_posts)) {
+      const insertPost = db.prepare(
+        `INSERT INTO linkedin_posts (id, content, area, status, scheduled_date, created_at, updated_at)
+         VALUES (@id, @content, @area, @status, @scheduled_date, @created_at, @updated_at)`,
+      );
+      for (const post of data.linkedin_posts) insertPost.run(post);
     }
 
     const insertSetting = db.prepare("INSERT INTO settings (key, value) VALUES (?, ?)");

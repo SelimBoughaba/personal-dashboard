@@ -94,6 +94,8 @@ const MORE_ITEMS = [
   { label: "Verträge & Abos", path: "/vertraege", enabled: true },
   { label: "Gesundheit", path: "/gesundheit", enabled: true },
   { label: "Notizen", path: "/notizen", enabled: true },
+  { label: "Prompt-Bibliothek", path: "/prompts", enabled: true },
+  { label: "LinkedIn", path: "/linkedin", enabled: true },
   { label: "Einstellungen", path: "/einstellungen", icon: "einstellungen", enabled: true },
 ];
 
