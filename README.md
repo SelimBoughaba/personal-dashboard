@@ -5,15 +5,15 @@ eigenen Heimnetz, kein öffentliches Hosting, keine Pflicht-Cloud-Dienste.
 Design orientiert sich an der Evermont-Markenidentität (Waldgrün, Ivory,
 Lime-Akzente, Manrope).
 
-**Stand:** Etappe 13 – Globale Suche/Kommandopalette. Zusätzlich zu allen
-Modulen aus den Etappen 7–12 (lokale Grundlage, Dokumente, Verträge &
-Abos, Ziele, Notizen, Gesundheit) gibt es jetzt eine Kommandopalette
-(Tastenkürzel Strg/Cmd+K oder Such-Button in der Sidebar), die Aufgaben,
-Rechnungen, Dokumente, Verträge, Ziele und Notizen gleichzeitig durchsucht
-und zusätzlich als Schnellzugriff auf alle Seiten dient.
+**Stand:** Etappe 14 – Erweiterte Kalender- und Aufgabenansichten. Der
+Kalender hat jetzt zusätzlich zu Tag/Woche eine Monatsansicht sowie echte
+Zurück/Weiter/Heute-Navigation (vorher immer fest auf „heute" verankert).
+Aufgaben lassen sich wahlweise als Liste oder als Kanban-Board (Spalten
+nach Priorität) anzeigen.
 
-Damit sind alle bisherigen Hauptnavigationspunkte umgesetzt. Noch als
-„bald" markiert: erweiterte Kalender-/Aufgabenansichten.
+**Damit sind alle Punkte der ursprünglich vereinbarten Reihenfolge
+umgesetzt** – kein Navigationspunkt zeigt mehr einen deaktivierten
+„bald"-Platzhalter.
 
 ## Projektstruktur
 
@@ -321,7 +321,14 @@ mobilen Header:
    Apple-ID und das App-Passwort eintragen und mit „Verbindung testen"
    prüfen.
 3. Termine (inkl. wiederkehrender Termine) erscheinen im Tab „Kalender" in
-   Tages- und Wochenansicht, farblich nach Lebensbereich filterbar.
+   Tages-, Wochen- und Monatsansicht, farblich nach Lebensbereich
+   filterbar. Zurück-/Weiter-Pfeile sowie ein „Heute"-Button navigieren
+   durch die jeweils gewählte Ansicht.
+4. **Einschränkung:** Termine lassen sich nur ansehen, nicht in der App
+   selbst anlegen oder bearbeiten – dafür weiterhin die Kalender-App auf
+   dem Mac/iPhone nutzen. Ein Schreibzugriff auf das externe Kalenderkonto
+   wäre ein größerer, risikoreicherer Umbau (versehentliches Überschreiben
+   echter Termine) und ist bewusst nicht Teil dieser Etappe.
 
 ## Mail-Modul einrichten
 
@@ -411,8 +418,14 @@ iPhone automatisch beim nächsten Öffnen.
   optimal für Screenreader beschriftet. Geplante schrittweise Behebung.
 - Kein Verschlüsselungs-Layer für die in der Datenbank gespeicherten
   Zugangsdaten (siehe oben).
-- Erweiterte Kalender-/Aufgabenansichten sind noch nicht umgesetzt (klar
-  als „bald" markiert in der Navigation).
+- Kalender: nur Ansicht, kein Anlegen/Bearbeiten von Terminen in der App
+  (siehe Abschnitt „Kalender-Sync einrichten" oben); keine
+  Konflikterkennung, kein ICS-Import/-Export.
+- Aufgaben: Kanban-Board gruppiert nur nach Priorität (drei feste
+  Spalten), keine frei definierbaren Spalten, kein Drag-and-drop
+  zwischen Spalten (Status/Priorität ändert sich weiterhin über die
+  Checkbox bzw. „Bearbeiten"); erledigte Aufgaben werden im Kanban
+  ausgeblendet. Keine Unteraufgaben/Abhängigkeiten.
 - Globale Suche: kein Deep-Link zu einzelnen Einträgen (nur zur Modul-
   Seite), keine Fuzzy-Suche, reine Textsuche pro Feld.
 - Notizen: kein Markdown/Rich-Text, reiner Text.
@@ -431,5 +444,18 @@ iPhone automatisch beim nächsten Öffnen.
 
 ## Nächste Etappen
 
-- Erweiterte Kalender-/Aufgabenansichten (Monats-/Agenda-Ansicht, Kanban,
-  Unteraufgaben, wiederkehrende Termine im UI erstellbar)
+Alle Punkte der ursprünglich vereinbarten Reihenfolge sind umgesetzt.
+Mögliche weitere Ausbaustufen, die während der Arbeit an den bisherigen
+Etappen als bewusste Einschränkung offengelegt wurden (siehe „Bekannte
+Einschränkungen" oben) und bei Bedarf eigene künftige Etappen wären:
+
+- Termine im Kalender direkt in der App anlegen/bearbeiten (Schreib-
+  zugriff auf CalDAV), ICS-Import/-Export, Konflikterkennung
+- Unteraufgaben/Abhängigkeiten, frei definierbare Kanban-Spalten
+- Verschlüsselung der in der Datenbank gespeicherten Zugangsdaten
+- Vollständige `htmlFor`/`id`-Verknüpfung in allen Formularen (aktuell
+  nur auf dem Login-/Setup-Bildschirm umgesetzt)
+- Google Calendar/Gmail-OAuth, native Apple-Calendar-Integration,
+  Outlook/Microsoft-365-Postfächer
+- Verschlüsseltes Backup (aktuell Klartext-JSON, siehe „Backup &
+  Wiederherstellung")
