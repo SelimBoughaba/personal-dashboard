@@ -87,43 +87,49 @@ export async function getEvents({ from, to }) {
 
   const client = await getClient();
   const calendars = await getCalendars();
-  const results = [];
 
-  for (const calendar of calendars) {
-    const objects = await client.fetchCalendarObjects({
-      calendar,
-      timeRange: { start: rangeStart.toISOString(), end: rangeEnd.toISOString() },
-    });
+  // Kalender sind unabhängig voneinander – parallel statt nacheinander
+  // abfragen, damit die Wartezeit nicht mit der Anzahl der Kalender wächst.
+  const perCalendarResults = await Promise.all(
+    calendars.map(async (calendar) => {
+      const objects = await client.fetchCalendarObjects({
+        calendar,
+        timeRange: { start: rangeStart.toISOString(), end: rangeEnd.toISOString() },
+      });
 
-    for (const obj of objects) {
-      if (!obj.data) continue;
+      const events = [];
+      for (const obj of objects) {
+        if (!obj.data) continue;
 
-      let parsed;
-      try {
-        parsed = ical.parseICS(obj.data);
-      } catch {
-        continue;
-      }
+        let parsed;
+        try {
+          parsed = ical.parseICS(obj.data);
+        } catch {
+          continue;
+        }
 
-      for (const event of Object.values(parsed)) {
-        if (event.type !== "VEVENT" || !event.start) continue;
+        for (const event of Object.values(parsed)) {
+          if (event.type !== "VEVENT" || !event.start) continue;
 
-        for (const occ of expandEvent(event, rangeStart, rangeEnd)) {
-          results.push({
-            id: `${event.uid}-${occ.start.toISOString()}`,
-            title: occ.summary || "(Ohne Titel)",
-            start: occ.start.toISOString(),
-            end: occ.end.toISOString(),
-            allDay: event.datetype === "date",
-            location: event.location || null,
-            calendar: calendar.displayName,
-            area: areaForCalendar(calendar.displayName, areaMap),
-          });
+          for (const occ of expandEvent(event, rangeStart, rangeEnd)) {
+            events.push({
+              id: `${event.uid}-${occ.start.toISOString()}`,
+              title: occ.summary || "(Ohne Titel)",
+              start: occ.start.toISOString(),
+              end: occ.end.toISOString(),
+              allDay: event.datetype === "date",
+              location: event.location || null,
+              calendar: calendar.displayName,
+              area: areaForCalendar(calendar.displayName, areaMap),
+            });
+          }
         }
       }
-    }
-  }
+      return events;
+    })
+  );
 
+  const results = perCalendarResults.flat();
   results.sort((a, b) => a.start.localeCompare(b.start));
   return results;
 }

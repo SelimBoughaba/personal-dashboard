@@ -116,7 +116,16 @@ async function scanAccount(account, rules) {
   });
 
   const created = [];
-  await withTimeout(client.connect(), CONNECTION_TIMEOUT_MS, `Verbindung zu ${account.host}`);
+  try {
+    await withTimeout(client.connect(), CONNECTION_TIMEOUT_MS, `Verbindung zu ${account.host}`);
+  } catch (err) {
+    // Falls connect() selbst durch den Timeout "gewonnen" hat, kann die
+    // zugrunde liegende Verbindung im Hintergrund trotzdem noch aufgebaut
+    // werden. Ohne close() bliebe dieser Socket offen und würde nie
+    // aufgeräumt (Leak bei jedem erneuten Scan-Versuch).
+    client.close();
+    throw err;
+  }
 
   try {
     const lock = await client.getMailboxLock("INBOX");
@@ -203,6 +212,23 @@ export async function scanForInvoices() {
   }
 
   const rules = parseAreaRules();
-  const results = await Promise.all(accounts.map((account) => scanAccount(account, rules)));
-  return results.flat();
+  const settled = await Promise.allSettled(accounts.map((account) => scanAccount(account, rules)));
+
+  const created = [];
+  settled.forEach((result, i) => {
+    if (result.status === "fulfilled") {
+      created.push(...result.value);
+    } else {
+      console.error(`Rechnungs-Scan-Fehler (${accounts[i].id}):`, result.reason);
+    }
+  });
+
+  // Nur wenn ALLE Konten fehlschlagen, den Fehler nach oben reichen –
+  // ein einzelnes gestörtes Postfach soll den Scan der anderen Konten
+  // nicht verhindern.
+  if (settled.every((r) => r.status === "rejected")) {
+    throw settled[0].reason;
+  }
+
+  return created;
 }

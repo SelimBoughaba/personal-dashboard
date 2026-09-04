@@ -1,11 +1,9 @@
 import { Router } from "express";
 import { db } from "../db.js";
 import { scanForInvoices } from "../invoiceScanner.js";
+import { AREAS, INVOICE_STATUSES as STATUSES } from "../constants.js";
 
 export const invoicesRouter = Router();
-
-const AREAS = ["corelegal", "evermont", "nachhilfe", "allgemein"];
-const STATUSES = ["offen", "bezahlt"];
 
 invoicesRouter.get("/", (req, res) => {
   const { area, status } = req.query;

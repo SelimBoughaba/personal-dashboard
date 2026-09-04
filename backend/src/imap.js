@@ -14,7 +14,16 @@ async function fetchAccountMessages(account, rules) {
   });
 
   const messages = [];
-  await withTimeout(client.connect(), CONNECTION_TIMEOUT_MS, `Verbindung zu ${account.host}`);
+  try {
+    await withTimeout(client.connect(), CONNECTION_TIMEOUT_MS, `Verbindung zu ${account.host}`);
+  } catch (err) {
+    // Falls connect() selbst durch den Timeout "gewonnen" hat, kann die
+    // zugrunde liegende Verbindung im Hintergrund trotzdem noch aufgebaut
+    // werden. Ohne close() bliebe dieser Socket offen und würde nie
+    // aufgeräumt (Leak bei jedem erneuten Poll-Versuch).
+    client.close();
+    throw err;
+  }
 
   try {
     const lock = await client.getMailboxLock("INBOX");
@@ -62,6 +71,23 @@ export async function getMessages() {
   }
 
   const rules = parseAreaRules();
-  const results = await Promise.all(accounts.map((account) => fetchAccountMessages(account, rules)));
-  return results.flat().sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  const settled = await Promise.allSettled(accounts.map((account) => fetchAccountMessages(account, rules)));
+
+  const messages = [];
+  settled.forEach((result, i) => {
+    if (result.status === "fulfilled") {
+      messages.push(...result.value);
+    } else {
+      console.error(`IMAP-Fehler (${accounts[i].id}):`, result.reason);
+    }
+  });
+
+  // Nur wenn ALLE Konten fehlschlagen, den Fehler nach oben reichen –
+  // ein einzelnes gestörtes Postfach soll nicht die Mails der anderen
+  // Konten verschlucken.
+  if (settled.every((r) => r.status === "rejected")) {
+    throw settled[0].reason;
+  }
+
+  return messages.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
 }

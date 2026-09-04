@@ -1,11 +1,8 @@
 import { Router } from "express";
 import { db } from "../db.js";
+import { AREAS, TASK_PRIORITIES as PRIORITIES, TASK_STATUSES as STATUSES } from "../constants.js";
 
 export const tasksRouter = Router();
-
-const AREAS = ["corelegal", "evermont", "nachhilfe", "allgemein"];
-const PRIORITIES = ["niedrig", "mittel", "hoch"];
-const STATUSES = ["offen", "erledigt"];
 
 function validateTaskInput(body, { partial = false } = {}) {
   const errors = [];
