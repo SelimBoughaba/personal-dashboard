@@ -97,11 +97,13 @@ export function ProfilSection() {
 
 function DarstellungSection() {
   const [reducedMotion, setReducedMotion] = useState(false);
+  const [theme, setTheme] = useState("dark");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     apiFetch("/settings").then((s) => {
       setReducedMotion(!!s["appearance.reduced_motion"]);
+      setTheme(s["appearance.theme"] === "light" ? "light" : "dark");
       setLoading(false);
     });
   }, []);
@@ -112,15 +114,48 @@ function DarstellungSection() {
     document.documentElement.classList.toggle("reduce-motion", value);
   }
 
+  async function setThemeValue(value) {
+    setTheme(value);
+    await apiFetch("/settings/appearance.theme", { method: "PUT", body: JSON.stringify({ value }) });
+    document.documentElement.dataset.theme = value;
+  }
+
   if (loading) return <p className="text-sm text-ivory/40">Lädt…</p>;
 
   return (
     <GlassCard>
       <h2 className="mb-1 text-base font-semibold text-ivory">Darstellung</h2>
       <p className="mb-4 text-sm text-ivory/50">
-        Das Design (Manrope, Waldgrün/Ivory, Liquid Glass) ist bewusst einheitlich vorgegeben. Hier lässt sich nur
-        die Bewegung reduzieren.
+        Schriftart und Grundlayout (Manrope, Liquid Glass) sind bewusst einheitlich vorgegeben. Farbschema und
+        Bewegung lassen sich hier anpassen.
       </p>
+      <div className="mb-5">
+        <Label>Farbschema</Label>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setThemeValue("dark")}
+            className={`rounded-xl border px-4 py-2 text-sm transition-colors duration-200 ${
+              theme === "dark"
+                ? "border-lime/40 bg-lime/10 text-ivory"
+                : "border-white/10 bg-white/[0.02] text-ivory/60 hover:bg-white/[0.05]"
+            }`}
+          >
+            Dunkel
+          </button>
+          <button
+            type="button"
+            onClick={() => setThemeValue("light")}
+            className={`rounded-xl border px-4 py-2 text-sm transition-colors duration-200 ${
+              theme === "light"
+                ? "border-lime/40 bg-lime/10 text-ivory"
+                : "border-white/10 bg-white/[0.02] text-ivory/60 hover:bg-white/[0.05]"
+            }`}
+          >
+            Hell
+          </button>
+        </div>
+      </div>
       <label className="flex items-center gap-3 text-sm text-ivory/85">
         <input
           type="checkbox"

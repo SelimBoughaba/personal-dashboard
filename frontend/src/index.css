@@ -2,13 +2,43 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Dunkles Theme (Standard). RGB-Tripel ohne rgb()-Wrapper, damit
+     Tailwinds <alpha-value>-Platzhalter (siehe tailwind.config.js) die
+     Deckkraft aus der jeweiligen Utility-Klasse einsetzen kann. */
+  --color-forest-950: 7 31 25;
+  --color-forest-900: 13 44 36;
+  --color-forest-800: 23 68 56;
+  --color-forest-700: 31 82 69;
+  --color-ivory: 243 241 233;
+  --color-paper: 233 231 223;
+  --color-muted: 96 112 104;
+  --color-white: 255 255 255;
+}
+
+/* Helles Theme: dieselben Namen, umgekehrte Rollen (z. B. wird die
+   "weiße" Glas-Überlagerung zu einer dunklen, die vorher helle
+   Fließtextfarbe "ivory" zu dunklem Text). Jede bestehende Utility-Klasse
+   (text-ivory, bg-forest-900/60, bg-white/[0.05], ...) passt sich dadurch
+   automatisch an, ohne einzelne Komponenten anfassen zu müssen. */
+[data-theme="light"] {
+  --color-forest-950: 246 244 238;
+  --color-forest-900: 255 255 255;
+  --color-forest-800: 214 224 218;
+  --color-forest-700: 190 205 197;
+  --color-ivory: 16 34 28;
+  --color-paper: 214 219 210;
+  --color-muted: 74 88 80;
+  --color-white: 16 34 28;
+}
+
 @layer base {
   body {
     @apply min-h-screen text-ivory antialiased font-sans;
     background:
-      radial-gradient(ellipse 70% 55% at 15% -10%, rgba(23, 68, 56, 0.55), transparent 60%),
-      radial-gradient(ellipse 60% 50% at 100% 0%, rgba(23, 68, 56, 0.35), transparent 60%),
-      #071f19;
+      radial-gradient(ellipse 70% 55% at 15% -10%, rgb(var(--color-forest-800) / 0.55), transparent 60%),
+      radial-gradient(ellipse 60% 50% at 100% 0%, rgb(var(--color-forest-800) / 0.35), transparent 60%),
+      rgb(var(--color-forest-950));
     background-attachment: fixed;
   }
   ::selection {

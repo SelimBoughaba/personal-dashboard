@@ -7,17 +7,25 @@ export default {
         sans: ["Manrope", "ui-sans-serif", "system-ui", "sans-serif"],
       },
       colors: {
-        // Evermont-Markenpalette
+        // Evermont-Markenpalette. forest/ivory/paper/muted/white sind über
+        // CSS-Variablen definiert (siehe index.css :root und
+        // [data-theme="light"]), damit ein Light Mode möglich ist, ohne in
+        // jeder einzelnen Komponente Klassen umzuschreiben - dieselbe
+        // Utility-Klasse (z. B. bg-forest-950, text-ivory/60,
+        // bg-white/[0.05]) rendert je nach Theme automatisch die passende
+        // Farbe. ink/lime/area/status bleiben bewusst themenunabhängig
+        // fest (Kontrastfarbe auf hellen Akzentflächen bzw. Akzentfarben).
+        white: "rgb(var(--color-white) / <alpha-value>)",
         forest: {
-          950: "#071f19",
-          900: "#0d2c24",
-          800: "#174438",
-          700: "#1f5245",
+          950: "rgb(var(--color-forest-950) / <alpha-value>)",
+          900: "rgb(var(--color-forest-900) / <alpha-value>)",
+          800: "rgb(var(--color-forest-800) / <alpha-value>)",
+          700: "rgb(var(--color-forest-700) / <alpha-value>)",
         },
-        ivory: "#f3f1e9",
-        paper: "#e9e7df",
+        ivory: "rgb(var(--color-ivory) / <alpha-value>)",
+        paper: "rgb(var(--color-paper) / <alpha-value>)",
         ink: "#10221c",
-        muted: "#607068",
+        muted: "rgb(var(--color-muted) / <alpha-value>)",
         lime: "#c8ff52",
         area: {
           corelegal: "#e8b866",

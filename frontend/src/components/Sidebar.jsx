@@ -136,8 +136,8 @@ function SidebarContent({ onNavigate, onOpenSearch }) {
   return (
     <div className="flex h-full flex-col" onClick={onNavigate}>
       <div className="flex items-center gap-2.5 px-3 pb-6 pt-1">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
-          <path d="M3 17 L9 6 L12.5 12 L15.5 5 L21 17 Z" fill="#f3f1e9" />
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" className="text-ivory">
+          <path d="M3 17 L9 6 L12.5 12 L15.5 5 L21 17 Z" fill="currentColor" />
         </svg>
         <span className="font-semibold tracking-tight text-ivory">Dashboard</span>
       </div>

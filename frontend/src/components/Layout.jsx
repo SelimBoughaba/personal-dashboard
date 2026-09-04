@@ -11,6 +11,7 @@ export function Layout({ children }) {
     apiFetch("/settings")
       .then((s) => {
         document.documentElement.classList.toggle("reduce-motion", !!s["appearance.reduced_motion"]);
+        document.documentElement.dataset.theme = s["appearance.theme"] === "light" ? "light" : "dark";
       })
       .catch(() => {});
   }, []);
