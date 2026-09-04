@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import { getJwtSecret } from "../configStore.js";
 
 export function requireAuth(req, res, next) {
   const header = req.headers.authorization || "";
@@ -9,7 +10,7 @@ export function requireAuth(req, res, next) {
   }
 
   try {
-    req.user = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = jwt.verify(token, getJwtSecret());
     next();
   } catch {
     return res.status(401).json({ error: "Sitzung ungültig oder abgelaufen." });

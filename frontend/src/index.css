@@ -18,6 +18,25 @@
     outline: 2px solid theme("colors.lime");
     outline-offset: 2px;
   }
+
+  /* Respektiert System-Präferenz "Bewegung reduzieren" sowie die
+     gleichnamige Einstellung in der App (Einstellungen → Darstellung). */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+  html.reduce-motion *,
+  html.reduce-motion *::before,
+  html.reduce-motion *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }
 
 @layer components {

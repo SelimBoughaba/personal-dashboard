@@ -58,6 +58,12 @@ const ICONS = {
       <path d="M21 12H9" />
     </>
   ),
+  einstellungen: (
+    <>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+    </>
+  ),
 };
 
 function Icon({ name }) {
@@ -77,7 +83,12 @@ const NAV_ITEMS = [
   { label: "Dokumente", icon: "dokumente", enabled: false },
 ];
 
-const MORE_ITEMS = ["Verträge & Abos", "Gesundheit", "Notizen", "Einstellungen"];
+const MORE_ITEMS = [
+  { label: "Verträge & Abos", enabled: false },
+  { label: "Gesundheit", enabled: false },
+  { label: "Notizen", enabled: false },
+  { label: "Einstellungen", path: "/einstellungen", icon: "einstellungen", enabled: true },
+];
 
 function NavRow({ item }) {
   const base = "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors duration-200";
@@ -156,16 +167,30 @@ function SidebarContent({ onNavigate }) {
           >
             <div className="min-h-0">
               <div className="ml-8 mt-1 space-y-0.5 border-l border-white/10 pl-3">
-                {MORE_ITEMS.map((label) => (
-                  <div
-                    key={label}
-                    className="flex items-center justify-between rounded-lg px-2.5 py-2 text-[13px] text-ivory/30"
-                    title="In Entwicklung"
-                  >
-                    {label}
-                    <span className="rounded-full bg-white/5 px-1.5 py-0.5 text-[9px] text-ivory/40">bald</span>
-                  </div>
-                ))}
+                {MORE_ITEMS.map((item) =>
+                  item.enabled ? (
+                    <NavLink
+                      key={item.label}
+                      to={item.path}
+                      className={({ isActive }) =>
+                        `flex items-center justify-between rounded-lg px-2.5 py-2 text-[13px] transition-colors duration-200 ${
+                          isActive ? "text-ivory" : "text-ivory/65 hover:text-ivory"
+                        }`
+                      }
+                    >
+                      {item.label}
+                    </NavLink>
+                  ) : (
+                    <div
+                      key={item.label}
+                      className="flex items-center justify-between rounded-lg px-2.5 py-2 text-[13px] text-ivory/30"
+                      title="In Entwicklung"
+                    >
+                      {item.label}
+                      <span className="rounded-full bg-white/5 px-1.5 py-0.5 text-[9px] text-ivory/40">bald</span>
+                    </div>
+                  ),
+                )}
               </div>
             </div>
           </div>

@@ -1,0 +1,128 @@
+// Einfaches Migrationssystem: jede Migration läuft genau einmal (Tracking
+// über schema_migrations), in einer Transaktion, in fester Reihenfolge.
+// Neue Migrationen werden am Ende der MIGRATIONS-Liste ergänzt, bestehende
+// nie verändert – so bleibt der Verlauf für jede Installation nachvollziehbar
+// und bestehende Daten (Aufgaben, Rechnungen, ...) gehen nie verloren.
+
+const DEFAULT_AREA_COLORS = {
+  corelegal: "#e8b866",
+  evermont: "#c8ff52",
+  nachhilfe: "#7fb69e",
+  allgemein: "#94a08f",
+};
+
+const MIGRATIONS = [
+  {
+    id: "0001_areas_table",
+    up(db) {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS areas (
+          id TEXT PRIMARY KEY,
+          label TEXT NOT NULL,
+          color TEXT NOT NULL DEFAULT '#94a08f',
+          sort_order INTEGER NOT NULL DEFAULT 0,
+          is_default INTEGER NOT NULL DEFAULT 0,
+          archived INTEGER NOT NULL DEFAULT 0,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+      `);
+      const seed = [
+        ["corelegal", "Corelegal", 0],
+        ["evermont", "Evermont", 1],
+        ["nachhilfe", "Nachhilfe", 2],
+        ["allgemein", "Allgemein", 3],
+      ];
+      const insert = db.prepare(
+        "INSERT OR IGNORE INTO areas (id, label, color, sort_order, is_default) VALUES (?, ?, ?, ?, ?)",
+      );
+      for (const [id, label, order] of seed) {
+        insert.run(id, label, DEFAULT_AREA_COLORS[id], order, id === "allgemein" ? 1 : 0);
+      }
+    },
+  },
+  {
+    id: "0002_settings_table",
+    up(db) {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS settings (
+          key TEXT PRIMARY KEY,
+          value TEXT NOT NULL,
+          updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+      `);
+    },
+  },
+  {
+    id: "0003_relax_task_area_check",
+    up(db) {
+      db.exec(`
+        CREATE TABLE tasks_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          title TEXT NOT NULL,
+          notes TEXT DEFAULT '',
+          due_date TEXT,
+          priority TEXT NOT NULL DEFAULT 'mittel' CHECK (priority IN ('niedrig', 'mittel', 'hoch')),
+          area TEXT NOT NULL DEFAULT 'allgemein',
+          status TEXT NOT NULL DEFAULT 'offen' CHECK (status IN ('offen', 'erledigt')),
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        INSERT INTO tasks_new SELECT * FROM tasks;
+        DROP TABLE tasks;
+        ALTER TABLE tasks_new RENAME TO tasks;
+        CREATE INDEX IF NOT EXISTS idx_tasks_area ON tasks(area);
+        CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
+        CREATE INDEX IF NOT EXISTS idx_tasks_due_date ON tasks(due_date);
+      `);
+    },
+  },
+  {
+    id: "0004_relax_invoice_area_check",
+    up(db) {
+      db.exec(`
+        CREATE TABLE invoices_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          mail_ref TEXT UNIQUE,
+          sender TEXT DEFAULT '',
+          sender_name TEXT DEFAULT '',
+          subject TEXT DEFAULT '',
+          file_name TEXT DEFAULT '',
+          amount REAL,
+          due_date TEXT,
+          area TEXT NOT NULL DEFAULT 'allgemein',
+          status TEXT NOT NULL DEFAULT 'offen' CHECK (status IN ('offen', 'bezahlt')),
+          received_at TEXT,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        INSERT INTO invoices_new SELECT * FROM invoices;
+        DROP TABLE invoices;
+        ALTER TABLE invoices_new RENAME TO invoices;
+        CREATE INDEX IF NOT EXISTS idx_invoices_area ON invoices(area);
+        CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status);
+        CREATE INDEX IF NOT EXISTS idx_invoices_due_date ON invoices(due_date);
+      `);
+    },
+  },
+];
+
+export function runMigrations(db) {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS schema_migrations (
+      id TEXT PRIMARY KEY,
+      applied_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+  `);
+  const applied = new Set(db.prepare("SELECT id FROM schema_migrations").all().map((r) => r.id));
+
+  for (const migration of MIGRATIONS) {
+    if (applied.has(migration.id)) continue;
+    const run = db.transaction(() => {
+      migration.up(db);
+      db.prepare("INSERT INTO schema_migrations (id) VALUES (?)").run(migration.id);
+    });
+    run();
+    console.log(`Migration angewendet: ${migration.id}`);
+  }
+}

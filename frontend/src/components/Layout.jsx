@@ -1,8 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sidebar } from "./Sidebar";
+import { apiFetch } from "../api/client";
 
 export function Layout({ children }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    apiFetch("/settings")
+      .then((s) => {
+        document.documentElement.classList.toggle("reduce-motion", !!s["appearance.reduced_motion"]);
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <div className="mx-auto flex min-h-screen max-w-7xl gap-4 px-4 pb-10 pt-4 sm:px-6 lg:gap-6">

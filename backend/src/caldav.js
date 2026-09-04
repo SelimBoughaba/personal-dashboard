@@ -1,5 +1,6 @@
 import { createDAVClient } from "tsdav";
 import ical from "node-ical";
+import { getIcloudConfig } from "./configStore.js";
 
 const CALENDAR_CACHE_MS = 5 * 60 * 1000;
 
@@ -7,13 +8,28 @@ let cachedClient = null;
 let cachedCalendars = null;
 let calendarsCachedAt = 0;
 
+// Wird aufgerufen, sobald sich die iCloud-Zugangsdaten über die
+// Einstellungen ändern, damit nicht bis zum nächsten Server-Neustart mit
+// dem alten Client weitergearbeitet wird.
+export function resetCalendarCache() {
+  cachedClient = null;
+  cachedCalendars = null;
+  calendarsCachedAt = 0;
+}
+
 async function getClient() {
   if (cachedClient) return cachedClient;
+  const config = getIcloudConfig();
+  if (!config) {
+    const err = new Error("Kalender ist nicht konfiguriert.");
+    err.code = "NOT_CONFIGURED";
+    throw err;
+  }
   cachedClient = await createDAVClient({
     serverUrl: "https://caldav.icloud.com",
     credentials: {
-      username: process.env.ICLOUD_USERNAME,
-      password: process.env.ICLOUD_APP_PASSWORD,
+      username: config.username,
+      password: config.appPassword,
     },
     authMethod: "Basic",
     defaultAccountType: "caldav",
@@ -30,15 +46,6 @@ async function getCalendars() {
   cachedCalendars = await client.fetchCalendars();
   calendarsCachedAt = now;
   return cachedCalendars;
-}
-
-function parseAreaMap() {
-  try {
-    return JSON.parse(process.env.CALENDAR_AREA_MAP || "{}");
-  } catch {
-    console.warn("CALENDAR_AREA_MAP ist kein gültiges JSON – ignoriere Bereichs-Zuordnung.");
-    return {};
-  }
 }
 
 function areaForCalendar(calendarName, areaMap) {
@@ -81,7 +88,14 @@ function expandEvent(event, rangeStart, rangeEnd) {
 }
 
 export async function getEvents({ from, to }) {
-  const areaMap = parseAreaMap();
+  const config = getIcloudConfig();
+  if (!config) {
+    const err = new Error("Kalender ist nicht konfiguriert.");
+    err.code = "NOT_CONFIGURED";
+    throw err;
+  }
+
+  const areaMap = config.areaMap || {};
   const rangeStart = new Date(from);
   const rangeEnd = new Date(to);
 
@@ -126,7 +140,7 @@ export async function getEvents({ from, to }) {
         }
       }
       return events;
-    })
+    }),
   );
 
   const results = perCalendarResults.flat();

@@ -17,6 +17,10 @@ export function Select({ children, className = "", ...props }) {
   );
 }
 
-export function Label({ children }) {
-  return <label className="mb-1 block text-xs font-medium text-muted">{children}</label>;
+export function Label({ children, htmlFor }) {
+  return (
+    <label htmlFor={htmlFor} className="mb-1 block text-xs font-medium text-muted">
+      {children}
+    </label>
+  );
 }

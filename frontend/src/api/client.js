@@ -28,7 +28,12 @@ export async function apiFetch(path, options = {}) {
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body.error || `Fehler ${res.status}`);
+    const err = new Error(body.error || `Fehler ${res.status}`);
+    // Zusätzliche strukturierte Felder (z. B. needsReassignment) durchreichen,
+    // damit aufrufender Code mehr als nur die Fehlermeldung auswerten kann.
+    Object.assign(err, body);
+    err.status = res.status;
+    throw err;
   }
 
   if (res.status === 204) return null;

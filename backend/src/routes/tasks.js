@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { db } from "../db.js";
-import { AREAS, TASK_PRIORITIES as PRIORITIES, TASK_STATUSES as STATUSES } from "../constants.js";
+import { db, isValidArea, getDefaultAreaId } from "../db.js";
+import { TASK_PRIORITIES as PRIORITIES, TASK_STATUSES as STATUSES } from "../constants.js";
 
 export const tasksRouter = Router();
 
@@ -22,7 +22,7 @@ function validateTaskInput(body, { partial = false } = {}) {
     else data.priority = body.priority;
   }
   if (body.area !== undefined) {
-    if (!AREAS.includes(body.area)) errors.push("Ungültiger Bereich.");
+    if (!isValidArea(body.area)) errors.push("Ungültiger Bereich.");
     else data.area = body.area;
   }
   if (body.status !== undefined) {
@@ -67,7 +67,7 @@ tasksRouter.post("/", (req, res) => {
     notes: data.notes ?? "",
     due_date: data.due_date ?? null,
     priority: data.priority ?? "mittel",
-    area: data.area ?? "allgemein",
+    area: data.area ?? getDefaultAreaId(),
     status: "offen",
   });
 

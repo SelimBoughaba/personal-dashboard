@@ -4,12 +4,6 @@ import { getEvents } from "../caldav.js";
 export const calendarRouter = Router();
 
 calendarRouter.get("/events", async (req, res) => {
-  if (!process.env.ICLOUD_USERNAME || !process.env.ICLOUD_APP_PASSWORD) {
-    return res.status(503).json({
-      error: "Kalender ist nicht konfiguriert (ICLOUD_USERNAME/ICLOUD_APP_PASSWORD fehlen in .env).",
-    });
-  }
-
   const from = req.query.from || new Date().toISOString();
   const defaultTo = new Date();
   defaultTo.setDate(defaultTo.getDate() + 7);
@@ -19,6 +13,11 @@ calendarRouter.get("/events", async (req, res) => {
     const events = await getEvents({ from, to });
     res.json(events);
   } catch (err) {
+    if (err.code === "NOT_CONFIGURED") {
+      return res.status(503).json({
+        error: "Kalender ist nicht konfiguriert. In den Einstellungen unter „Kalender“ einrichten.",
+      });
+    }
     console.error("CalDAV-Fehler:", err);
     res.status(502).json({
       error: "Kalender konnte nicht geladen werden. iCloud-Zugangsdaten/App-Passwort prüfen.",

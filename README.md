@@ -1,20 +1,21 @@
 # Persönliches Dashboard
 
 Lokales Dashboard für Aufgaben, Kalender, Finanzen und mehr – läuft nur im
-eigenen Heimnetz, kein öffentliches Hosting. Design orientiert sich an der
-Evermont-Markenidentität (Waldgrün, Ivory, Lime-Akzente, Manrope).
+eigenen Heimnetz, kein öffentliches Hosting, keine Pflicht-Cloud-Dienste.
+Design orientiert sich an der Evermont-Markenidentität (Waldgrün, Ivory,
+Lime-Akzente, Manrope).
 
-**Stand:** Etappe 6 – Navigations-Umbau (linke Sidebar), Evermont-Redesign,
-neue Übersicht-Seite mit Live-Daten. Basis-Module (Aufgaben, Kalender,
-Finanzen/Rechnungen) sind vollständig nutzbar und persistent gespeichert
-(SQLite). Mail ist kein Hauptnavigationspunkt mehr, bleibt aber unter `/mail`
-erreichbar und speist die "Wichtige E-Mails"-Kachel auf der Übersicht.
+**Stand:** Etappe 7 – Lokale Grundlage, Einstellungen und Einrichtung.
+Alle Daten liegen vollständig lokal in einer SQLite-Datei, es gibt einen
+geführten Einrichtungsassistenten, eine vollständige Einstellungsseite,
+frei anlegbare Lebensbereiche, ein konfigurierbares Übersicht-Dashboard
+sowie CSV-Import/-Export und ein vollständiges JSON-Backup mit
+Wiederherstellung.
 
-**Noch nicht umgesetzt** (erscheinen in der Navigation klar als „bald"
-markiert, ohne Fake-Funktionalität): Ziele, Dokumente, Verträge & Abos,
-Gesundheit, Notizen, Einstellungen, Einrichtungsassistent, Kommandopalette/
-globale Suche, CSV-Import/-Export, verschlüsseltes Backup, Google/Gmail-OAuth.
-Finanzen zeigt bisher nur Rechnungen (Einnahmen/Ausgaben/Budgets folgen).
+**Noch als „bald" markiert** (klar erkennbar in der Navigation, keine
+Fake-Funktionalität dahinter): Ziele, Dokumente, Verträge & Abos,
+Gesundheit, Notizen, globale Suche/Kommandopalette, erweiterte
+Kalender-/Aufgabenansichten. Diese folgen in den nächsten Etappen.
 
 ## Projektstruktur
 
@@ -28,15 +29,14 @@ Finanzen zeigt bisher nur Rechnungen (Einnahmen/Ausgaben/Budgets folgen).
 ```bash
 cd backend
 npm install
-cp .env.example .env
-npm run hash-password -- "DeinPasswort"
-# den ausgegebenen APP_PASSWORD_HASH in backend/.env eintragen
-# außerdem JWT_SECRET in .env auf einen langen zufälligen Wert setzen
 npm run dev
 ```
 
 Der Server läuft dann auf `http://localhost:4000` (bzw. `http://<Mac-IP>:4000`
-für Zugriff vom iPhone im selben WLAN).
+für Zugriff vom iPhone im selben WLAN). Ein `.env` ist **nicht mehr
+zwingend erforderlich** – siehe „Ersteinrichtung" unten. Wer eine
+`backend/.env` mitbringt (z. B. aus einer älteren Version), dessen Werte
+werden beim allerersten Start automatisch übernommen.
 
 ### 2. Frontend
 
@@ -49,7 +49,25 @@ npm run dev
 Öffnet unter `http://localhost:5173`. Im Dev-Modus leitet Vite `/api`-Anfragen
 an den Backend-Server auf Port 4000 weiter.
 
-### 3. Zugriff vom iPhone
+### 3. Ersteinrichtung
+
+Beim allerersten Öffnen der App (kein Passwort in der Datenbank vorhanden)
+erscheint statt des Login-Formulars ein Bildschirm „Passwort festlegen".
+Danach führt ein zehnschrittiger Einrichtungsassistent (`/einrichtung`)
+einmalig durch: Profil, Lebensbereiche, Erklärung zum Datenstandort,
+Kalender-Verbindung, E-Mail-Verbindung, Dokumente-Speicherort, Finanzen
+(inkl. CSV-Import), Benachrichtigungen und Datenschutz-Übersicht. Jeder
+optionale Schritt lässt sich überspringen, der Fortschritt wird nach jedem
+Schritt in der Datenbank gespeichert – der Assistent lässt sich also
+jederzeit schließen und beim nächsten Login genau dort fortsetzen, wo man
+aufgehört hat. Nach Abschluss landet man auf einer personalisierten
+Übersicht.
+
+Alles, was im Assistenten eingegeben wird, lässt sich später jederzeit
+unter „Einstellungen" ändern – der Assistent ist nur eine geführte
+Erstbefüllung derselben Einstellungen.
+
+### 4. Zugriff vom iPhone
 
 Mac-IP im selben WLAN herausfinden (Systemeinstellungen → WLAN → Details),
 dann auf dem iPhone `http://<Mac-IP>:5173` (Dev) bzw. später die produktive
@@ -57,61 +75,160 @@ Adresse öffnen. Für den Dauerbetrieb: `npm run build` im Frontend, danach
 liefert der Backend-Server (`npm start` in `backend/`) das gebaute Frontend
 automatisch mit aus – dann reicht eine einzige Adresse `http://<Mac-IP>:4000`.
 
+## Einstellungen
+
+Unter „Einstellungen" (auch über „Mehr" in der Sidebar erreichbar) gibt es
+elf Unterbereiche, alle serverseitig in SQLite gespeichert und sofort auf
+allen Geräten sichtbar, die auf denselben Server zugreifen:
+
+1. **Profil** – Name, Begrüßungstext auf der Übersicht.
+2. **Darstellung** – reduzierte Bewegung/Animationen (`prefers-reduced-motion`
+   wird zusätzlich automatisch respektiert, auch ohne diese Einstellung).
+3. **Lebensbereiche** – frei anlegen, umbenennen, Farbe wählen, archivieren,
+   umsortieren. Löschen eines Bereichs, dem noch Aufgaben oder Rechnungen
+   zugeordnet sind, verlangt vorher eine explizite Zuordnung der
+   betroffenen Einträge zu einem anderen Bereich (kein stilles Datenverlust-
+   Risiko). Der letzte verbleibende Bereich lässt sich nicht löschen.
+4. **Dashboard** – Kacheln auf der Übersicht ein-/ausblenden und per
+   Drag-Reihenfolge anpassen; die Auswahl wird pro Server gespeichert.
+5. **Kalender** – iCloud-CalDAV-Zugangsdaten eintragen und testen.
+6. **E-Mail** – beliebig viele IMAP-Postfächer hinzufügen/entfernen/
+   pausieren, Verbindung testen, Absender-zu-Bereich-Zuordnungsregeln
+   pflegen.
+7. **Dokumente und Speicherort** – Basis-Ordnerpfad für das künftige
+   Dokumente-Modul hinterlegen (das Modul selbst folgt in einer späteren
+   Etappe).
+8. **Benachrichtigungen** – lokale Vorlieben (Vorlaufzeit für Termine u. Ä.),
+   es gibt aktuell keinen externen Push-Versand.
+9. **Datenschutz und Sicherheit** – ehrliche Übersicht, was wo gespeichert
+   wird und welche Einschränkungen bestehen (siehe Abschnitt unten).
+10. **Import und Export** – CSV-Import/-Export für Rechnungen, vollständiger
+    JSON-Export aller Daten.
+11. **Sicherung und Wiederherstellung** – Backup-Datei herunterladen bzw.
+    aus einer Backup-Datei mit Vorschau wiederherstellen.
+
+## Was wird lokal gespeichert?
+
+Alles liegt in einer einzigen SQLite-Datei unter `backend/data/dashboard.db`
+(WAL-Modus, `-shm`/`-wal`-Begleitdateien sind Laufzeit-Cache derselben
+Datenbank). Es gibt keine externe Datenbank und keinen Cloud-Sync-Dienst.
+Gespeichert werden u. a.:
+
+- Aufgaben, Termine-Cache, Rechnungen (inkl. hochgeladener PDF-Anhänge im
+  Dateisystem unter `backend/data/`)
+- Lebensbereiche (Name, Farbe, Reihenfolge, Archiv-Status)
+- Alle Einstellungen (Profil, Darstellung, Dashboard-Konfiguration,
+  Benachrichtigungs-Vorlieben, Onboarding-Fortschritt)
+- **Zugangsdaten für Kalender (iCloud-App-Passwort) und E-Mail-Konten
+  (IMAP-Passwörter) – im Klartext.** Das ist eine bewusste, aber wichtige
+  Einschränkung, siehe nächster Abschnitt.
+- Der bcrypt-Hash des Dashboard-Passworts und ein automatisch erzeugtes
+  JWT-Signaturgeheimnis.
+
+Ein `.env` in `backend/` wird nur noch als **einmaliger Fallback beim
+allerersten Start** gelesen (z. B. für Alt-Installationen); danach ist die
+Datenbank die alleinige Quelle der Wahrheit, und alles ist über die
+Oberfläche änderbar.
+
+### Ehrliche Sicherheitseinschränkung: Klartext-Zugangsdaten
+
+Browser haben keinen Zugriff auf den macOS-Schlüsselbund, und Safari
+unterstützt die File System Access API nicht – beides wären Wege, um
+Zugangsdaten außerhalb der App-Datenbank sicher abzulegen. Deshalb speichert
+diese App Kalender- und Mail-Zugangsdaten aktuell **im Klartext** in
+`dashboard.db`. Das ist dieselbe Vertrauensgrenze wie die lokale
+Festplatte selbst: Wer physischen oder Netzwerkzugriff auf den Mac bzw. das
+Backup hat, kann diese Zugangsdaten lesen. Das ist keine im Hintergrund
+verschleierte Schwäche, sondern wird in der App unter „Einstellungen →
+Datenschutz und Sicherheit" sowie hier bewusst offengelegt. Eine
+Verschlüsselung dieser Werte ist als spätere Verbesserung denkbar, aber
+noch nicht umgesetzt.
+
+## Welche externen Verbindungen funktionieren wirklich?
+
+Es wird nirgends eine erfolgreiche Verbindung simuliert. Ein
+„Verbindung testen"-Button meldet immer das echte Ergebnis des
+tatsächlichen Verbindungsversuchs – bei falschen Zugangsdaten also eine
+echte Fehlermeldung, nie ein Fake-Erfolg.
+
+**Funktioniert bereits:**
+
+- **Kalender via iCloud CalDAV** – mit einem App-spezifischen Apple-ID-
+  Passwort (nicht dem normalen Passwort). Einrichtung unter Einstellungen
+  → Kalender oder im Assistenten.
+- **E-Mail via generisches IMAP** (getestet mit IONOS, sollte mit jedem
+  Standard-IMAP-Postfach funktionieren) – beliebig viele Konten, mit
+  Bereichs-Zuordnung nach Absenderadresse.
+- **Rechnungserkennung aus PDF-Anhängen** – nutzt eine der eingerichteten
+  IMAP-Verbindungen, durchsucht die letzten 90 Tage nach Anhängen.
+
+**Vorbereitet, aber noch nicht angebunden** (erscheint ehrlich als „noch
+nicht verfügbar", nicht als funktionierende Option):
+
+- Google Calendar / Gmail über OAuth (technisch ohne Cloud-Pflicht machbar,
+  aber eine eigene Etappe – App-Registrierung bei Google nötig)
+- Native Apple-Calendar-Integration ohne CalDAV-Umweg (würde einen
+  nativen Helper auf dem Mac voraussetzen, den es (noch) nicht gibt)
+- Microsoft/Outlook-Postfächer (Microsoft hat klassisches Passwort-IMAP
+  2022 abgeschaltet, würde eine eigene OAuth2/Azure-Anbindung brauchen)
+
+## CSV-Import/-Export
+
+Unter „Finanzen" (Rechnungen) sowie unter Einstellungen → Import und
+Export:
+
+- **Export:** lädt alle Rechnungen als `;`-getrennte CSV-Datei (deutsche/
+  Excel-Konvention, damit Beträge mit Komma als Dezimaltrennzeichen nicht
+  mit dem Spaltentrenner kollidieren) mit UTF-8-BOM für korrekte Umlaute
+  in Excel.
+- **Import:** CSV-Datei auswählen, jede Zeile wird einzeln validiert;
+  fehlerhafte Zeilen werden übersprungen und gezählt, gültige Zeilen
+  werden in einer Transaktion eingefügt. Rückmeldung zeigt, wie viele
+  Zeilen importiert bzw. übersprungen wurden.
+
+## Backup & Wiederherstellung
+
+Unter Einstellungen → Sicherung und Wiederherstellung:
+
+- **Backup erstellen:** „Backup herunterladen" lädt eine vollständige
+  JSON-Kopie aller lokalen Daten herunter – **inklusive** der oben
+  beschriebenen Klartext-Zugangsdaten. Die Datei entsprechend sicher
+  aufbewahren (z. B. nicht unverschlüsselt in einer Cloud ablegen).
+- **Wiederherstellen:** Backup-Datei auswählen → die App zeigt zunächst
+  nur eine **Vorschau** (Anzahl Aufgaben/Rechnungen/Bereiche, Erstellungs-
+  zeitpunkt), ohne etwas zu verändern. Erst nach explizitem Klick auf
+  „Jetzt überschreiben & wiederherstellen" werden alle aktuellen lokalen
+  Daten unwiderruflich durch den Inhalt der Backup-Datei ersetzt
+  (serverseitig transaktional, alles-oder-nichts). Der Button ist bewusst
+  von der Vorschau getrennt und deutlich als destruktiv gekennzeichnet.
+
 ## Kalender-Sync einrichten (iCloud)
 
 1. App-spezifisches Passwort erzeugen: auf [appleid.apple.com](https://appleid.apple.com)
    anmelden → „Anmelden & Sicherheit" → „App-spezifische Passwörter" → neues
    Passwort erstellen (Name z. B. „Dashboard"). **Nicht** das normale
    Apple-ID-Passwort verwenden, das funktioniert nicht.
-2. In `backend/.env` eintragen:
-   ```
-   ICLOUD_USERNAME=deine-apple-id@icloud.com
-   ICLOUD_APP_PASSWORD=xxxx-xxxx-xxxx-xxxx
-   ```
-3. Optional: Kalender bestimmten Bereichen zuordnen. Wenn du in Apple Calendar
-   z. B. eigene Kalender „Corelegal", „Evermont", „Nachhilfe" angelegt hast,
-   trage in `backend/.env` ein:
-   ```
-   CALENDAR_AREA_MAP={"Corelegal":"corelegal","Evermont":"evermont","Nachhilfe":"nachhilfe"}
-   ```
-   Der Name muss exakt dem Kalendernamen in Apple Calendar entsprechen.
-   Nicht gelistete Kalender werden als „Allgemein" angezeigt.
-4. Backend neu starten. Termine (inkl. wiederkehrender Termine) erscheinen
-   dann im Tab „Kalender" in Tages- und Wochenansicht, farblich nach Bereich
-   filterbar.
+2. Unter Einstellungen → Kalender (oder im Einrichtungsassistenten)
+   Apple-ID und das App-Passwort eintragen und mit „Verbindung testen"
+   prüfen.
+3. Termine (inkl. wiederkehrender Termine) erscheinen im Tab „Kalender" in
+   Tages- und Wochenansicht, farblich nach Lebensbereich filterbar.
 
-## Mail-Modul einrichten (IONOS)
+## Mail-Modul einrichten
 
-1. IMAP muss im IONOS-Postfach aktiviert sein (Webmail → Einstellungen →
-   POP3/IMAP). Host/Port findest du in den IONOS-Kontoeinstellungen bzw.
-   in der bisherigen Mail-App-Konfiguration deines iPhones (meist
-   `imap.ionos.de`, Port `993`).
-2. In `backend/.env` eintragen:
-   ```
-   IONOS_IMAP_HOST=imap.ionos.de
-   IONOS_IMAP_PORT=993
-   IONOS_IMAP_USER=deine-adresse@deine-domain.de
-   IONOS_IMAP_PASSWORD=dein-postfach-passwort
-   ```
-3. Optional: Absender bestimmten Bereichen zuordnen, z. B.
-   ```
-   MAIL_AREA_RULES={"kanzlei-mustermann.de":"corelegal","evermont.de":"evermont"}
-   ```
-   Geprüft wird, ob der angegebene Text (Domain oder vollständige Adresse)
-   in der Absenderadresse vorkommt. Nicht zugeordnete Mails laufen unter
-   „Allgemein".
-4. Backend neu starten. Im Tab „Mail" erscheinen ungelesene und markierte
-   Mails aus dem Postfach, bereichsfilterbar.
-
-**Hinweis zu Outlook/Microsoft 365:** Microsoft hat klassisches
-Passwort-IMAP 2022 abgeschaltet. Das Outlook-Postfach ist deshalb aktuell
-noch nicht angebunden – dafür wäre eine OAuth2-Anbindung (Azure-App-
-Registrierung) nötig, die wir bei Bedarf als eigene Etappe ergänzen.
+1. IMAP muss im Postfach aktiviert sein. Host/Port findest du in den
+   Kontoeinstellungen deines Anbieters (bei IONOS meist `imap.ionos.de`,
+   Port `993`).
+2. Unter Einstellungen → E-Mail ein Konto hinzufügen (Kennung,
+   Anzeigename, Host, Port, Benutzername, Passwort) und mit
+   „Verbindung testen" prüfen.
+3. Optional: Absender bestimmten Lebensbereichen zuordnen (Domain oder
+   vollständige Adresse). Nicht zugeordnete Mails laufen unter dem
+   Standardbereich.
 
 ## Rechnungs-Automatisierung
 
-Voraussetzung: Mail-Modul (IONOS) ist eingerichtet (siehe oben) – die
-Rechnungserkennung nutzt dieselbe Postfach-Verbindung.
+Voraussetzung: mindestens ein E-Mail-Konto ist eingerichtet.
 
 1. Im Tab „Rechnungen" auf „Postfächer durchsuchen" klicken. Die letzten
    90 Tage werden nach PDF-Anhängen durchsucht (max. 150 Mails pro
@@ -125,8 +242,6 @@ Rechnungserkennung nutzt dieselbe Postfach-Verbindung.
    Absender und Bereich jederzeit manuell korrigieren. Rechnungen ohne
    Mail-Bezug (z. B. Papierbelege) lassen sich über „+ Rechnung" auch
    direkt manuell anlegen.
-4. Nutzt dieselbe `MAIL_AREA_RULES`-Zuordnung wie das Mail-Modul für die
-   automatische Bereichs-Zuordnung.
 
 ## Als App aufs iPhone installieren (PWA)
 
@@ -154,13 +269,17 @@ iPhone automatisch beim nächsten Öffnen.
 
 ## Sicherheit
 
-- `.env`-Dateien enthalten Zugangsdaten und werden nie committet.
-- Passwort wird nur als bcrypt-Hash gespeichert.
-- Zugriff nur mit gültigem JWT (30 Tage gültig, dann erneut anmelden).
-- **Startup-Validierung:** Der Server verweigert den Start, wenn `JWT_SECRET`
-  fehlt, zu kurz ist oder noch der Platzhalter aus `.env.example` ist, oder
-  wenn `APP_PASSWORD_HASH` fehlt bzw. kein echter bcrypt-Hash ist. Verhindert,
-  dass die App versehentlich mit unsicherer Konfiguration im Heimnetz läuft.
+- Passwort wird nur als bcrypt-Hash gespeichert, nie im Klartext.
+- Zugriff nur mit gültigem JWT (30 Tage gültig, dann erneut anmelden). Das
+  JWT-Signaturgeheimnis wird beim ersten Start automatisch zufällig erzeugt
+  und in der Datenbank gespeichert, falls kein sicherer Wert vorkonfiguriert
+  ist – kein manuelles `openssl`-Kommando mehr nötig.
+- **Ersteinrichtung statt Startup-Blockade:** Frühere Versionen verweigerten
+  den Serverstart komplett ohne vorkonfiguriertes Passwort. Das war ein
+  Henne-Ei-Problem (man kam nie bis zu einer Oberfläche, die das Passwort
+  hätte setzen können) und wurde durch den Setup-Bildschirm ersetzt: der
+  Server startet immer, verweigert aber jede andere Aktion, bis ein
+  Passwort gesetzt ist.
 - **Rate-Limiting:** Login ist auf 10 Versuche pro 15 Minuten pro IP begrenzt
   (jeder im selben WLAN kann die Login-Route erreichen, nicht nur du selbst).
 - **Security-Header** via `helmet` (Content-Security-Policy, X-Frame-Options,
@@ -169,25 +288,34 @@ iPhone automatisch beim nächsten Öffnen.
   nicht den ganzen Server zum Absturz; Antworten geben nie Stacktraces preis.
 - Kein CORS-Middleware, da Frontend und Backend immer same-origin laufen –
   eine unnötige offene Angriffsfläche weniger.
+- Klartext-Speicherung von Kalender-/Mail-Zugangsdaten: siehe eigener
+  Abschnitt oben unter „Was wird lokal gespeichert?".
 
-## Nächste Etappen (Evermont-Ausbau)
+## Bekannte Einschränkungen
 
-Der Umbau zu „Übersicht/Kalender/Aufgaben/Finanzen/Ziele/Dokumente/Mehr" ist
-deutlich größer als der ursprüngliche Funktionsumfang und wird in weiteren
-Etappen umgesetzt:
+- **Barrierefreiheit (Formular-Labels):** Auf dem Login-/Setup-Bildschirm
+  sind `<label>` und `<input>` korrekt über `htmlFor`/`id` verknüpft
+  (Screenreader lesen das Feld korrekt vor, Klick aufs Label fokussiert das
+  Feld). In den übrigen Formularen der App (Aufgaben, Rechnungen, alle
+  Einstellungs-Unterseiten) fehlt diese Verknüpfung noch teilweise – die
+  Felder sind visuell und per Tab-Reihenfolge nutzbar, aber nicht überall
+  optimal für Screenreader beschriftet. Geplante schrittweise Behebung.
+- Kein Verschlüsselungs-Layer für die in der Datenbank gespeicherten
+  Zugangsdaten (siehe oben).
+- Dokumente-Modul, Ziele, Verträge & Abos, Gesundheit, Notizen, globale
+  Suche/Kommandopalette und erweiterte Kalender-/Aufgabenansichten sind
+  noch nicht umgesetzt (klar als „bald" markiert in der Navigation).
+- Google-/Gmail-OAuth, native Apple-Calendar-Integration und Outlook/
+  Microsoft-365-Postfächer sind vorbereitet, aber noch nicht angebunden
+  (siehe „Welche externen Verbindungen funktionieren wirklich?").
 
-- Finanzen: Einnahmen/Ausgaben-Erfassung, Budgets, Kategorien, wiederkehrende
-  Zahlungen, Auswertungen, CSV-Import/-Export
-- Ziele-Modul (Fortschritt, Meilensteine, Verknüpfung mit Aufgaben)
-- Dokumente-Modul (serverseitige Ablage auf dem Mac, Ordner/Tags/Suche –
-  freie Ordnerwahl im Browser ist in Safari technisch nicht möglich)
-- Mehr-Bereiche: Verträge & Abos, Gesundheit, Notizen, vollständige
-  Einstellungen (inkl. E-Mail-Konten-Verwaltung)
-- Einrichtungsassistent für die Ersteinrichtung
+## Nächste Etappen
+
+- Dokumente (serverseitige Ablage, Ordner/Tags/Suche)
+- Verträge & Abos
+- Ziele (Fortschritt, Meilensteine, Verknüpfung mit Aufgaben)
+- Notizen
+- Gesundheit
 - Globale Suche / Kommandopalette
-- Kalender: Monats-/Agenda-Ansicht, Termin-Erstellung/-Bearbeitung im UI,
-  wiederkehrende Termine, Konflikterkennung, ICS-Import/-Export
-- Aufgaben: Kanban-Ansicht, Unteraufgaben, Abhängigkeiten, Erinnerungen
-- Verschlüsseltes lokales Backup/Restore, vollständiger Datenexport
-- Optional: Google Calendar/Gmail-Anbindung (kostenloses OAuth via
-  Desktop-App-Flow, technisch möglich ohne öffentliches Hosting)
+- Erweiterte Kalender-/Aufgabenansichten (Monats-/Agenda-Ansicht, Kanban,
+  Unteraufgaben, wiederkehrende Termine im UI erstellbar)

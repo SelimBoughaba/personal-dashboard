@@ -1,9 +1,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { apiFetch } from "../api/client";
 import { GlassCard } from "../components/ui/GlassCard";
-import { AreaBadge, AREA_LABELS } from "../components/ui/AreaBadge";
-
-const AREAS = ["corelegal", "evermont", "nachhilfe", "allgemein"];
+import { AreaBadge } from "../components/ui/AreaBadge";
+import { useAreas } from "../context/AreasContext";
 
 function startOfDay(date) {
   const d = new Date(date);
@@ -18,6 +17,7 @@ function addDays(date, n) {
 }
 
 export function Kalender() {
+  const { activeAreas } = useAreas();
   const [view, setView] = useState("woche");
   const [areaFilter, setAreaFilter] = useState("alle");
   const [events, setEvents] = useState([]);
@@ -78,17 +78,17 @@ export function Kalender() {
           ))}
         </div>
         <div className="flex flex-wrap gap-2">
-          {["alle", ...AREAS].map((a) => (
+          {[{ id: "alle", label: "Alle" }, ...activeAreas].map((a) => (
             <button
-              key={a}
-              onClick={() => setAreaFilter(a)}
+              key={a.id}
+              onClick={() => setAreaFilter(a.id)}
               className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
-                areaFilter === a
+                areaFilter === a.id
                   ? "border-white/20 bg-white/10 text-ivory"
                   : "border-white/10 bg-white/[0.03] text-ivory/55 hover:bg-white/[0.06]"
               }`}
             >
-              {a === "alle" ? "Alle" : AREA_LABELS[a]}
+              {a.label}
             </button>
           ))}
         </div>

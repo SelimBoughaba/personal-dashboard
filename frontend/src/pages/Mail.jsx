@@ -2,9 +2,8 @@ import { useEffect, useState, useCallback } from "react";
 import { apiFetch } from "../api/client";
 import { GlassCard } from "../components/ui/GlassCard";
 import { Button } from "../components/ui/Button";
-import { AreaBadge, AREA_LABELS } from "../components/ui/AreaBadge";
-
-const AREAS = ["corelegal", "evermont", "nachhilfe", "allgemein"];
+import { AreaBadge } from "../components/ui/AreaBadge";
+import { useAreas } from "../context/AreasContext";
 
 function formatDate(iso) {
   if (!iso) return "";
@@ -17,6 +16,7 @@ function formatDate(iso) {
 }
 
 export function Mail() {
+  const { activeAreas } = useAreas();
   const [messages, setMessages] = useState([]);
   const [areaFilter, setAreaFilter] = useState("alle");
   const [error, setError] = useState("");
@@ -45,17 +45,17 @@ export function Mail() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
-          {["alle", ...AREAS].map((a) => (
+          {[{ id: "alle", label: "Alle" }, ...activeAreas].map((a) => (
             <button
-              key={a}
-              onClick={() => setAreaFilter(a)}
+              key={a.id}
+              onClick={() => setAreaFilter(a.id)}
               className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
-                areaFilter === a
+                areaFilter === a.id
                   ? "border-white/20 bg-white/10 text-ivory"
                   : "border-white/10 bg-white/[0.03] text-ivory/55 hover:bg-white/[0.06]"
               }`}
             >
-              {a === "alle" ? "Alle" : AREA_LABELS[a]}
+              {a.label}
             </button>
           ))}
         </div>

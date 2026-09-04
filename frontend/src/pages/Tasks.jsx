@@ -3,13 +3,14 @@ import { apiFetch } from "../api/client";
 import { GlassCard } from "../components/ui/GlassCard";
 import { Button } from "../components/ui/Button";
 import { Input, Textarea, Select, Label } from "../components/ui/Field";
-import { AreaBadge, AREA_LABELS } from "../components/ui/AreaBadge";
+import { AreaBadge } from "../components/ui/AreaBadge";
 import { PriorityBadge } from "../components/ui/PriorityBadge";
+import { useAreas } from "../context/AreasContext";
 
-const AREAS = ["corelegal", "evermont", "nachhilfe", "allgemein"];
-const EMPTY_FORM = { title: "", due_date: "", priority: "mittel", area: "allgemein", notes: "" };
+const EMPTY_FORM = { title: "", due_date: "", priority: "mittel", area: "", notes: "" };
 
 export function Tasks() {
+  const { activeAreas } = useAreas();
   const [tasks, setTasks] = useState([]);
   const [areaFilter, setAreaFilter] = useState("alle");
   const [sort, setSort] = useState("due_date");
@@ -44,6 +45,12 @@ export function Tasks() {
     setForm(EMPTY_FORM);
     setEditingId(null);
     setShowForm(false);
+  }
+
+  function openNewForm() {
+    const defaultArea = activeAreas.find((a) => a.is_default) || activeAreas[0];
+    setForm({ ...EMPTY_FORM, area: defaultArea?.id || "" });
+    setShowForm(true);
   }
 
   async function handleSubmit(e) {
@@ -82,17 +89,17 @@ export function Tasks() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
-          {["alle", ...AREAS].map((a) => (
+          {[{ id: "alle", label: "Alle" }, ...activeAreas].map((a) => (
             <button
-              key={a}
-              onClick={() => setAreaFilter(a)}
+              key={a.id}
+              onClick={() => setAreaFilter(a.id)}
               className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
-                areaFilter === a
+                areaFilter === a.id
                   ? "border-white/20 bg-white/10 text-ivory"
                   : "border-white/10 bg-white/[0.03] text-ivory/55 hover:bg-white/[0.06]"
               }`}
             >
-              {a === "alle" ? "Alle" : AREA_LABELS[a]}
+              {a.label}
             </button>
           ))}
         </div>
@@ -101,10 +108,7 @@ export function Tasks() {
             <option value="due_date">Nach Fälligkeit</option>
             <option value="priority">Nach Priorität</option>
           </Select>
-          <Button
-            onClick={() => (showForm ? resetForm() : setShowForm(true))}
-            variant={showForm ? "ghost" : "primary"}
-          >
+          <Button onClick={() => (showForm ? resetForm() : openNewForm())} variant={showForm ? "ghost" : "primary"}>
             {showForm ? "Abbrechen" : "+ Aufgabe"}
           </Button>
         </div>
@@ -145,9 +149,9 @@ export function Tasks() {
             <div className="sm:col-span-2">
               <Label>Bereich</Label>
               <Select value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })}>
-                {AREAS.map((a) => (
-                  <option key={a} value={a}>
-                    {AREA_LABELS[a]}
+                {activeAreas.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.label}
                   </option>
                 ))}
               </Select>

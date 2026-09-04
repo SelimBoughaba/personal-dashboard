@@ -10,7 +10,7 @@ mailRouter.get("/messages", async (req, res) => {
   } catch (err) {
     if (err.code === "NOT_CONFIGURED") {
       return res.status(503).json({
-        error: "Mail ist nicht konfiguriert (IONOS_IMAP_* fehlen in .env).",
+        error: "E-Mail ist nicht konfiguriert. In den Einstellungen unter „E-Mail“ ein Konto hinzufügen.",
       });
     }
     console.error("IMAP-Fehler:", err);

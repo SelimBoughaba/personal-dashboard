@@ -1,12 +1,12 @@
-import { useEffect, useState, useCallback } from "react";
-import { apiFetch } from "../api/client";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { apiFetch, getToken } from "../api/client";
 import { GlassCard } from "../components/ui/GlassCard";
 import { Button } from "../components/ui/Button";
 import { Input, Select, Label } from "../components/ui/Field";
-import { AreaBadge, AREA_LABELS } from "../components/ui/AreaBadge";
+import { AreaBadge } from "../components/ui/AreaBadge";
+import { useAreas } from "../context/AreasContext";
 
-const AREAS = ["corelegal", "evermont", "nachhilfe", "allgemein"];
-const EMPTY_FORM = { sender_name: "", subject: "", amount: "", due_date: "", area: "allgemein", status: "offen" };
+const EMPTY_FORM = { sender_name: "", subject: "", amount: "", due_date: "", area: "", status: "offen" };
 
 function formatAmount(value) {
   if (value === null || value === undefined) return "–";
@@ -14,6 +14,7 @@ function formatAmount(value) {
 }
 
 export function Rechnungen() {
+  const { activeAreas } = useAreas();
   const [invoices, setInvoices] = useState([]);
   const [allInvoices, setAllInvoices] = useState([]);
   const [areaFilter, setAreaFilter] = useState("alle");
@@ -24,6 +25,8 @@ export function Rechnungen() {
   const [error, setError] = useState("");
   const [scanning, setScanning] = useState(false);
   const [scanMessage, setScanMessage] = useState("");
+  const [importMessage, setImportMessage] = useState("");
+  const fileInputRef = useRef(null);
 
   const load = useCallback(async () => {
     const params = new URLSearchParams({ area: areaFilter, status: statusFilter });
@@ -82,6 +85,53 @@ export function Rechnungen() {
     setForm(EMPTY_FORM);
     setEditingId(null);
     setShowForm(false);
+  }
+
+  function openNewForm() {
+    const defaultArea = activeAreas.find((a) => a.is_default) || activeAreas[0];
+    setForm({ ...EMPTY_FORM, area: defaultArea?.id || "" });
+    setShowForm(true);
+  }
+
+  async function handleExportCsv() {
+    setError("");
+    try {
+      const res = await fetch("/api/invoices/export.csv", {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      if (!res.ok) throw new Error("Export fehlgeschlagen.");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `rechnungen-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function handleImportCsv(e) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setError("");
+    setImportMessage("");
+    try {
+      const csv = await file.text();
+      const result = await apiFetch("/invoices/import", { method: "POST", body: JSON.stringify({ csv }) });
+      const skippedNote = result.skipped.length > 0 ? `, ${result.skipped.length} übersprungen (siehe unten)` : "";
+      setImportMessage(
+        `${result.imported} Rechnung(en) importiert${skippedNote}.` +
+          (result.skipped.length > 0
+            ? " " + result.skipped.map((s) => `Zeile ${s.row}: ${s.reason}`).join(" ")
+            : ""),
+      );
+      await load();
+    } catch (err) {
+      setError(err.message);
+    }
   }
 
   async function handleSubmit(e) {
@@ -146,17 +196,17 @@ export function Rechnungen() {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
-          {["alle", ...AREAS].map((a) => (
+          {[{ id: "alle", label: "Alle" }, ...activeAreas].map((a) => (
             <button
-              key={a}
-              onClick={() => setAreaFilter(a)}
+              key={a.id}
+              onClick={() => setAreaFilter(a.id)}
               className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
-                areaFilter === a
+                areaFilter === a.id
                   ? "border-white/20 bg-white/10 text-ivory"
                   : "border-white/10 bg-white/[0.03] text-ivory/55 hover:bg-white/[0.06]"
               }`}
             >
-              {a === "alle" ? "Alle" : AREA_LABELS[a]}
+              {a.label}
             </button>
           ))}
         </div>
@@ -169,13 +219,21 @@ export function Rechnungen() {
           <Button variant="ghost" onClick={handleScan} disabled={scanning}>
             {scanning ? "Durchsuche…" : "Postfächer durchsuchen"}
           </Button>
-          <Button onClick={() => (showForm ? resetForm() : setShowForm(true))} variant={showForm ? "ghost" : "primary"}>
+          <Button variant="ghost" onClick={handleExportCsv}>
+            CSV export
+          </Button>
+          <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={handleImportCsv} />
+          <Button variant="ghost" onClick={() => fileInputRef.current?.click()}>
+            CSV import
+          </Button>
+          <Button onClick={() => (showForm ? resetForm() : openNewForm())} variant={showForm ? "ghost" : "primary"}>
             {showForm ? "Abbrechen" : "+ Rechnung"}
           </Button>
         </div>
       </div>
 
       {scanMessage && <p className="text-sm text-ivory/80">{scanMessage}</p>}
+      {importMessage && <p className="text-sm text-ivory/80">{importMessage}</p>}
       {error && <p className="text-sm text-status-hoch">{error}</p>}
 
       {showForm && (
@@ -212,9 +270,9 @@ export function Rechnungen() {
             <div>
               <Label>Bereich</Label>
               <Select value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })}>
-                {AREAS.map((a) => (
-                  <option key={a} value={a}>
-                    {AREA_LABELS[a]}
+                {activeAreas.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.label}
                   </option>
                 ))}
               </Select>

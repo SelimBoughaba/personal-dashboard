@@ -15,13 +15,24 @@ export function AuthProvider({ children }) {
     setAuthed(true);
   }, []);
 
+  // Nur beim allerersten Start nutzbar (noch kein Passwort vorhanden) –
+  // siehe GET /api/auth/status.
+  const setup = useCallback(async (password) => {
+    const { token } = await apiFetch("/auth/setup", {
+      method: "POST",
+      body: JSON.stringify({ password }),
+    });
+    setToken(token);
+    setAuthed(true);
+  }, []);
+
   const logout = useCallback(() => {
     setToken(null);
     setAuthed(false);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ authed, login, logout }}>
+    <AuthContext.Provider value={{ authed, login, setup, logout }}>
       {children}
     </AuthContext.Provider>
   );

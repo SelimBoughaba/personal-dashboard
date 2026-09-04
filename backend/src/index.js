@@ -6,15 +6,18 @@ import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 
-import { validateEnv } from "./startupChecks.js";
+import { logStartupStatus } from "./startupChecks.js";
 import { authRouter } from "./routes/auth.js";
 import { tasksRouter } from "./routes/tasks.js";
 import { calendarRouter } from "./routes/calendar.js";
 import { mailRouter } from "./routes/mail.js";
 import { invoicesRouter } from "./routes/invoices.js";
+import { areasRouter } from "./routes/areas.js";
+import { settingsRouter } from "./routes/settings.js";
+import { backupRouter } from "./routes/backup.js";
 import { requireAuth } from "./middleware/auth.js";
 
-validateEnv();
+logStartupStatus();
 
 // Ein einzelner unbehandelter Fehler irgendwo (z. B. ein Promise-Reject in
 // einer Bibliothek) soll nicht den ganzen Server mitreißen – Node beendet
@@ -42,6 +45,9 @@ app.use("/api/tasks", requireAuth, tasksRouter);
 app.use("/api/calendar", requireAuth, calendarRouter);
 app.use("/api/mail", requireAuth, mailRouter);
 app.use("/api/invoices", requireAuth, invoicesRouter);
+app.use("/api/areas", requireAuth, areasRouter);
+app.use("/api/settings", requireAuth, settingsRouter);
+app.use("/api/backup", requireAuth, backupRouter);
 
 app.use("/api", (req, res) => {
   res.status(404).json({ error: "Nicht gefunden." });

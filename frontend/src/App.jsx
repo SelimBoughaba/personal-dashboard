@@ -1,23 +1,38 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { AreasProvider } from "./context/AreasContext";
 import { Login } from "./pages/Login";
 import { Uebersicht } from "./pages/Uebersicht";
 import { Tasks } from "./pages/Tasks";
 import { Kalender } from "./pages/Kalender";
 import { Mail } from "./pages/Mail";
 import { Rechnungen } from "./pages/Rechnungen";
+import { Einstellungen } from "./pages/Einstellungen";
+import { Onboarding } from "./pages/Onboarding";
 import { Layout } from "./components/Layout";
 
 function ProtectedRoute({ children }) {
   const { authed } = useAuth();
   if (!authed) return <Navigate to="/login" replace />;
-  return <Layout>{children}</Layout>;
+  return (
+    <AreasProvider>
+      <Layout>{children}</Layout>
+    </AreasProvider>
+  );
 }
 
 function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route
+        path="/einrichtung"
+        element={
+          <ProtectedRoute>
+            <Onboarding />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/"
         element={
@@ -50,9 +65,16 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/einstellungen"
+        element={
+          <ProtectedRoute>
+            <Einstellungen />
+          </ProtectedRoute>
+        }
+      />
       {/* Mail ist kein Hauptnavigationspunkt mehr, bleibt aber erreichbar
-          (u. a. für den "Wichtige E-Mails"-Widget-Link und bis Mail-
-          Einstellungen einen eigenen Bereich bekommen). */}
+          (u. a. für den "Wichtige E-Mails"-Widget-Link auf der Übersicht). */}
       <Route
         path="/mail"
         element={
