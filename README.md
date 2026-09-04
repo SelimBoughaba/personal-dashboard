@@ -149,3 +149,15 @@ iPhone automatisch beim nächsten Öffnen.
 - `.env`-Dateien enthalten Zugangsdaten und werden nie committet.
 - Passwort wird nur als bcrypt-Hash gespeichert.
 - Zugriff nur mit gültigem JWT (30 Tage gültig, dann erneut anmelden).
+- **Startup-Validierung:** Der Server verweigert den Start, wenn `JWT_SECRET`
+  fehlt, zu kurz ist oder noch der Platzhalter aus `.env.example` ist, oder
+  wenn `APP_PASSWORD_HASH` fehlt bzw. kein echter bcrypt-Hash ist. Verhindert,
+  dass die App versehentlich mit unsicherer Konfiguration im Heimnetz läuft.
+- **Rate-Limiting:** Login ist auf 10 Versuche pro 15 Minuten pro IP begrenzt
+  (jeder im selben WLAN kann die Login-Route erreichen, nicht nur du selbst).
+- **Security-Header** via `helmet` (Content-Security-Policy, X-Frame-Options,
+  kein `X-Powered-By` mehr).
+- **Zentrale Fehlerbehandlung:** Ein einzelner Fehler in einer Route bringt
+  nicht den ganzen Server zum Absturz; Antworten geben nie Stacktraces preis.
+- Kein CORS-Middleware, da Frontend und Backend immer same-origin laufen –
+  eine unnötige offene Angriffsfläche weniger.

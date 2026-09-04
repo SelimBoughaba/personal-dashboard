@@ -1,10 +1,12 @@
 import "dotenv/config";
 import express from "express";
-import cors from "cors";
+import helmet from "helmet";
+import compression from "compression";
 import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 
+import { validateEnv } from "./startupChecks.js";
 import { authRouter } from "./routes/auth.js";
 import { tasksRouter } from "./routes/tasks.js";
 import { calendarRouter } from "./routes/calendar.js";
@@ -12,11 +14,27 @@ import { mailRouter } from "./routes/mail.js";
 import { invoicesRouter } from "./routes/invoices.js";
 import { requireAuth } from "./middleware/auth.js";
 
+validateEnv();
+
+// Ein einzelner unbehandelter Fehler irgendwo (z. B. ein Promise-Reject in
+// einer Bibliothek) soll nicht den ganzen Server mitreißen – Node beendet
+// den Prozess bei unhandledRejection sonst standardmäßig.
+process.on("unhandledRejection", (reason) => {
+  console.error("Unbehandelte Promise-Ablehnung:", reason);
+});
+process.on("uncaughtException", (err) => {
+  console.error("Unbehandelte Ausnahme:", err);
+});
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 
-app.use(cors());
-app.use(express.json());
+// Kein CORS-Middleware nötig: Frontend und Backend laufen immer same-origin
+// (im Dev-Modus per Vite-Proxy, im Produktivbetrieb liefert dieser Server
+// das Frontend selbst mit aus). Weniger Angriffsfläche als offenes CORS.
+app.use(helmet());
+app.use(compression());
+app.use(express.json({ limit: "1mb" }));
 
 app.get("/api/health", (req, res) => res.json({ ok: true }));
 app.use("/api/auth", authRouter);
@@ -25,16 +43,29 @@ app.use("/api/calendar", requireAuth, calendarRouter);
 app.use("/api/mail", requireAuth, mailRouter);
 app.use("/api/invoices", requireAuth, invoicesRouter);
 
+app.use("/api", (req, res) => {
+  res.status(404).json({ error: "Nicht gefunden." });
+});
+
 // Im lokalen Betrieb wird das gebaute Frontend mitausgeliefert,
 // damit auf dem iPhone nur eine Adresse (Mac-IP:Port) nötig ist.
 const frontendDist = path.join(__dirname, "..", "..", "frontend", "dist");
 if (fs.existsSync(frontendDist)) {
   app.use(express.static(frontendDist));
-  app.get("*", (req, res, next) => {
-    if (req.path.startsWith("/api")) return next();
+  app.get("*", (req, res) => {
     res.sendFile(path.join(frontendDist, "index.html"));
   });
 }
+
+// Zentrale Fehlerbehandlung: fängt sowohl synchrone Throws in Routen als
+// auch von Express selbst erkannte Fehler (z. B. kaputtes JSON im Body-
+// Parser) ab. Gibt nie einen Stacktrace an den Client zurück.
+app.use((err, req, res, next) => {
+  if (res.headersSent) return next(err);
+  console.error("Unbehandelter Request-Fehler:", err);
+  const status = err.status || err.statusCode || 500;
+  res.status(status).json({ error: "Es ist ein unerwarteter Fehler aufgetreten." });
+});
 
 const port = process.env.PORT || 4000;
 app.listen(port, "0.0.0.0", () => {
