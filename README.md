@@ -1,12 +1,20 @@
 # Persönliches Dashboard
 
-Lokales Dashboard für Aufgaben, Kalender, Mail und Rechnungen – läuft nur im
-eigenen Heimnetz, kein öffentliches Hosting.
+Lokales Dashboard für Aufgaben, Kalender, Finanzen und mehr – läuft nur im
+eigenen Heimnetz, kein öffentliches Hosting. Design orientiert sich an der
+Evermont-Markenidentität (Waldgrün, Ivory, Lime-Akzente, Manrope).
 
-**Stand:** Etappe 5 (letzte Etappe) – Setup, Passwort-Login, Aufgaben-Modul,
-Design-System, Kalender-Sync (CalDAV/iCloud), Mail-Modul (IONOS via IMAP),
-Rechnungs-Automatisierung (PDF-Erkennung), PWA (installierbar, offline-fähig).
-Alle Module aus der ursprünglichen Anleitung sind umgesetzt.
+**Stand:** Etappe 6 – Navigations-Umbau (linke Sidebar), Evermont-Redesign,
+neue Übersicht-Seite mit Live-Daten. Basis-Module (Aufgaben, Kalender,
+Finanzen/Rechnungen) sind vollständig nutzbar und persistent gespeichert
+(SQLite). Mail ist kein Hauptnavigationspunkt mehr, bleibt aber unter `/mail`
+erreichbar und speist die "Wichtige E-Mails"-Kachel auf der Übersicht.
+
+**Noch nicht umgesetzt** (erscheinen in der Navigation klar als „bald"
+markiert, ohne Fake-Funktionalität): Ziele, Dokumente, Verträge & Abos,
+Gesundheit, Notizen, Einstellungen, Einrichtungsassistent, Kommandopalette/
+globale Suche, CSV-Import/-Export, verschlüsseltes Backup, Google/Gmail-OAuth.
+Finanzen zeigt bisher nur Rechnungen (Einnahmen/Ausgaben/Budgets folgen).
 
 ## Projektstruktur
 
@@ -161,3 +169,25 @@ iPhone automatisch beim nächsten Öffnen.
   nicht den ganzen Server zum Absturz; Antworten geben nie Stacktraces preis.
 - Kein CORS-Middleware, da Frontend und Backend immer same-origin laufen –
   eine unnötige offene Angriffsfläche weniger.
+
+## Nächste Etappen (Evermont-Ausbau)
+
+Der Umbau zu „Übersicht/Kalender/Aufgaben/Finanzen/Ziele/Dokumente/Mehr" ist
+deutlich größer als der ursprüngliche Funktionsumfang und wird in weiteren
+Etappen umgesetzt:
+
+- Finanzen: Einnahmen/Ausgaben-Erfassung, Budgets, Kategorien, wiederkehrende
+  Zahlungen, Auswertungen, CSV-Import/-Export
+- Ziele-Modul (Fortschritt, Meilensteine, Verknüpfung mit Aufgaben)
+- Dokumente-Modul (serverseitige Ablage auf dem Mac, Ordner/Tags/Suche –
+  freie Ordnerwahl im Browser ist in Safari technisch nicht möglich)
+- Mehr-Bereiche: Verträge & Abos, Gesundheit, Notizen, vollständige
+  Einstellungen (inkl. E-Mail-Konten-Verwaltung)
+- Einrichtungsassistent für die Ersteinrichtung
+- Globale Suche / Kommandopalette
+- Kalender: Monats-/Agenda-Ansicht, Termin-Erstellung/-Bearbeitung im UI,
+  wiederkehrende Termine, Konflikterkennung, ICS-Import/-Export
+- Aufgaben: Kanban-Ansicht, Unteraufgaben, Abhängigkeiten, Erinnerungen
+- Verschlüsseltes lokales Backup/Restore, vollständiger Datenexport
+- Optional: Google Calendar/Gmail-Anbindung (kostenloses OAuth via
+  Desktop-App-Flow, technisch möglich ohne öffentliches Hosting)

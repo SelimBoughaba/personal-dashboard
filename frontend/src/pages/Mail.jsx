@@ -51,8 +51,8 @@ export function Mail() {
               onClick={() => setAreaFilter(a)}
               className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
                 areaFilter === a
-                  ? "border-accent-500/40 bg-accent-500/15 text-accent-400"
-                  : "border-white/10 bg-white/[0.03] text-slate-400 hover:bg-white/[0.06]"
+                  ? "border-white/20 bg-white/10 text-ivory"
+                  : "border-white/10 bg-white/[0.03] text-ivory/55 hover:bg-white/[0.06]"
               }`}
             >
               {a === "alle" ? "Alle" : AREA_LABELS[a]}
@@ -64,10 +64,10 @@ export function Mail() {
         </Button>
       </div>
 
-      {error && <GlassCard className="text-sm text-red-400">{error}</GlassCard>}
-      {loading && !error && <p className="text-sm text-slate-500">Lade Mails…</p>}
+      {error && <GlassCard className="text-sm text-status-hoch">{error}</GlassCard>}
+      {loading && !error && <p className="text-sm text-ivory/40">Lade Mails…</p>}
       {!loading && !error && filtered.length === 0 && (
-        <p className="py-8 text-center text-sm text-slate-500">
+        <p className="py-8 text-center text-sm text-ivory/40">
           Keine ungelesenen oder markierten Mails in diesem Bereich.
         </p>
       )}
@@ -76,22 +76,22 @@ export function Mail() {
         {filtered.map((m) => (
           <GlassCard key={m.id} className="flex items-center gap-3 !p-4">
             <span
-              className={`h-2 w-2 shrink-0 rounded-full ${m.unread ? "bg-accent-500" : "bg-white/10"}`}
+              className={`h-2 w-2 shrink-0 rounded-full ${m.unread ? "bg-lime" : "bg-white/10"}`}
               title={m.unread ? "Ungelesen" : "Gelesen"}
             />
             <div className="min-w-0 flex-1">
-              <p className={`truncate text-sm ${m.unread ? "font-semibold text-slate-100" : "text-slate-300"}`}>
+              <p className={`truncate text-sm ${m.unread ? "font-semibold text-ivory" : "text-ivory/75"}`}>
                 {m.fromName}
               </p>
-              <p className={`truncate text-sm ${m.unread ? "text-slate-300" : "text-slate-500"}`}>{m.subject}</p>
+              <p className={`truncate text-sm ${m.unread ? "text-ivory/75" : "text-ivory/40"}`}>{m.subject}</p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
               {m.flagged && (
-                <span className="text-amber-400" title="Markiert">
+                <span className="text-status-mittel" title="Markiert">
                   ★
                 </span>
               )}
-              <span className="text-xs text-slate-500">{formatDate(m.date)}</span>
+              <span className="text-xs text-ivory/40">{formatDate(m.date)}</span>
               <AreaBadge area={m.area} />
             </div>
           </GlassCard>

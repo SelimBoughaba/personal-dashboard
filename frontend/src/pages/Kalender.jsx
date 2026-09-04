@@ -69,8 +69,8 @@ export function Kalender() {
               onClick={() => setView(v.key)}
               className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
                 view === v.key
-                  ? "border-accent-500/40 bg-accent-500/15 text-accent-400"
-                  : "border-white/10 bg-white/[0.03] text-slate-400 hover:bg-white/[0.06]"
+                  ? "border-white/20 bg-white/10 text-ivory"
+                  : "border-white/10 bg-white/[0.03] text-ivory/55 hover:bg-white/[0.06]"
               }`}
             >
               {v.label}
@@ -84,8 +84,8 @@ export function Kalender() {
               onClick={() => setAreaFilter(a)}
               className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
                 areaFilter === a
-                  ? "border-accent-500/40 bg-accent-500/15 text-accent-400"
-                  : "border-white/10 bg-white/[0.03] text-slate-400 hover:bg-white/[0.06]"
+                  ? "border-white/20 bg-white/10 text-ivory"
+                  : "border-white/10 bg-white/[0.03] text-ivory/55 hover:bg-white/[0.06]"
               }`}
             >
               {a === "alle" ? "Alle" : AREA_LABELS[a]}
@@ -94,21 +94,21 @@ export function Kalender() {
         </div>
       </div>
 
-      {error && <GlassCard className="text-sm text-red-400">{error}</GlassCard>}
-      {loading && !error && <p className="text-sm text-slate-500">Lade Termine…</p>}
+      {error && <GlassCard className="text-sm text-status-hoch">{error}</GlassCard>}
+      {loading && !error && <p className="text-sm text-ivory/40">Lade Termine…</p>}
 
       {!loading && !error && Object.keys(groups).length === 0 && (
-        <p className="py-8 text-center text-sm text-slate-500">Keine Termine in diesem Zeitraum.</p>
+        <p className="py-8 text-center text-sm text-ivory/40">Keine Termine in diesem Zeitraum.</p>
       )}
 
       <div className="space-y-5">
         {Object.entries(groups).map(([day, dayEvents]) => (
           <div key={day}>
-            <h2 className="mb-2 text-sm font-medium capitalize text-slate-400">{day}</h2>
+            <h2 className="mb-2 text-sm font-medium capitalize text-ivory/55">{day}</h2>
             <div className="space-y-2">
               {dayEvents.map((ev) => (
                 <GlassCard key={ev.id} className="flex items-center gap-3 !p-4">
-                  <div className="w-16 shrink-0 text-xs text-slate-400">
+                  <div className="w-16 shrink-0 text-xs text-ivory/55">
                     {ev.allDay
                       ? "ganztägig"
                       : new Date(ev.start).toLocaleTimeString("de-DE", {
@@ -117,8 +117,8 @@ export function Kalender() {
                         })}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium text-slate-100">{ev.title}</p>
-                    {ev.location && <p className="truncate text-xs text-slate-500">{ev.location}</p>}
+                    <p className="truncate font-medium text-ivory">{ev.title}</p>
+                    {ev.location && <p className="truncate text-xs text-ivory/40">{ev.location}</p>}
                   </div>
                   <AreaBadge area={ev.area} />
                 </GlassCard>

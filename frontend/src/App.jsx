@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { Login } from "./pages/Login";
+import { Uebersicht } from "./pages/Uebersicht";
 import { Tasks } from "./pages/Tasks";
 import { Kalender } from "./pages/Kalender";
 import { Mail } from "./pages/Mail";
@@ -21,6 +22,14 @@ function AppRoutes() {
         path="/"
         element={
           <ProtectedRoute>
+            <Uebersicht />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/aufgaben"
+        element={
+          <ProtectedRoute>
             <Tasks />
           </ProtectedRoute>
         }
@@ -34,18 +43,21 @@ function AppRoutes() {
         }
       />
       <Route
+        path="/finanzen"
+        element={
+          <ProtectedRoute>
+            <Rechnungen />
+          </ProtectedRoute>
+        }
+      />
+      {/* Mail ist kein Hauptnavigationspunkt mehr, bleibt aber erreichbar
+          (u. a. für den "Wichtige E-Mails"-Widget-Link und bis Mail-
+          Einstellungen einen eigenen Bereich bekommen). */}
+      <Route
         path="/mail"
         element={
           <ProtectedRoute>
             <Mail />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/rechnungen"
-        element={
-          <ProtectedRoute>
-            <Rechnungen />
           </ProtectedRoute>
         }
       />

@@ -15,6 +15,7 @@ function formatAmount(value) {
 
 export function Rechnungen() {
   const [invoices, setInvoices] = useState([]);
+  const [allInvoices, setAllInvoices] = useState([]);
   const [areaFilter, setAreaFilter] = useState("alle");
   const [statusFilter, setStatusFilter] = useState("alle");
   const [showForm, setShowForm] = useState(false);
@@ -26,13 +27,26 @@ export function Rechnungen() {
 
   const load = useCallback(async () => {
     const params = new URLSearchParams({ area: areaFilter, status: statusFilter });
-    const data = await apiFetch(`/invoices?${params}`);
-    setInvoices(data);
+    const [filtered, all] = await Promise.all([
+      apiFetch(`/invoices?${params}`),
+      apiFetch("/invoices?area=alle&status=alle"),
+    ]);
+    setInvoices(filtered);
+    setAllInvoices(all);
   }, [areaFilter, statusFilter]);
 
   useEffect(() => {
     load().catch((err) => setError(err.message));
   }, [load]);
+
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const openInvoices = allInvoices.filter((i) => i.status === "offen");
+  const overdueInvoices = openInvoices.filter((i) => i.due_date && i.due_date < todayIso);
+  const openSum = openInvoices.reduce((s, i) => s + (i.amount || 0), 0);
+  const overdueSum = overdueInvoices.reduce((s, i) => s + (i.amount || 0), 0);
+  const paidThisMonthSum = allInvoices
+    .filter((i) => i.status === "bezahlt" && i.updated_at && i.updated_at.slice(0, 7) === todayIso.slice(0, 7))
+    .reduce((s, i) => s + (i.amount || 0), 0);
 
   async function handleScan() {
     setScanning(true);
@@ -100,7 +114,36 @@ export function Rechnungen() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight text-ivory">Finanzen</h1>
+        <p className="mt-1 text-sm text-ivory/50">
+          Rechnungen sind vollständig nutzbar. Einnahmen, Ausgaben, Budgets und Auswertungen folgen in einer
+          späteren Etappe.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <GlassCard className="!p-4">
+          <p className="text-xs text-ivory/45">Offene Rechnungen</p>
+          <p className="mt-1 text-xl font-semibold text-ivory">{formatAmount(openSum)}</p>
+        </GlassCard>
+        <GlassCard className="!p-4">
+          <p className="text-xs text-ivory/45">Überfällig</p>
+          <p className={`mt-1 text-xl font-semibold ${overdueSum > 0 ? "text-status-hoch" : "text-ivory"}`}>
+            {formatAmount(overdueSum)}
+          </p>
+        </GlassCard>
+        <GlassCard className="!p-4">
+          <p className="text-xs text-ivory/45">Bezahlt (dieser Monat)</p>
+          <p className="mt-1 text-xl font-semibold text-ivory">{formatAmount(paidThisMonthSum)}</p>
+        </GlassCard>
+        <GlassCard className="!p-4">
+          <p className="text-xs text-ivory/45">Anzahl offen</p>
+          <p className="mt-1 text-xl font-semibold text-ivory">{openInvoices.length}</p>
+        </GlassCard>
+      </div>
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
           {["alle", ...AREAS].map((a) => (
@@ -109,8 +152,8 @@ export function Rechnungen() {
               onClick={() => setAreaFilter(a)}
               className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
                 areaFilter === a
-                  ? "border-accent-500/40 bg-accent-500/15 text-accent-400"
-                  : "border-white/10 bg-white/[0.03] text-slate-400 hover:bg-white/[0.06]"
+                  ? "border-white/20 bg-white/10 text-ivory"
+                  : "border-white/10 bg-white/[0.03] text-ivory/55 hover:bg-white/[0.06]"
               }`}
             >
               {a === "alle" ? "Alle" : AREA_LABELS[a]}
@@ -132,8 +175,8 @@ export function Rechnungen() {
         </div>
       </div>
 
-      {scanMessage && <p className="text-sm text-accent-400">{scanMessage}</p>}
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {scanMessage && <p className="text-sm text-ivory/80">{scanMessage}</p>}
+      {error && <p className="text-sm text-status-hoch">{error}</p>}
 
       {showForm && (
         <GlassCard>
@@ -192,7 +235,7 @@ export function Rechnungen() {
 
       <div className="space-y-3">
         {invoices.length === 0 && (
-          <p className="py-8 text-center text-sm text-slate-500">Keine Rechnungen in diesem Bereich.</p>
+          <p className="py-8 text-center text-sm text-ivory/40">Keine Rechnungen in diesem Bereich.</p>
         )}
         {invoices.map((inv) => (
           <GlassCard key={inv.id} className="flex items-start gap-3 !p-4">
@@ -200,23 +243,23 @@ export function Rechnungen() {
               type="checkbox"
               checked={inv.status === "bezahlt"}
               onChange={() => toggleStatus(inv)}
-              className="mt-1 h-4 w-4 rounded border-white/20 bg-white/5 accent-accent-500"
+              className="mt-1 h-4 w-4 rounded border-white/20 bg-white/5 accent-lime"
               title="Als bezahlt markieren"
             />
             <div className="min-w-0 flex-1">
-              <p className={`font-medium ${inv.status === "bezahlt" ? "text-slate-500 line-through" : "text-slate-100"}`}>
+              <p className={`font-medium ${inv.status === "bezahlt" ? "text-ivory/40 line-through" : "text-ivory"}`}>
                 {inv.sender_name || inv.sender || "Unbekannter Absender"}
               </p>
-              {inv.subject && <p className="mt-0.5 truncate text-sm text-slate-400">{inv.subject}</p>}
+              {inv.subject && <p className="mt-0.5 truncate text-sm text-ivory/55">{inv.subject}</p>}
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <AreaBadge area={inv.area} />
-                <span className="text-xs font-medium text-slate-200">{formatAmount(inv.amount)}</span>
+                <span className="text-xs font-medium text-ivory/90">{formatAmount(inv.amount)}</span>
                 {inv.due_date && (
-                  <span className="text-xs text-slate-400">
+                  <span className="text-xs text-ivory/55">
                     fällig {new Date(inv.due_date).toLocaleDateString("de-DE")}
                   </span>
                 )}
-                {inv.file_name && <span className="text-xs text-slate-500">{inv.file_name}</span>}
+                {inv.file_name && <span className="text-xs text-ivory/40">{inv.file_name}</span>}
               </div>
             </div>
             <div className="flex shrink-0 gap-1">

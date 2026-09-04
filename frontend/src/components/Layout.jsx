@@ -1,60 +1,30 @@
-import { NavLink } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import { Button } from "./ui/Button";
-
-const NAV_ITEMS = [
-  { label: "Aufgaben", path: "/", enabled: true },
-  { label: "Kalender", path: "/kalender", enabled: true },
-  { label: "Mail", path: "/mail", enabled: true },
-  { label: "Rechnungen", path: "/rechnungen", enabled: true },
-];
+import { useState } from "react";
+import { Sidebar } from "./Sidebar";
 
 export function Layout({ children }) {
-  const { logout } = useAuth();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="mx-auto min-h-screen max-w-5xl px-4 pb-16 pt-6 sm:px-6">
-      <header className="glass-panel mb-6 flex items-center justify-between px-5 py-4">
-        <div>
-          <h1 className="text-lg font-semibold tracking-tight text-white">Dashboard</h1>
-          <p className="text-xs text-slate-400">Corelegal · Evermont · Nachhilfe</p>
-        </div>
-        <Button variant="ghost" onClick={logout}>
-          Abmelden
-        </Button>
-      </header>
+    <div className="mx-auto flex min-h-screen max-w-7xl gap-4 px-4 pb-10 pt-4 sm:px-6 lg:gap-6">
+      <Sidebar mobileOpen={mobileOpen} onCloseMobile={() => setMobileOpen(false)} />
 
-      <nav className="mb-6 flex gap-2 overflow-x-auto">
-        {NAV_ITEMS.map((item) =>
-          item.enabled ? (
-            <NavLink
-              key={item.label}
-              to={item.path}
-              end={item.path === "/"}
-              className={({ isActive }) =>
-                `rounded-xl border px-4 py-2 text-sm whitespace-nowrap ${
-                  isActive
-                    ? "border-accent-500/30 bg-accent-500/10 text-accent-400"
-                    : "border-white/5 bg-white/[0.02] text-slate-400 hover:bg-white/[0.05]"
-                }`
-              }
-            >
-              {item.label}
-            </NavLink>
-          ) : (
-            <span
-              key={item.label}
-              className="rounded-xl border border-white/5 bg-white/[0.02] px-4 py-2 text-sm whitespace-nowrap text-slate-500"
-              title="Folgt in einer späteren Etappe"
-            >
-              {item.label}
-              <span className="ml-1.5 text-[10px]">bald</span>
-            </span>
-          ),
-        )}
-      </nav>
+      <div className="min-w-0 flex-1">
+        <header className="glass-panel mb-4 flex items-center gap-3 px-4 py-3 lg:hidden">
+          <button
+            type="button"
+            onClick={() => setMobileOpen(true)}
+            aria-label="Menü öffnen"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-ivory/80 hover:bg-white/[0.06]"
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+              <path d="M4 7h16M4 12h16M4 17h16" />
+            </svg>
+          </button>
+          <span className="font-semibold text-ivory">Dashboard</span>
+        </header>
 
-      <main>{children}</main>
+        <main>{children}</main>
+      </div>
     </div>
   );
 }

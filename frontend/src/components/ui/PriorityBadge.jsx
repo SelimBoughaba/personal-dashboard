@@ -1,7 +1,7 @@
 const STYLES = {
-  hoch: "text-red-300 bg-red-500/10 border-red-500/20",
-  mittel: "text-amber-300 bg-amber-500/10 border-amber-500/20",
-  niedrig: "text-emerald-300 bg-emerald-500/10 border-emerald-500/20",
+  hoch: "text-status-hoch bg-status-hoch/10 border-status-hoch/25",
+  mittel: "text-status-mittel bg-status-mittel/10 border-status-mittel/25",
+  niedrig: "text-status-niedrig bg-status-niedrig/10 border-status-niedrig/25",
 };
 
 export function PriorityBadge({ priority }) {

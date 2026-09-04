@@ -4,22 +4,31 @@
 
 @layer base {
   body {
-    @apply min-h-screen text-slate-100 antialiased;
+    @apply min-h-screen text-ivory antialiased font-sans;
     background:
-      radial-gradient(ellipse 80% 60% at 20% -10%, rgba(56, 189, 248, 0.12), transparent),
-      radial-gradient(ellipse 60% 50% at 100% 0%, rgba(167, 139, 250, 0.1), transparent),
-      #04060f;
+      radial-gradient(ellipse 70% 55% at 15% -10%, rgba(23, 68, 56, 0.55), transparent 60%),
+      radial-gradient(ellipse 60% 50% at 100% 0%, rgba(23, 68, 56, 0.35), transparent 60%),
+      #071f19;
     background-attachment: fixed;
+  }
+  ::selection {
+    background: rgba(200, 255, 82, 0.28);
+  }
+  :focus-visible {
+    outline: 2px solid theme("colors.lime");
+    outline-offset: 2px;
   }
 }
 
 @layer components {
+  /* Zurückhaltendes Liquid Glass: feine helle Innenkante, dezente
+     Unschärfe, keine milchigen/schwer lesbaren Flächen. */
   .glass-panel {
-    @apply relative rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl shadow-glass;
+    @apply relative rounded-brand border border-white/[0.06] bg-forest-900/60 backdrop-blur-xl shadow-glass;
   }
   .glass-panel::before {
     content: "";
-    @apply pointer-events-none absolute inset-0 rounded-2xl;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), transparent 40%);
+    @apply pointer-events-none absolute inset-0 rounded-brand;
+    background: linear-gradient(150deg, rgba(255, 255, 255, 0.05), transparent 45%);
   }
 }

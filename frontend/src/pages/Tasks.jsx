@@ -88,8 +88,8 @@ export function Tasks() {
               onClick={() => setAreaFilter(a)}
               className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
                 areaFilter === a
-                  ? "border-accent-500/40 bg-accent-500/15 text-accent-400"
-                  : "border-white/10 bg-white/[0.03] text-slate-400 hover:bg-white/[0.06]"
+                  ? "border-white/20 bg-white/10 text-ivory"
+                  : "border-white/10 bg-white/[0.03] text-ivory/55 hover:bg-white/[0.06]"
               }`}
             >
               {a === "alle" ? "Alle" : AREA_LABELS[a]}
@@ -110,7 +110,7 @@ export function Tasks() {
         </div>
       </div>
 
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-sm text-status-hoch">{error}</p>}
 
       {showForm && (
         <GlassCard>
@@ -169,7 +169,7 @@ export function Tasks() {
 
       <div className="space-y-3">
         {tasks.length === 0 && (
-          <p className="py-8 text-center text-sm text-slate-500">Keine Aufgaben in diesem Bereich.</p>
+          <p className="py-8 text-center text-sm text-ivory/40">Keine Aufgaben in diesem Bereich.</p>
         )}
         {tasks.map((task) => (
           <GlassCard key={task.id} className="flex items-start gap-3 !p-4">
@@ -177,18 +177,18 @@ export function Tasks() {
               type="checkbox"
               checked={task.status === "erledigt"}
               onChange={() => toggleStatus(task)}
-              className="mt-1 h-4 w-4 rounded border-white/20 bg-white/5 accent-accent-500"
+              className="mt-1 h-4 w-4 rounded border-white/20 bg-white/5 accent-lime"
             />
             <div className="flex-1 min-w-0">
-              <p className={`font-medium ${task.status === "erledigt" ? "text-slate-500 line-through" : "text-slate-100"}`}>
+              <p className={`font-medium ${task.status === "erledigt" ? "text-ivory/40 line-through" : "text-ivory"}`}>
                 {task.title}
               </p>
-              {task.notes && <p className="mt-0.5 text-sm text-slate-400">{task.notes}</p>}
+              {task.notes && <p className="mt-0.5 text-sm text-ivory/55">{task.notes}</p>}
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <AreaBadge area={task.area} />
                 <PriorityBadge priority={task.priority} />
                 {task.due_date && (
-                  <span className="text-xs text-slate-400">
+                  <span className="text-xs text-ivory/55">
                     fällig {new Date(task.due_date).toLocaleDateString("de-DE")}
                   </span>
                 )}

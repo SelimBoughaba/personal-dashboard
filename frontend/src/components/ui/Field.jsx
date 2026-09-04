@@ -1,5 +1,5 @@
 const fieldClass =
-  "w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-accent-500/50 focus:outline-none focus:ring-1 focus:ring-accent-500/50";
+  "w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-ivory placeholder:text-muted focus:border-lime/40 focus:outline-none focus:ring-1 focus:ring-lime/40";
 
 export function Input({ className = "", ...props }) {
   return <input className={`${fieldClass} ${className}`} {...props} />;
@@ -18,5 +18,5 @@ export function Select({ children, className = "", ...props }) {
 }
 
 export function Label({ children }) {
-  return <label className="mb-1 block text-xs font-medium text-slate-400">{children}</label>;
+  return <label className="mb-1 block text-xs font-medium text-muted">{children}</label>;
 }
