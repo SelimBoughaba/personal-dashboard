@@ -8,3 +8,4 @@ export const TASK_STATUSES = ["offen", "erledigt"];
 export const INVOICE_STATUSES = ["offen", "bezahlt"];
 export const CONTRACT_STATUSES = ["aktiv", "gekuendigt", "abgelaufen"];
 export const CONTRACT_BILLING_CYCLES = ["monatlich", "jaehrlich", "einmalig", "sonstig"];
+export const GOAL_STATUSES = ["aktiv", "erreicht", "abgebrochen"];

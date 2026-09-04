@@ -3,15 +3,16 @@ import { db } from "../db.js";
 
 export const backupRouter = Router();
 
-const BACKUP_VERSION = 3;
+const BACKUP_VERSION = 4;
 // Ältere Backup-Versionen kannten neuere Tabellen (documents, contracts, ...)
 // noch nicht. Beim Wiederherstellen eines älteren Backups bleibt die
 // jeweils fehlende Tabelle dann einfach unangetastet, statt gelöscht zu
 // werden – so bleiben ältere Backups kompatibel, ohne Daten zu verlieren.
-const SUPPORTED_VERSIONS = [1, 2, 3];
+const SUPPORTED_VERSIONS = [1, 2, 3, 4];
 const OPTIONAL_TABLES = [
   { key: "documents", sinceVersion: 2 },
   { key: "contracts", sinceVersion: 3 },
+  { key: "goals", sinceVersion: 4 },
 ];
 
 function buildBackup() {
@@ -26,6 +27,7 @@ function buildBackup() {
     // sollte separat gesichert werden (siehe README).
     documents: db.prepare("SELECT * FROM documents").all(),
     contracts: db.prepare("SELECT * FROM contracts").all(),
+    goals: db.prepare("SELECT * FROM goals").all(),
     settings: Object.fromEntries(
       db.prepare("SELECT key, value FROM settings").all().map((r) => [r.key, r.value]),
     ),
@@ -81,6 +83,7 @@ backupRouter.post("/preview", (req, res) => {
       areas: data.areas.length,
       documents: Array.isArray(data.documents) ? data.documents.length : 0,
       contracts: Array.isArray(data.contracts) ? data.contracts.length : 0,
+      goals: Array.isArray(data.goals) ? data.goals.length : 0,
       settings: Object.keys(data.settings).length,
     },
   });
@@ -101,6 +104,7 @@ backupRouter.post("/restore", (req, res) => {
     db.exec("DELETE FROM tasks; DELETE FROM invoices; DELETE FROM areas; DELETE FROM settings;");
     if (Array.isArray(data.documents)) db.exec("DELETE FROM documents;");
     if (Array.isArray(data.contracts)) db.exec("DELETE FROM contracts;");
+    if (Array.isArray(data.goals)) db.exec("DELETE FROM goals;");
 
     const insertArea = db.prepare(
       "INSERT INTO areas (id, label, color, sort_order, is_default, archived, created_at, updated_at) VALUES (@id, @label, @color, @sort_order, @is_default, @archived, @created_at, @updated_at)",
@@ -134,6 +138,16 @@ backupRouter.post("/restore", (req, res) => {
          VALUES (@id, @title, @provider, @area, @cost, @billing_cycle, @cancellation_period_days, @next_renewal_date, @status, @notes, @created_at, @updated_at)`,
       );
       for (const contract of data.contracts) insertContract.run(contract);
+    }
+
+    if (Array.isArray(data.goals)) {
+      const insertGoal = db.prepare(
+        `INSERT INTO goals (id, title, description, area, target_date, status, progress, milestones, created_at, updated_at)
+         VALUES (@id, @title, @description, @area, @target_date, @status, @progress, @milestones, @created_at, @updated_at)`,
+      );
+      for (const goal of data.goals) {
+        insertGoal.run({ ...goal, milestones: typeof goal.milestones === "string" ? goal.milestones : JSON.stringify(goal.milestones || []) });
+      }
     }
 
     const insertSetting = db.prepare("INSERT INTO settings (key, value) VALUES (?, ?)");

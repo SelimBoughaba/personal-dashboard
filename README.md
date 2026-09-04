@@ -5,17 +5,13 @@ eigenen Heimnetz, kein öffentliches Hosting, keine Pflicht-Cloud-Dienste.
 Design orientiert sich an der Evermont-Markenidentität (Waldgrün, Ivory,
 Lime-Akzente, Manrope).
 
-**Stand:** Etappe 9 – Verträge & Abos. Zusätzlich zur lokalen Grundlage aus
-Etappe 7 (SQLite-Persistenz, Einrichtungsassistent, vollständige
-Einstellungsseite, frei anlegbare Lebensbereiche, konfigurierbares
-Übersicht-Dashboard, CSV-Import/-Export, JSON-Backup mit Wiederherstellung)
-und dem Dokumente-Modul aus Etappe 8 (Datei-Upload, lokale Ablage,
-Bereichs-/Tag-Zuordnung, Suche, Download) gibt es jetzt eine Verwaltung
-für laufende Verträge und Abos inkl. Kosten, Abrechnungszyklus und
-In-App-Warnung bei bald ablaufender Kündigungsfrist.
+**Stand:** Etappe 10 – Ziele. Zusätzlich zur lokalen Grundlage aus Etappe 7,
+dem Dokumente-Modul aus Etappe 8 und Verträge & Abos aus Etappe 9 gibt es
+jetzt ein Ziele-Modul mit Meilensteinen (Checkliste je Ziel) und
+automatisch aus abgehakten Meilensteinen berechnetem Fortschritt.
 
 **Noch als „bald" markiert** (klar erkennbar in der Navigation, keine
-Fake-Funktionalität dahinter): Ziele, Gesundheit, Notizen, globale Suche/
+Fake-Funktionalität dahinter): Gesundheit, Notizen, globale Suche/
 Kommandopalette, erweiterte Kalender-/Aufgabenansichten. Diese folgen in
 den nächsten Etappen.
 
@@ -253,6 +249,23 @@ Unter „Mehr" → „Verträge & Abos" in der Sidebar:
   Einstellungen).
 - Nach Bereich filterbar, wie die übrigen Module.
 
+## Ziele
+
+Unter „Ziele" in der Sidebar:
+
+- Ziel anlegen mit Titel, Beschreibung, Bereich, optionalem Zieldatum und
+  Status (aktiv/erreicht/abgebrochen).
+- Meilensteine sind eine einfache Checkliste je Ziel (Text + erledigt/
+  offen), direkt in der Zielkarte hinzufügbar, abhakbar und löschbar.
+- **Fortschritt wird nicht frei erfunden manuell eingegeben, sondern aus
+  den Meilensteinen berechnet**, sobald mindestens einer angelegt ist
+  (Prozentsatz der abgehakten Meilensteine) – so kann der angezeigte
+  Fortschritt nie von den tatsächlich erledigten Schritten abweichen. Ohne
+  Meilensteine steht der Fortschritt bei 0 %.
+- Es gibt aktuell **keine Verknüpfung mit dem Aufgaben-Modul** (Meilensteine
+  sind eine eigene, einfache Liste je Ziel, keine echten Aufgaben-
+  Datensätze) – das wäre eine mögliche spätere Erweiterung.
+
 ## Kalender-Sync einrichten (iCloud)
 
 1. App-spezifisches Passwort erzeugen: auf [appleid.apple.com](https://appleid.apple.com)
@@ -353,9 +366,11 @@ iPhone automatisch beim nächsten Öffnen.
   optimal für Screenreader beschriftet. Geplante schrittweise Behebung.
 - Kein Verschlüsselungs-Layer für die in der Datenbank gespeicherten
   Zugangsdaten (siehe oben).
-- Ziele, Gesundheit, Notizen, globale Suche/Kommandopalette und
-  erweiterte Kalender-/Aufgabenansichten sind noch nicht umgesetzt (klar
-  als „bald" markiert in der Navigation).
+- Gesundheit, Notizen, globale Suche/Kommandopalette und erweiterte
+  Kalender-/Aufgabenansichten sind noch nicht umgesetzt (klar als „bald"
+  markiert in der Navigation).
+- Ziele: Meilensteine sind eine eigene Checkliste, keine Verknüpfung mit
+  echten Aufgaben-Datensätzen.
 - Dokumente: keine Inhalts-Vorschau/kein Viewer in der App, kein
   Volltext-Suche innerhalb der Dateien (nur über Titel/Dateiname), keine
   Ordnerstruktur/Unterordner.
@@ -367,7 +382,6 @@ iPhone automatisch beim nächsten Öffnen.
 
 ## Nächste Etappen
 
-- Ziele (Fortschritt, Meilensteine, Verknüpfung mit Aufgaben)
 - Notizen
 - Gesundheit
 - Globale Suche / Kommandopalette

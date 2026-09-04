@@ -17,6 +17,7 @@ import { settingsRouter } from "./routes/settings.js";
 import { backupRouter } from "./routes/backup.js";
 import { documentsRouter } from "./routes/documents.js";
 import { contractsRouter } from "./routes/contracts.js";
+import { goalsRouter } from "./routes/goals.js";
 import { requireAuth } from "./middleware/auth.js";
 
 logStartupStatus();
@@ -52,6 +53,7 @@ app.use("/api/settings", requireAuth, settingsRouter);
 app.use("/api/backup", requireAuth, backupRouter);
 app.use("/api/documents", requireAuth, documentsRouter);
 app.use("/api/contracts", requireAuth, contractsRouter);
+app.use("/api/goals", requireAuth, goalsRouter);
 
 app.use("/api", (req, res) => {
   res.status(404).json({ error: "Nicht gefunden." });

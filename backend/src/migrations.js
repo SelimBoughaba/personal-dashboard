@@ -148,6 +148,26 @@ const MIGRATIONS = [
       `);
     },
   },
+  {
+    id: "0007_goals_table",
+    up(db) {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS goals (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          title TEXT NOT NULL,
+          description TEXT DEFAULT '',
+          area TEXT NOT NULL DEFAULT 'allgemein',
+          target_date TEXT,
+          status TEXT NOT NULL DEFAULT 'aktiv',
+          progress INTEGER NOT NULL DEFAULT 0,
+          milestones TEXT NOT NULL DEFAULT '[]',
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_goals_area ON goals(area);
+      `);
+    },
+  },
 ];
 
 export function runMigrations(db) {

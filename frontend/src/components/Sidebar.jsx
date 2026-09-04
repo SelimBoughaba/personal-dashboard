@@ -79,7 +79,7 @@ const NAV_ITEMS = [
   { label: "Kalender", path: "/kalender", icon: "kalender", enabled: true },
   { label: "Aufgaben", path: "/aufgaben", icon: "aufgaben", enabled: true },
   { label: "Finanzen", path: "/finanzen", icon: "finanzen", enabled: true },
-  { label: "Ziele", icon: "ziele", enabled: false },
+  { label: "Ziele", path: "/ziele", icon: "ziele", enabled: true },
   { label: "Dokumente", path: "/dokumente", icon: "dokumente", enabled: true },
 ];
 
