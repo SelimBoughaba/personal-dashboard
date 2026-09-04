@@ -17,6 +17,7 @@
     "imapflow": "^1.0.171",
     "jsonwebtoken": "^9.0.2",
     "node-ical": "^0.20.1",
+    "pdf-parse": "^1.1.1",
     "tsdav": "^2.1.3"
   }
 }

@@ -6,7 +6,7 @@ const NAV_ITEMS = [
   { label: "Aufgaben", path: "/", enabled: true },
   { label: "Kalender", path: "/kalender", enabled: true },
   { label: "Mail", path: "/mail", enabled: true },
-  { label: "Rechnungen", path: "/rechnungen", enabled: false },
+  { label: "Rechnungen", path: "/rechnungen", enabled: true },
 ];
 
 export function Layout({ children }) {

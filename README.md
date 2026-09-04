@@ -3,9 +3,9 @@
 Lokales Dashboard für Aufgaben, Kalender, Mail und Rechnungen – läuft nur im
 eigenen Heimnetz, kein öffentliches Hosting.
 
-**Stand:** Etappe 3 – Setup, Passwort-Login, Aufgaben-Modul, Design-System,
-Kalender-Sync (CalDAV/iCloud), Mail-Modul (IONOS via IMAP). Rechnungen folgen
-in einer weiteren Etappe.
+**Stand:** Etappe 4 – Setup, Passwort-Login, Aufgaben-Modul, Design-System,
+Kalender-Sync (CalDAV/iCloud), Mail-Modul (IONOS via IMAP), Rechnungs-
+Automatisierung (PDF-Erkennung). Nur noch PWA-Feinschliff steht aus.
 
 ## Projektstruktur
 
@@ -99,6 +99,26 @@ Passwort-IMAP 2022 abgeschaltet. Das Outlook-Postfach ist deshalb aktuell
 noch nicht angebunden – dafür wäre eine OAuth2-Anbindung (Azure-App-
 Registrierung) nötig, die wir bei Bedarf als eigene Etappe ergänzen.
 
+## Rechnungs-Automatisierung
+
+Voraussetzung: Mail-Modul (IONOS) ist eingerichtet (siehe oben) – die
+Rechnungserkennung nutzt dieselbe Postfach-Verbindung.
+
+1. Im Tab „Rechnungen" auf „Postfächer durchsuchen" klicken. Die letzten
+   90 Tage werden nach PDF-Anhängen durchsucht (max. 150 Mails pro
+   Postfach), Betrag, Fälligkeitsdatum und Absender werden automatisch
+   erkannt.
+2. Bereits gefundene Anhänge werden bei erneutem Scan nicht doppelt
+   angelegt.
+3. Erkennung ist heuristisch (Schlüsselwörter wie „Gesamtbetrag",
+   „Fälligkeitsdatum" plus Muster für deutsche Zahlenformate) – **nicht
+   immer perfekt**. Über „Bearbeiten" lassen sich Betrag, Fälligkeitsdatum,
+   Absender und Bereich jederzeit manuell korrigieren. Rechnungen ohne
+   Mail-Bezug (z. B. Papierbelege) lassen sich über „+ Rechnung" auch
+   direkt manuell anlegen.
+4. Nutzt dieselbe `MAIL_AREA_RULES`-Zuordnung wie das Mail-Modul für die
+   automatische Bereichs-Zuordnung.
+
 ## Sicherheit
 
 - `.env`-Dateien enthalten Zugangsdaten und werden nie committet.
@@ -107,5 +127,4 @@ Registrierung) nötig, die wir bei Bedarf als eigene Etappe ergänzen.
 
 ## Nächste Etappen
 
-4. Rechnungs-Automatisierung (PDF-Erkennung aus Mail-Anhängen)
 5. PWA-Feinschliff (Installierbarkeit auf iPhone, Offline-Fähigkeit)

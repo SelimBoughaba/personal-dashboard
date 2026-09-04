@@ -1,34 +1,8 @@
 import { ImapFlow } from "imapflow";
+import { withTimeout, parseAreaRules, areaForAddress, configuredMailAccounts } from "./mailAccounts.js";
 
 const MAX_MESSAGES_PER_ACCOUNT = 50;
 const CONNECTION_TIMEOUT_MS = 15000;
-
-function withTimeout(promise, ms, label) {
-  return Promise.race([
-    promise,
-    new Promise((_, reject) => setTimeout(() => reject(new Error(`Zeitüberschreitung: ${label}`)), ms)),
-  ]);
-}
-
-function parseAreaRules() {
-  try {
-    return JSON.parse(process.env.MAIL_AREA_RULES || "{}");
-  } catch {
-    console.warn("MAIL_AREA_RULES ist kein gültiges JSON – ignoriere Bereichs-Zuordnung.");
-    return {};
-  }
-}
-
-// Bereich anhand der Absenderadresse bestimmen: erste Regel, deren
-// Suchtext (Domain oder vollständige Adresse) in der Absenderadresse
-// enthalten ist, gewinnt.
-function areaForAddress(address, rules) {
-  const lower = (address || "").toLowerCase();
-  for (const [match, area] of Object.entries(rules)) {
-    if (lower.includes(match.toLowerCase())) return area;
-  }
-  return "allgemein";
-}
 
 async function fetchAccountMessages(account, rules) {
   const client = new ImapFlow({
@@ -79,23 +53,8 @@ async function fetchAccountMessages(account, rules) {
   return messages;
 }
 
-function configuredAccounts() {
-  const accounts = [];
-  if (process.env.IONOS_IMAP_HOST && process.env.IONOS_IMAP_USER && process.env.IONOS_IMAP_PASSWORD) {
-    accounts.push({
-      id: "ionos",
-      host: process.env.IONOS_IMAP_HOST,
-      port: process.env.IONOS_IMAP_PORT || 993,
-      user: process.env.IONOS_IMAP_USER,
-      password: process.env.IONOS_IMAP_PASSWORD,
-    });
-  }
-  // Outlook/Microsoft folgt später separat (erfordert OAuth2 statt Passwort-Login).
-  return accounts;
-}
-
 export async function getMessages() {
-  const accounts = configuredAccounts();
+  const accounts = configuredMailAccounts();
   if (accounts.length === 0) {
     const err = new Error("Mail ist nicht konfiguriert.");
     err.code = "NOT_CONFIGURED";

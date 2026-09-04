@@ -22,4 +22,20 @@ db.exec(`
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
+
+  CREATE TABLE IF NOT EXISTS invoices (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    mail_ref TEXT UNIQUE,
+    sender TEXT DEFAULT '',
+    sender_name TEXT DEFAULT '',
+    subject TEXT DEFAULT '',
+    file_name TEXT DEFAULT '',
+    amount REAL,
+    due_date TEXT,
+    area TEXT NOT NULL DEFAULT 'allgemein' CHECK (area IN ('corelegal', 'evermont', 'nachhilfe', 'allgemein')),
+    status TEXT NOT NULL DEFAULT 'offen' CHECK (status IN ('offen', 'bezahlt')),
+    received_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
 `);
