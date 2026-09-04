@@ -8,3 +8,4 @@ backend/data/*.db-shm
 backend/data/*.db-wal
 backend/data/documents/
 .DS_Store
+dashboard-server.log

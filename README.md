@@ -20,7 +20,29 @@ umgesetzt** – kein Navigationspunkt zeigt mehr einen deaktivierten
 - `backend/` – Express-API + SQLite (`better-sqlite3`)
 - `frontend/` – React (Vite) + Tailwind CSS
 
-## Lokal starten
+## Schnellstart per Doppelklick (macOS, ohne Terminal-Kenntnisse)
+
+Im Projektordner liegen zwei Dateien:
+
+- **`Dashboard starten.command`** – doppelklicken, um das Dashboard zu
+  starten. Holt automatisch die neueste Version (`git pull`),
+  installiert bei Bedarf Abhängigkeiten, baut das Frontend neu und
+  öffnet die App im Standardbrowser. Läuft danach im Hintergrund weiter,
+  auch wenn das Terminal-Fenster geschlossen wird.
+- **`Dashboard stoppen.command`** – doppelklicken, um den im Hintergrund
+  laufenden Server zu beenden.
+
+**Beim allerersten Doppelklick** verweigert macOS Gatekeeper vermutlich
+die Ausführung ("kann nicht geöffnet werden, da der Entwickler nicht
+verifiziert werden kann"). Einmalig: mit **Rechtsklick** auf die Datei →
+**„Öffnen"** → im Dialog nochmal **„Öffnen"** bestätigen. Danach
+funktioniert der normale Doppelklick.
+
+„Aktualisieren" heißt hier: einfach `Dashboard starten.command` erneut
+doppelklicken (nach vorherigem Stoppen) – jeder Start holt automatisch
+den neuesten Stand aus dem Git-Repository.
+
+## Lokal starten (manuell über das Terminal)
 
 ### 1. Backend
 
