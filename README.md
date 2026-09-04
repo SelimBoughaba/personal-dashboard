@@ -42,15 +42,6 @@ funktioniert der normale Doppelklick.
 doppelklicken (nach vorherigem Stoppen) – jeder Start holt automatisch
 den neuesten Stand aus dem Git-Repository.
 
-**Falls die Seite im Browser weiß/leer bleibt** und in der Konsole ein
-TLS-Fehler bei `.js`/`.css`-Dateien steht: Das ist keine Störung der App,
-sondern eine gespeicherte "immer HTTPS erzwingen"-Regel (HSTS) für den
-Namen „localhost" in deinem Browser, meist von einem früheren,
-unabhängigen Projekt auf demselben Rechner. Abhilfe: statt
-`http://localhost:4000` die IP-Adresse **`http://127.0.0.1:4000`**
-öffnen – dafür gilt die gespeicherte Regel nicht. Der Doppelklick-Starter
-oben öffnet automatisch schon diese Adresse.
-
 ## Lokal starten (manuell über das Terminal)
 
 ### 1. Backend
@@ -62,9 +53,7 @@ npm run dev
 ```
 
 Der Server läuft dann auf `http://localhost:4000` (bzw. `http://<Mac-IP>:4000`
-für Zugriff vom iPhone im selben WLAN) – siehe auch die Anmerkung zu
-`127.0.0.1` weiter unten, falls „localhost" im Browser einen TLS-Fehler
-zeigt. Ein `.env` ist **nicht mehr
+für Zugriff vom iPhone im selben WLAN). Ein `.env` ist **nicht mehr
 zwingend erforderlich** – siehe „Ersteinrichtung" unten. Wer eine
 `backend/.env` mitbringt (z. B. aus einer älteren Version), dessen Werte
 werden beim allerersten Start automatisch übernommen.

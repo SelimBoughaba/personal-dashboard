@@ -41,12 +41,7 @@ const app = express();
 // Kein CORS-Middleware nötig: Frontend und Backend laufen immer same-origin
 // (im Dev-Modus per Vite-Proxy, im Produktivbetrieb liefert dieser Server
 // das Frontend selbst mit aus). Weniger Angriffsfläche als offenes CORS.
-// HSTS (hsts:false) bewusst deaktiviert: Diese App läuft ausschließlich über
-// unverschlüsseltes HTTP im lokalen Netz und wird nie über HTTPS bereitgestellt.
-// Ein HSTS-Header hat hier keinen Nutzen und kann im Browser eine dauerhafte
-// "immer HTTPS erzwingen"-Regel für den Hostnamen hinterlassen, die dann jede
-// künftige (unverschlüsselte) Verbindung zur App mit einem TLS-Fehler blockiert.
-app.use(helmet({ hsts: false }));
+app.use(helmet());
 app.use(compression());
 app.use(express.json({ limit: "1mb" }));
 

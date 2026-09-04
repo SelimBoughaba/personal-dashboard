@@ -15,9 +15,9 @@ if ! command -v node >/dev/null 2>&1; then
 fi
 
 # Schon ein laufender Server? Dann nur das Fenster im Browser öffnen.
-if curl -s -o /dev/null -m 2 "http://127.0.0.1:4000/api/health"; then
+if curl -s -o /dev/null -m 2 "http://localhost:4000/api/health"; then
   echo "Dashboard läuft bereits – öffne den Browser."
-  open "http://127.0.0.1:4000"
+  open "http://localhost:4000"
   exit 0
 fi
 
@@ -49,9 +49,9 @@ disown
 
 echo "Warte, bis der Server bereit ist..."
 for i in $(seq 1 30); do
-  if curl -s -o /dev/null -m 1 "http://127.0.0.1:4000/api/health"; then
+  if curl -s -o /dev/null -m 1 "http://localhost:4000/api/health"; then
     echo "Server läuft."
-    open "http://127.0.0.1:4000"
+    open "http://localhost:4000"
     echo
     echo "Fertig. Dieses Fenster kann geschlossen werden, der Server läuft im"
     echo "Hintergrund weiter (zum Beenden: 'Dashboard stoppen.command' benutzen)."
