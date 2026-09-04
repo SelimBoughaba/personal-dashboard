@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { Login } from "./pages/Login";
 import { Tasks } from "./pages/Tasks";
 import { Kalender } from "./pages/Kalender";
+import { Mail } from "./pages/Mail";
 import { Layout } from "./components/Layout";
 
 function ProtectedRoute({ children }) {
@@ -28,6 +29,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Kalender />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/mail"
+        element={
+          <ProtectedRoute>
+            <Mail />
           </ProtectedRoute>
         }
       />

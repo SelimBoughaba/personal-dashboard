@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 import { authRouter } from "./routes/auth.js";
 import { tasksRouter } from "./routes/tasks.js";
 import { calendarRouter } from "./routes/calendar.js";
+import { mailRouter } from "./routes/mail.js";
 import { requireAuth } from "./middleware/auth.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -20,6 +21,7 @@ app.get("/api/health", (req, res) => res.json({ ok: true }));
 app.use("/api/auth", authRouter);
 app.use("/api/tasks", requireAuth, tasksRouter);
 app.use("/api/calendar", requireAuth, calendarRouter);
+app.use("/api/mail", requireAuth, mailRouter);
 
 // Im lokalen Betrieb wird das gebaute Frontend mitausgeliefert,
 // damit auf dem iPhone nur eine Adresse (Mac-IP:Port) nötig ist.

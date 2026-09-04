@@ -3,8 +3,9 @@
 Lokales Dashboard für Aufgaben, Kalender, Mail und Rechnungen – läuft nur im
 eigenen Heimnetz, kein öffentliches Hosting.
 
-**Stand:** Etappe 2 – Setup, Passwort-Login, Aufgaben-Modul, Design-System,
-Kalender-Sync (CalDAV/iCloud). Mail und Rechnungen folgen in weiteren Etappen.
+**Stand:** Etappe 3 – Setup, Passwort-Login, Aufgaben-Modul, Design-System,
+Kalender-Sync (CalDAV/iCloud), Mail-Modul (IONOS via IMAP). Rechnungen folgen
+in einer weiteren Etappe.
 
 ## Projektstruktur
 
@@ -70,6 +71,34 @@ automatisch mit aus – dann reicht eine einzige Adresse `http://<Mac-IP>:4000`.
    dann im Tab „Kalender" in Tages- und Wochenansicht, farblich nach Bereich
    filterbar.
 
+## Mail-Modul einrichten (IONOS)
+
+1. IMAP muss im IONOS-Postfach aktiviert sein (Webmail → Einstellungen →
+   POP3/IMAP). Host/Port findest du in den IONOS-Kontoeinstellungen bzw.
+   in der bisherigen Mail-App-Konfiguration deines iPhones (meist
+   `imap.ionos.de`, Port `993`).
+2. In `backend/.env` eintragen:
+   ```
+   IONOS_IMAP_HOST=imap.ionos.de
+   IONOS_IMAP_PORT=993
+   IONOS_IMAP_USER=deine-adresse@deine-domain.de
+   IONOS_IMAP_PASSWORD=dein-postfach-passwort
+   ```
+3. Optional: Absender bestimmten Bereichen zuordnen, z. B.
+   ```
+   MAIL_AREA_RULES={"kanzlei-mustermann.de":"corelegal","evermont.de":"evermont"}
+   ```
+   Geprüft wird, ob der angegebene Text (Domain oder vollständige Adresse)
+   in der Absenderadresse vorkommt. Nicht zugeordnete Mails laufen unter
+   „Allgemein".
+4. Backend neu starten. Im Tab „Mail" erscheinen ungelesene und markierte
+   Mails aus dem Postfach, bereichsfilterbar.
+
+**Hinweis zu Outlook/Microsoft 365:** Microsoft hat klassisches
+Passwort-IMAP 2022 abgeschaltet. Das Outlook-Postfach ist deshalb aktuell
+noch nicht angebunden – dafür wäre eine OAuth2-Anbindung (Azure-App-
+Registrierung) nötig, die wir bei Bedarf als eigene Etappe ergänzen.
+
 ## Sicherheit
 
 - `.env`-Dateien enthalten Zugangsdaten und werden nie committet.
@@ -78,6 +107,5 @@ automatisch mit aus – dann reicht eine einzige Adresse `http://<Mac-IP>:4000`.
 
 ## Nächste Etappen
 
-3. Mail-Modul (IONOS via IMAP; Outlook folgt später separat wegen OAuth2)
 4. Rechnungs-Automatisierung (PDF-Erkennung aus Mail-Anhängen)
 5. PWA-Feinschliff (Installierbarkeit auf iPhone, Offline-Fähigkeit)
