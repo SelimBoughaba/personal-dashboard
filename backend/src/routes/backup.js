@@ -3,7 +3,16 @@ import { db } from "../db.js";
 
 export const backupRouter = Router();
 
-const BACKUP_VERSION = 2;
+const BACKUP_VERSION = 3;
+// Ältere Backup-Versionen kannten neuere Tabellen (documents, contracts, ...)
+// noch nicht. Beim Wiederherstellen eines älteren Backups bleibt die
+// jeweils fehlende Tabelle dann einfach unangetastet, statt gelöscht zu
+// werden – so bleiben ältere Backups kompatibel, ohne Daten zu verlieren.
+const SUPPORTED_VERSIONS = [1, 2, 3];
+const OPTIONAL_TABLES = [
+  { key: "documents", sinceVersion: 2 },
+  { key: "contracts", sinceVersion: 3 },
+];
 
 function buildBackup() {
   return {
@@ -16,6 +25,7 @@ function buildBackup() {
     // Backup unkontrolliert groß. Der Dokumenten-Ordner auf der Platte
     // sollte separat gesichert werden (siehe README).
     documents: db.prepare("SELECT * FROM documents").all(),
+    contracts: db.prepare("SELECT * FROM contracts").all(),
     settings: Object.fromEntries(
       db.prepare("SELECT key, value FROM settings").all().map((r) => [r.key, r.value]),
     ),
@@ -24,17 +34,16 @@ function buildBackup() {
 
 function validateBackup(data) {
   if (!data || typeof data !== "object") return "Datei ist kein gültiges Backup (kein JSON-Objekt).";
-  if (data.version !== 1 && data.version !== BACKUP_VERSION) {
+  if (!SUPPORTED_VERSIONS.includes(data.version)) {
     return `Nicht unterstützte Backup-Version (${data.version}).`;
   }
   for (const key of ["tasks", "invoices", "areas"]) {
     if (!Array.isArray(data[key])) return `Feld "${key}" fehlt oder ist keine Liste.`;
   }
-  // Ältere Backups (Version 1) kannten noch keine Dokumente-Tabelle – beim
-  // Wiederherstellen eines solchen Backups bleiben vorhandene Dokumente
-  // dann einfach unangetastet erhalten statt gelöscht zu werden.
-  if (data.version === BACKUP_VERSION && !Array.isArray(data.documents)) {
-    return `Feld "documents" fehlt oder ist keine Liste.`;
+  for (const { key, sinceVersion } of OPTIONAL_TABLES) {
+    if (data.version >= sinceVersion && !Array.isArray(data[key])) {
+      return `Feld "${key}" fehlt oder ist keine Liste.`;
+    }
   }
   if (typeof data.settings !== "object" || data.settings === null) {
     return `Feld "settings" fehlt oder ist kein Objekt.`;
@@ -71,6 +80,7 @@ backupRouter.post("/preview", (req, res) => {
       invoices: data.invoices.length,
       areas: data.areas.length,
       documents: Array.isArray(data.documents) ? data.documents.length : 0,
+      contracts: Array.isArray(data.contracts) ? data.contracts.length : 0,
       settings: Object.keys(data.settings).length,
     },
   });
@@ -90,6 +100,7 @@ backupRouter.post("/restore", (req, res) => {
   const run = db.transaction(() => {
     db.exec("DELETE FROM tasks; DELETE FROM invoices; DELETE FROM areas; DELETE FROM settings;");
     if (Array.isArray(data.documents)) db.exec("DELETE FROM documents;");
+    if (Array.isArray(data.contracts)) db.exec("DELETE FROM contracts;");
 
     const insertArea = db.prepare(
       "INSERT INTO areas (id, label, color, sort_order, is_default, archived, created_at, updated_at) VALUES (@id, @label, @color, @sort_order, @is_default, @archived, @created_at, @updated_at)",
@@ -115,6 +126,14 @@ backupRouter.post("/restore", (req, res) => {
       for (const document of data.documents) {
         insertDocument.run({ ...document, tags: typeof document.tags === "string" ? document.tags : JSON.stringify(document.tags || []) });
       }
+    }
+
+    if (Array.isArray(data.contracts)) {
+      const insertContract = db.prepare(
+        `INSERT INTO contracts (id, title, provider, area, cost, billing_cycle, cancellation_period_days, next_renewal_date, status, notes, created_at, updated_at)
+         VALUES (@id, @title, @provider, @area, @cost, @billing_cycle, @cancellation_period_days, @next_renewal_date, @status, @notes, @created_at, @updated_at)`,
+      );
+      for (const contract of data.contracts) insertContract.run(contract);
     }
 
     const insertSetting = db.prepare("INSERT INTO settings (key, value) VALUES (?, ?)");

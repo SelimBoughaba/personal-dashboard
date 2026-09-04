@@ -125,6 +125,29 @@ const MIGRATIONS = [
       `);
     },
   },
+  {
+    id: "0006_contracts_table",
+    up(db) {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS contracts (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          title TEXT NOT NULL,
+          provider TEXT DEFAULT '',
+          area TEXT NOT NULL DEFAULT 'allgemein',
+          cost REAL,
+          billing_cycle TEXT NOT NULL DEFAULT 'monatlich',
+          cancellation_period_days INTEGER,
+          next_renewal_date TEXT,
+          status TEXT NOT NULL DEFAULT 'aktiv',
+          notes TEXT DEFAULT '',
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_contracts_area ON contracts(area);
+        CREATE INDEX IF NOT EXISTS idx_contracts_next_renewal ON contracts(next_renewal_date);
+      `);
+    },
+  },
 ];
 
 export function runMigrations(db) {

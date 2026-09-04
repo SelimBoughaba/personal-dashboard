@@ -5,18 +5,19 @@ eigenen Heimnetz, kein öffentliches Hosting, keine Pflicht-Cloud-Dienste.
 Design orientiert sich an der Evermont-Markenidentität (Waldgrün, Ivory,
 Lime-Akzente, Manrope).
 
-**Stand:** Etappe 8 – Dokumente-Modul. Zusätzlich zur lokalen Grundlage aus
+**Stand:** Etappe 9 – Verträge & Abos. Zusätzlich zur lokalen Grundlage aus
 Etappe 7 (SQLite-Persistenz, Einrichtungsassistent, vollständige
 Einstellungsseite, frei anlegbare Lebensbereiche, konfigurierbares
 Übersicht-Dashboard, CSV-Import/-Export, JSON-Backup mit Wiederherstellung)
-gibt es jetzt eine echte Dokumentenverwaltung mit Datei-Upload, Ablage auf
-der lokalen Platte, Bereichs-/Tag-Zuordnung, Volltextsuche über Titel/
-Dateiname und Download.
+und dem Dokumente-Modul aus Etappe 8 (Datei-Upload, lokale Ablage,
+Bereichs-/Tag-Zuordnung, Suche, Download) gibt es jetzt eine Verwaltung
+für laufende Verträge und Abos inkl. Kosten, Abrechnungszyklus und
+In-App-Warnung bei bald ablaufender Kündigungsfrist.
 
 **Noch als „bald" markiert** (klar erkennbar in der Navigation, keine
-Fake-Funktionalität dahinter): Ziele, Verträge & Abos, Gesundheit, Notizen,
-globale Suche/Kommandopalette, erweiterte Kalender-/Aufgabenansichten.
-Diese folgen in den nächsten Etappen.
+Fake-Funktionalität dahinter): Ziele, Gesundheit, Notizen, globale Suche/
+Kommandopalette, erweiterte Kalender-/Aufgabenansichten. Diese folgen in
+den nächsten Etappen.
 
 ## Projektstruktur
 
@@ -235,6 +236,23 @@ Unter „Dokumente" in der Sidebar:
   innerhalb der App (z. B. kein eingebetteter PDF-Viewer) – Dokumente
   werden zum Ansehen heruntergeladen und lokal geöffnet.
 
+## Verträge & Abos
+
+Unter „Mehr" → „Verträge & Abos" in der Sidebar:
+
+- Vertrag anlegen mit Anbieter, Kosten, Abrechnungszyklus (monatlich/
+  jährlich/einmalig/sonstig), nächstem Verlängerungs-/Fälligkeitsdatum,
+  Kündigungsfrist (in Tagen vor der Verlängerung) und Status (aktiv/
+  gekündigt/abgelaufen).
+- Die App berechnet daraus den letzten möglichen Kündigungstermin und
+  zeigt aktive Verträge, deren Kündigungsfrist innerhalb von 30 Tagen
+  abläuft (oder bereits abgelaufen ist), oben auf der Seite als Warnung
+  an. Das ist eine **In-App-Anzeige beim Öffnen der Seite**, keine
+  Push- oder E-Mail-Benachrichtigung bei geschlossener App – dafür gibt
+  es aktuell keinen Versandweg (siehe „Benachrichtigungen" in den
+  Einstellungen).
+- Nach Bereich filterbar, wie die übrigen Module.
+
 ## Kalender-Sync einrichten (iCloud)
 
 1. App-spezifisches Passwort erzeugen: auf [appleid.apple.com](https://appleid.apple.com)
@@ -335,19 +353,20 @@ iPhone automatisch beim nächsten Öffnen.
   optimal für Screenreader beschriftet. Geplante schrittweise Behebung.
 - Kein Verschlüsselungs-Layer für die in der Datenbank gespeicherten
   Zugangsdaten (siehe oben).
-- Ziele, Verträge & Abos, Gesundheit, Notizen, globale Suche/
-  Kommandopalette und erweiterte Kalender-/Aufgabenansichten sind noch
-  nicht umgesetzt (klar als „bald" markiert in der Navigation).
+- Ziele, Gesundheit, Notizen, globale Suche/Kommandopalette und
+  erweiterte Kalender-/Aufgabenansichten sind noch nicht umgesetzt (klar
+  als „bald" markiert in der Navigation).
 - Dokumente: keine Inhalts-Vorschau/kein Viewer in der App, kein
   Volltext-Suche innerhalb der Dateien (nur über Titel/Dateiname), keine
   Ordnerstruktur/Unterordner.
+- Verträge & Abos: Kündigungsfrist-Warnung ist rein informativ innerhalb
+  der App beim Öffnen der Seite, keine Push-/E-Mail-Erinnerung.
 - Google-/Gmail-OAuth, native Apple-Calendar-Integration und Outlook/
   Microsoft-365-Postfächer sind vorbereitet, aber noch nicht angebunden
   (siehe „Welche externen Verbindungen funktionieren wirklich?").
 
 ## Nächste Etappen
 
-- Verträge & Abos
 - Ziele (Fortschritt, Meilensteine, Verknüpfung mit Aufgaben)
 - Notizen
 - Gesundheit
