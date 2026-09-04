@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { Login } from "./pages/Login";
 import { Tasks } from "./pages/Tasks";
+import { Kalender } from "./pages/Kalender";
 import { Layout } from "./components/Layout";
 
 function ProtectedRoute({ children }) {
@@ -19,6 +20,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Tasks />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/kalender"
+        element={
+          <ProtectedRoute>
+            <Kalender />
           </ProtectedRoute>
         }
       />
