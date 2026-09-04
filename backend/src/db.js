@@ -8,6 +8,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dataDir = path.join(__dirname, "..", "data");
 fs.mkdirSync(dataDir, { recursive: true });
 
+export { dataDir };
+
 export const db = new Database(path.join(dataDir, "dashboard.db"));
 db.pragma("journal_mode = WAL");
 

@@ -11,10 +11,14 @@ export function setToken(token) {
 
 export async function apiFetch(path, options = {}) {
   const token = getToken();
+  const isFormData = options.body instanceof FormData;
   const res = await fetch(`/api${path}`, {
     ...options,
     headers: {
-      "Content-Type": "application/json",
+      // FormData braucht den vom Browser gesetzten multipart-Boundary im
+      // Content-Type-Header - ein manuell gesetzter application/json-Header
+      // würde den Upload sonst kaputt machen.
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },

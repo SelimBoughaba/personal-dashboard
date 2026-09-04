@@ -105,6 +105,26 @@ const MIGRATIONS = [
       `);
     },
   },
+  {
+    id: "0005_documents_table",
+    up(db) {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS documents (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          title TEXT NOT NULL,
+          file_name TEXT NOT NULL,
+          stored_name TEXT NOT NULL UNIQUE,
+          mime_type TEXT DEFAULT '',
+          size INTEGER NOT NULL DEFAULT 0,
+          area TEXT NOT NULL DEFAULT 'allgemein',
+          tags TEXT NOT NULL DEFAULT '[]',
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_documents_area ON documents(area);
+      `);
+    },
+  },
 ];
 
 export function runMigrations(db) {

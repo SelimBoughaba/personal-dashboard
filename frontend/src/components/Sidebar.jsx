@@ -80,7 +80,7 @@ const NAV_ITEMS = [
   { label: "Aufgaben", path: "/aufgaben", icon: "aufgaben", enabled: true },
   { label: "Finanzen", path: "/finanzen", icon: "finanzen", enabled: true },
   { label: "Ziele", icon: "ziele", enabled: false },
-  { label: "Dokumente", icon: "dokumente", enabled: false },
+  { label: "Dokumente", path: "/dokumente", icon: "dokumente", enabled: true },
 ];
 
 const MORE_ITEMS = [

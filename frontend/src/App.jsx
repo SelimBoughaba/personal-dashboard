@@ -8,6 +8,7 @@ import { Kalender } from "./pages/Kalender";
 import { Mail } from "./pages/Mail";
 import { Rechnungen } from "./pages/Rechnungen";
 import { Einstellungen } from "./pages/Einstellungen";
+import { Dokumente } from "./pages/Dokumente";
 import { Onboarding } from "./pages/Onboarding";
 import { Layout } from "./components/Layout";
 
@@ -62,6 +63,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Rechnungen />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dokumente"
+        element={
+          <ProtectedRoute>
+            <Dokumente />
           </ProtectedRoute>
         }
       />

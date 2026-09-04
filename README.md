@@ -5,17 +5,18 @@ eigenen Heimnetz, kein öffentliches Hosting, keine Pflicht-Cloud-Dienste.
 Design orientiert sich an der Evermont-Markenidentität (Waldgrün, Ivory,
 Lime-Akzente, Manrope).
 
-**Stand:** Etappe 7 – Lokale Grundlage, Einstellungen und Einrichtung.
-Alle Daten liegen vollständig lokal in einer SQLite-Datei, es gibt einen
-geführten Einrichtungsassistenten, eine vollständige Einstellungsseite,
-frei anlegbare Lebensbereiche, ein konfigurierbares Übersicht-Dashboard
-sowie CSV-Import/-Export und ein vollständiges JSON-Backup mit
-Wiederherstellung.
+**Stand:** Etappe 8 – Dokumente-Modul. Zusätzlich zur lokalen Grundlage aus
+Etappe 7 (SQLite-Persistenz, Einrichtungsassistent, vollständige
+Einstellungsseite, frei anlegbare Lebensbereiche, konfigurierbares
+Übersicht-Dashboard, CSV-Import/-Export, JSON-Backup mit Wiederherstellung)
+gibt es jetzt eine echte Dokumentenverwaltung mit Datei-Upload, Ablage auf
+der lokalen Platte, Bereichs-/Tag-Zuordnung, Volltextsuche über Titel/
+Dateiname und Download.
 
 **Noch als „bald" markiert** (klar erkennbar in der Navigation, keine
-Fake-Funktionalität dahinter): Ziele, Dokumente, Verträge & Abos,
-Gesundheit, Notizen, globale Suche/Kommandopalette, erweiterte
-Kalender-/Aufgabenansichten. Diese folgen in den nächsten Etappen.
+Fake-Funktionalität dahinter): Ziele, Verträge & Abos, Gesundheit, Notizen,
+globale Suche/Kommandopalette, erweiterte Kalender-/Aufgabenansichten.
+Diese folgen in den nächsten Etappen.
 
 ## Projektstruktur
 
@@ -114,8 +115,13 @@ Alles liegt in einer einzigen SQLite-Datei unter `backend/data/dashboard.db`
 Datenbank). Es gibt keine externe Datenbank und keinen Cloud-Sync-Dienst.
 Gespeichert werden u. a.:
 
-- Aufgaben, Termine-Cache, Rechnungen (inkl. hochgeladener PDF-Anhänge im
-  Dateisystem unter `backend/data/`)
+- Aufgaben, Termine-Cache, Rechnungen
+- Hochgeladene Dokumente als Dateien im konfigurierten Speicherordner
+  (Standard: `backend/data/documents/`, unter Einstellungen → Dokumente
+  und Speicherort auf einen beliebigen absoluten Pfad auf der Platte
+  änderbar – der Server hat vollen Dateisystemzugriff, anders als ein
+  Browser); die zugehörigen Metadaten (Titel, Bereich, Tags, Originalname)
+  liegen in der Datenbank
 - Lebensbereiche (Name, Farbe, Reihenfolge, Archiv-Status)
 - Alle Einstellungen (Profil, Darstellung, Dashboard-Konfiguration,
   Benachrichtigungs-Vorlieben, Onboarding-Fortschritt)
@@ -194,6 +200,11 @@ Unter Einstellungen → Sicherung und Wiederherstellung:
   JSON-Kopie aller lokalen Daten herunter – **inklusive** der oben
   beschriebenen Klartext-Zugangsdaten. Die Datei entsprechend sicher
   aufbewahren (z. B. nicht unverschlüsselt in einer Cloud ablegen).
+  **Wichtig:** Bei Dokumenten enthält das Backup nur die Metadaten (Titel,
+  Bereich, Tags, Originalname), nicht die eigentlichen Dateiinhalte –
+  sonst würde die JSON-Datei unkontrolliert groß. Den Dokumente-
+  Speicherordner (siehe oben) daher separat sichern, z. B. per Time
+  Machine oder manuellem Kopieren.
 - **Wiederherstellen:** Backup-Datei auswählen → die App zeigt zunächst
   nur eine **Vorschau** (Anzahl Aufgaben/Rechnungen/Bereiche, Erstellungs-
   zeitpunkt), ohne etwas zu verändern. Erst nach explizitem Klick auf
@@ -201,6 +212,28 @@ Unter Einstellungen → Sicherung und Wiederherstellung:
   Daten unwiderruflich durch den Inhalt der Backup-Datei ersetzt
   (serverseitig transaktional, alles-oder-nichts). Der Button ist bewusst
   von der Vorschau getrennt und deutlich als destruktiv gekennzeichnet.
+
+## Dokumente-Modul
+
+Unter „Dokumente" in der Sidebar:
+
+- **Hochladen:** Datei auswählen, optional Titel (sonst wird der
+  Dateiname übernommen), Lebensbereich und mit Komma getrennte Tags
+  angeben. Die Datei wird auf der Platte im konfigurierten Speicherordner
+  abgelegt (siehe oben), unter einem intern generierten, kollisionsfreien
+  Namen – Original-Dateiname und Titel bleiben unabhängig davon erhalten
+  und werden angezeigt.
+- **Liste, Filter, Suche:** nach Lebensbereich filterbar, Volltextsuche
+  über Titel und Original-Dateinamen.
+- **Bearbeiten:** Titel, Bereich und Tags nachträglich änderbar, ohne die
+  Datei neu hochzuladen.
+- **Herunterladen:** lädt die Originaldatei mit ihrem ursprünglichen
+  Dateinamen herunter.
+- **Löschen:** entfernt sowohl den Datenbank-Eintrag als auch die Datei
+  auf der Platte unwiderruflich.
+- Es gibt aktuell keine Vorschau/kein Rendering von Dateiinhalten
+  innerhalb der App (z. B. kein eingebetteter PDF-Viewer) – Dokumente
+  werden zum Ansehen heruntergeladen und lokal geöffnet.
 
 ## Kalender-Sync einrichten (iCloud)
 
@@ -302,16 +335,18 @@ iPhone automatisch beim nächsten Öffnen.
   optimal für Screenreader beschriftet. Geplante schrittweise Behebung.
 - Kein Verschlüsselungs-Layer für die in der Datenbank gespeicherten
   Zugangsdaten (siehe oben).
-- Dokumente-Modul, Ziele, Verträge & Abos, Gesundheit, Notizen, globale
-  Suche/Kommandopalette und erweiterte Kalender-/Aufgabenansichten sind
-  noch nicht umgesetzt (klar als „bald" markiert in der Navigation).
+- Ziele, Verträge & Abos, Gesundheit, Notizen, globale Suche/
+  Kommandopalette und erweiterte Kalender-/Aufgabenansichten sind noch
+  nicht umgesetzt (klar als „bald" markiert in der Navigation).
+- Dokumente: keine Inhalts-Vorschau/kein Viewer in der App, kein
+  Volltext-Suche innerhalb der Dateien (nur über Titel/Dateiname), keine
+  Ordnerstruktur/Unterordner.
 - Google-/Gmail-OAuth, native Apple-Calendar-Integration und Outlook/
   Microsoft-365-Postfächer sind vorbereitet, aber noch nicht angebunden
   (siehe „Welche externen Verbindungen funktionieren wirklich?").
 
 ## Nächste Etappen
 
-- Dokumente (serverseitige Ablage, Ordner/Tags/Suche)
 - Verträge & Abos
 - Ziele (Fortschritt, Meilensteine, Verknüpfung mit Aufgaben)
 - Notizen

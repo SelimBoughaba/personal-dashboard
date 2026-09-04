@@ -3,7 +3,7 @@ import { db } from "../db.js";
 
 export const backupRouter = Router();
 
-const BACKUP_VERSION = 1;
+const BACKUP_VERSION = 2;
 
 function buildBackup() {
   return {
@@ -12,6 +12,10 @@ function buildBackup() {
     tasks: db.prepare("SELECT * FROM tasks").all(),
     invoices: db.prepare("SELECT * FROM invoices").all(),
     areas: db.prepare("SELECT * FROM areas").all(),
+    // Nur Metadaten, nicht der Dateiinhalt selbst – sonst würde das JSON-
+    // Backup unkontrolliert groß. Der Dokumenten-Ordner auf der Platte
+    // sollte separat gesichert werden (siehe README).
+    documents: db.prepare("SELECT * FROM documents").all(),
     settings: Object.fromEntries(
       db.prepare("SELECT key, value FROM settings").all().map((r) => [r.key, r.value]),
     ),
@@ -20,9 +24,17 @@ function buildBackup() {
 
 function validateBackup(data) {
   if (!data || typeof data !== "object") return "Datei ist kein gültiges Backup (kein JSON-Objekt).";
-  if (data.version !== BACKUP_VERSION) return `Nicht unterstützte Backup-Version (${data.version}).`;
+  if (data.version !== 1 && data.version !== BACKUP_VERSION) {
+    return `Nicht unterstützte Backup-Version (${data.version}).`;
+  }
   for (const key of ["tasks", "invoices", "areas"]) {
     if (!Array.isArray(data[key])) return `Feld "${key}" fehlt oder ist keine Liste.`;
+  }
+  // Ältere Backups (Version 1) kannten noch keine Dokumente-Tabelle – beim
+  // Wiederherstellen eines solchen Backups bleiben vorhandene Dokumente
+  // dann einfach unangetastet erhalten statt gelöscht zu werden.
+  if (data.version === BACKUP_VERSION && !Array.isArray(data.documents)) {
+    return `Feld "documents" fehlt oder ist keine Liste.`;
   }
   if (typeof data.settings !== "object" || data.settings === null) {
     return `Feld "settings" fehlt oder ist kein Objekt.`;
@@ -58,6 +70,7 @@ backupRouter.post("/preview", (req, res) => {
       tasks: data.tasks.length,
       invoices: data.invoices.length,
       areas: data.areas.length,
+      documents: Array.isArray(data.documents) ? data.documents.length : 0,
       settings: Object.keys(data.settings).length,
     },
   });
@@ -76,6 +89,7 @@ backupRouter.post("/restore", (req, res) => {
 
   const run = db.transaction(() => {
     db.exec("DELETE FROM tasks; DELETE FROM invoices; DELETE FROM areas; DELETE FROM settings;");
+    if (Array.isArray(data.documents)) db.exec("DELETE FROM documents;");
 
     const insertArea = db.prepare(
       "INSERT INTO areas (id, label, color, sort_order, is_default, archived, created_at, updated_at) VALUES (@id, @label, @color, @sort_order, @is_default, @archived, @created_at, @updated_at)",
@@ -92,6 +106,16 @@ backupRouter.post("/restore", (req, res) => {
        VALUES (@id, @mail_ref, @sender, @sender_name, @subject, @file_name, @amount, @due_date, @area, @status, @received_at, @created_at, @updated_at)`,
     );
     for (const invoice of data.invoices) insertInvoice.run(invoice);
+
+    if (Array.isArray(data.documents)) {
+      const insertDocument = db.prepare(
+        `INSERT INTO documents (id, title, file_name, stored_name, mime_type, size, area, tags, created_at, updated_at)
+         VALUES (@id, @title, @file_name, @stored_name, @mime_type, @size, @area, @tags, @created_at, @updated_at)`,
+      );
+      for (const document of data.documents) {
+        insertDocument.run({ ...document, tags: typeof document.tags === "string" ? document.tags : JSON.stringify(document.tags || []) });
+      }
+    }
 
     const insertSetting = db.prepare("INSERT INTO settings (key, value) VALUES (?, ?)");
     for (const [key, value] of Object.entries(data.settings)) {
