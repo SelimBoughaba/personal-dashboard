@@ -81,6 +81,7 @@ settingsRouter.post("/calendar/test", async (req, res) => {
       calendarNames: calendars.map((c) => c.displayName).filter(Boolean),
     });
   } catch (err) {
+    console.error("iCloud-CalDAV-Verbindungstest fehlgeschlagen:", err);
     res.status(400).json({ ok: false, error: "Verbindung fehlgeschlagen. Apple-ID/App-Passwort prüfen." });
   }
 });
@@ -156,7 +157,8 @@ settingsRouter.post("/mail/test", async (req, res) => {
     await withTimeout(client.connect(), 15000, "IMAP-Verbindungstest");
     await client.logout().catch(() => client.close());
     res.json({ ok: true });
-  } catch {
+  } catch (err) {
+    console.error("IMAP-Verbindungstest fehlgeschlagen:", err);
     res.status(400).json({ ok: false, error: "Verbindung fehlgeschlagen. Host/Zugangsdaten prüfen." });
   }
 });
