@@ -12,6 +12,7 @@ import { Dokumente } from "./pages/Dokumente";
 import { Vertraege } from "./pages/Vertraege";
 import { Ziele } from "./pages/Ziele";
 import { Notizen } from "./pages/Notizen";
+import { Gesundheit } from "./pages/Gesundheit";
 import { Onboarding } from "./pages/Onboarding";
 import { Layout } from "./components/Layout";
 
@@ -82,6 +83,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Ziele />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/gesundheit"
+        element={
+          <ProtectedRoute>
+            <Gesundheit />
           </ProtectedRoute>
         }
       />

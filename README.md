@@ -5,15 +5,15 @@ eigenen Heimnetz, kein öffentliches Hosting, keine Pflicht-Cloud-Dienste.
 Design orientiert sich an der Evermont-Markenidentität (Waldgrün, Ivory,
 Lime-Akzente, Manrope).
 
-**Stand:** Etappe 11 – Notizen. Zusätzlich zur lokalen Grundlage aus
-Etappe 7, dem Dokumente-Modul aus Etappe 8, Verträge & Abos aus Etappe 9
-und den Zielen aus Etappe 10 gibt es jetzt ein Notizen-Modul mit
-Anpinnen, Tags und Volltextsuche über Titel und Inhalt.
+**Stand:** Etappe 12 – Gesundheit. Zusätzlich zur lokalen Grundlage aus
+Etappe 7, dem Dokumente-Modul aus Etappe 8, Verträge & Abos aus Etappe 9,
+den Zielen aus Etappe 10 und den Notizen aus Etappe 11 gibt es jetzt ein
+Gesundheit-Modul für manuelle Verlaufsaufzeichnung (Gewicht, Schlaf,
+Sport, Sonstiges) mit Trend-Anzeige gegenüber dem letzten Eintrag.
 
-**Noch als „bald" markiert** (klar erkennbar in der Navigation, keine
-Fake-Funktionalität dahinter): Gesundheit, globale Suche/Kommandopalette,
-erweiterte Kalender-/Aufgabenansichten. Diese folgen in den nächsten
-Etappen.
+Damit sind alle bisherigen Hauptnavigationspunkte umgesetzt. Noch als
+„bald" markiert: globale Suche/Kommandopalette, erweiterte Kalender-/
+Aufgabenansichten.
 
 ## Projektstruktur
 
@@ -278,6 +278,21 @@ Unter „Mehr" → „Notizen" in der Sidebar:
 - Keine Formatierung (kein Markdown/Rich-Text) – reiner Text, mit
   erhaltenen Zeilenumbrüchen.
 
+## Gesundheit
+
+Unter „Mehr" → „Gesundheit" in der Sidebar:
+
+- Eintrag anlegen mit Datum, Typ (Gewicht/Schlaf/Sport/Sonstiges,
+  jeweils mit sinnvoller Standardeinheit, die frei überschreibbar ist),
+  Wert und Notiz.
+- Liste sortiert nach Datum absteigend, nach Typ filterbar.
+- Neben jedem Wert erscheint ein Trend-Pfeil (↑/↓/→) im Vergleich zum
+  vorherigen Eintrag desselben Typs.
+- **Bewusst keine Anbindung an Apple Health, Wearables oder andere
+  Gesundheits-Apps** – alle Werte werden manuell eingetragen. Es gibt
+  auch **keine Zuordnung zu Lebensbereichen**, da Gesundheitsdaten
+  bereichsübergreifend sind.
+
 ## Kalender-Sync einrichten (iCloud)
 
 1. App-spezifisches Passwort erzeugen: auf [appleid.apple.com](https://appleid.apple.com)
@@ -378,10 +393,12 @@ iPhone automatisch beim nächsten Öffnen.
   optimal für Screenreader beschriftet. Geplante schrittweise Behebung.
 - Kein Verschlüsselungs-Layer für die in der Datenbank gespeicherten
   Zugangsdaten (siehe oben).
-- Gesundheit, globale Suche/Kommandopalette und erweiterte Kalender-/
+- Globale Suche/Kommandopalette und erweiterte Kalender-/
   Aufgabenansichten sind noch nicht umgesetzt (klar als „bald" markiert
   in der Navigation).
 - Notizen: kein Markdown/Rich-Text, reiner Text.
+- Gesundheit: rein manuelle Erfassung, keine Anbindung an Apple Health/
+  Wearables, keine Zuordnung zu Lebensbereichen.
 - Ziele: Meilensteine sind eine eigene Checkliste, keine Verknüpfung mit
   echten Aufgaben-Datensätzen.
 - Dokumente: keine Inhalts-Vorschau/kein Viewer in der App, kein
@@ -395,7 +412,6 @@ iPhone automatisch beim nächsten Öffnen.
 
 ## Nächste Etappen
 
-- Gesundheit
 - Globale Suche / Kommandopalette
 - Erweiterte Kalender-/Aufgabenansichten (Monats-/Agenda-Ansicht, Kanban,
   Unteraufgaben, wiederkehrende Termine im UI erstellbar)

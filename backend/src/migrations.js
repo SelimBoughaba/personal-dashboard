@@ -187,6 +187,25 @@ const MIGRATIONS = [
       `);
     },
   },
+  {
+    id: "0009_health_entries_table",
+    up(db) {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS health_entries (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          entry_date TEXT NOT NULL,
+          type TEXT NOT NULL DEFAULT 'sonstiges',
+          value REAL,
+          unit TEXT DEFAULT '',
+          note TEXT DEFAULT '',
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_health_entries_date ON health_entries(entry_date);
+        CREATE INDEX IF NOT EXISTS idx_health_entries_type ON health_entries(type);
+      `);
+    },
+  },
 ];
 
 export function runMigrations(db) {

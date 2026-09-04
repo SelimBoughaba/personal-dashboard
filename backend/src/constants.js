@@ -9,3 +9,5 @@ export const INVOICE_STATUSES = ["offen", "bezahlt"];
 export const CONTRACT_STATUSES = ["aktiv", "gekuendigt", "abgelaufen"];
 export const CONTRACT_BILLING_CYCLES = ["monatlich", "jaehrlich", "einmalig", "sonstig"];
 export const GOAL_STATUSES = ["aktiv", "erreicht", "abgebrochen"];
+export const HEALTH_ENTRY_TYPES = ["gewicht", "schlaf", "sport", "sonstiges"];
+export const HEALTH_ENTRY_DEFAULT_UNITS = { gewicht: "kg", schlaf: "h", sport: "min", sonstiges: "" };

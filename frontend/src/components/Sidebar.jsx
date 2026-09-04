@@ -85,7 +85,7 @@ const NAV_ITEMS = [
 
 const MORE_ITEMS = [
   { label: "Verträge & Abos", path: "/vertraege", enabled: true },
-  { label: "Gesundheit", enabled: false },
+  { label: "Gesundheit", path: "/gesundheit", enabled: true },
   { label: "Notizen", path: "/notizen", enabled: true },
   { label: "Einstellungen", path: "/einstellungen", icon: "einstellungen", enabled: true },
 ];
