@@ -5,15 +5,15 @@ eigenen Heimnetz, kein öffentliches Hosting, keine Pflicht-Cloud-Dienste.
 Design orientiert sich an der Evermont-Markenidentität (Waldgrün, Ivory,
 Lime-Akzente, Manrope).
 
-**Stand:** Etappe 12 – Gesundheit. Zusätzlich zur lokalen Grundlage aus
-Etappe 7, dem Dokumente-Modul aus Etappe 8, Verträge & Abos aus Etappe 9,
-den Zielen aus Etappe 10 und den Notizen aus Etappe 11 gibt es jetzt ein
-Gesundheit-Modul für manuelle Verlaufsaufzeichnung (Gewicht, Schlaf,
-Sport, Sonstiges) mit Trend-Anzeige gegenüber dem letzten Eintrag.
+**Stand:** Etappe 13 – Globale Suche/Kommandopalette. Zusätzlich zu allen
+Modulen aus den Etappen 7–12 (lokale Grundlage, Dokumente, Verträge &
+Abos, Ziele, Notizen, Gesundheit) gibt es jetzt eine Kommandopalette
+(Tastenkürzel Strg/Cmd+K oder Such-Button in der Sidebar), die Aufgaben,
+Rechnungen, Dokumente, Verträge, Ziele und Notizen gleichzeitig durchsucht
+und zusätzlich als Schnellzugriff auf alle Seiten dient.
 
 Damit sind alle bisherigen Hauptnavigationspunkte umgesetzt. Noch als
-„bald" markiert: globale Suche/Kommandopalette, erweiterte Kalender-/
-Aufgabenansichten.
+„bald" markiert: erweiterte Kalender-/Aufgabenansichten.
 
 ## Projektstruktur
 
@@ -293,6 +293,24 @@ Unter „Mehr" → „Gesundheit" in der Sidebar:
   auch **keine Zuordnung zu Lebensbereichen**, da Gesundheitsdaten
   bereichsübergreifend sind.
 
+## Globale Suche / Kommandopalette
+
+Öffnen mit **Strg+K** (Windows/Linux) bzw. **Cmd+K** (Mac), über den
+Such-Button oben in der Sidebar (Desktop) oder das Lupen-Symbol im
+mobilen Header:
+
+- Ohne Eingabetext zeigt die Palette eine Liste aller Hauptseiten zum
+  schnellen Wechseln.
+- Mit Eingabetext durchsucht sie server-seitig Aufgaben (Titel/Notizen),
+  Rechnungen (Absender/Betreff), Dokumente (Titel/Dateiname), Verträge
+  (Titel/Anbieter), Ziele (Titel/Beschreibung) und Notizen (Titel/Inhalt)
+  gleichzeitig, gruppiert nach Kategorie (max. 5 Treffer pro Kategorie).
+- Ein Klick auf einen Treffer navigiert zur jeweiligen Modul-Seite (z. B.
+  „Aufgaben" oder „Notizen") – **kein Deep-Link zu einem einzelnen,
+  hervorgehobenen Eintrag** innerhalb der Seite, das wäre ein größerer
+  Umbau der einzelnen Module und ist als spätere Verbesserung denkbar.
+- Kein Fuzzy-Matching/keine Tippfehler-Toleranz, reine `LIKE`-Textsuche.
+
 ## Kalender-Sync einrichten (iCloud)
 
 1. App-spezifisches Passwort erzeugen: auf [appleid.apple.com](https://appleid.apple.com)
@@ -393,9 +411,10 @@ iPhone automatisch beim nächsten Öffnen.
   optimal für Screenreader beschriftet. Geplante schrittweise Behebung.
 - Kein Verschlüsselungs-Layer für die in der Datenbank gespeicherten
   Zugangsdaten (siehe oben).
-- Globale Suche/Kommandopalette und erweiterte Kalender-/
-  Aufgabenansichten sind noch nicht umgesetzt (klar als „bald" markiert
-  in der Navigation).
+- Erweiterte Kalender-/Aufgabenansichten sind noch nicht umgesetzt (klar
+  als „bald" markiert in der Navigation).
+- Globale Suche: kein Deep-Link zu einzelnen Einträgen (nur zur Modul-
+  Seite), keine Fuzzy-Suche, reine Textsuche pro Feld.
 - Notizen: kein Markdown/Rich-Text, reiner Text.
 - Gesundheit: rein manuelle Erfassung, keine Anbindung an Apple Health/
   Wearables, keine Zuordnung zu Lebensbereichen.
@@ -412,6 +431,5 @@ iPhone automatisch beim nächsten Öffnen.
 
 ## Nächste Etappen
 
-- Globale Suche / Kommandopalette
 - Erweiterte Kalender-/Aufgabenansichten (Monats-/Agenda-Ansicht, Kanban,
   Unteraufgaben, wiederkehrende Termine im UI erstellbar)

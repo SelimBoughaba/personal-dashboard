@@ -58,6 +58,12 @@ const ICONS = {
       <path d="M21 12H9" />
     </>
   ),
+  suche: (
+    <>
+      <circle cx="11" cy="11" r="7" />
+      <path d="M20 20l-3.5-3.5" />
+    </>
+  ),
   einstellungen: (
     <>
       <circle cx="12" cy="12" r="3" />
@@ -120,7 +126,7 @@ function NavRow({ item }) {
   );
 }
 
-function SidebarContent({ onNavigate }) {
+function SidebarContent({ onNavigate, onOpenSearch }) {
   const { logout } = useAuth();
   const [moreOpen, setMoreOpen] = useState(false);
 
@@ -132,6 +138,21 @@ function SidebarContent({ onNavigate }) {
         </svg>
         <span className="font-semibold tracking-tight text-ivory">Dashboard</span>
       </div>
+
+      {onOpenSearch && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpenSearch();
+          }}
+          className="mb-3 flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-ivory/50 transition-colors duration-200 hover:bg-white/[0.05]"
+        >
+          <Icon name="suche" />
+          <span className="flex-1 text-left">Suchen…</span>
+          <span className="rounded-md border border-white/10 px-1.5 py-0.5 text-[10px] text-ivory/35">⌘K</span>
+        </button>
+      )}
 
       <nav className="flex-1 space-y-1">
         {NAV_ITEMS.map((item) => (
@@ -212,12 +233,12 @@ function SidebarContent({ onNavigate }) {
   );
 }
 
-export function Sidebar({ mobileOpen, onCloseMobile }) {
+export function Sidebar({ mobileOpen, onCloseMobile, onOpenSearch }) {
   return (
     <>
       {/* Desktop: feste Sidebar */}
       <aside className="glass-panel sticky top-4 hidden h-[calc(100vh-2rem)] w-60 shrink-0 flex-col p-3 lg:flex">
-        <SidebarContent />
+        <SidebarContent onOpenSearch={onOpenSearch} />
       </aside>
 
       {/* Mobile: einklappbares Drawer-Panel */}
@@ -225,7 +246,7 @@ export function Sidebar({ mobileOpen, onCloseMobile }) {
         <div className="fixed inset-0 z-40 lg:hidden">
           <div className="absolute inset-0 bg-black/50" onClick={onCloseMobile} />
           <aside className="glass-panel absolute inset-y-3 left-3 flex w-64 flex-col p-3">
-            <SidebarContent onNavigate={onCloseMobile} />
+            <SidebarContent onNavigate={onCloseMobile} onOpenSearch={onOpenSearch} />
           </aside>
         </div>
       )}
