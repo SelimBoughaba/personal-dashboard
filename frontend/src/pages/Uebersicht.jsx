@@ -43,6 +43,8 @@ function WidgetShell({ id, title, hidden, onHide, children }) {
 export function Uebersicht() {
   const [name, setName] = useState("");
   const [editingName, setEditingName] = useState(false);
+  const [briefingText, setBriefingText] = useState("");
+  const [editingBriefing, setEditingBriefing] = useState(false);
   const [order, setOrder] = useState(DEFAULT_WIDGET_ORDER);
   const [hidden, setHidden] = useState([]);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
@@ -78,6 +80,7 @@ export function Uebersicht() {
     if (settingsR.status === "fulfilled") {
       const s = settingsR.value;
       setName(s["profile.name"] || "");
+      setBriefingText(s["briefing.text"] || "");
       const widgetCfg = s["dashboard.widgets"];
       if (widgetCfg?.order?.length) setOrder(widgetCfg.order);
       if (widgetCfg?.hidden) setHidden(widgetCfg.hidden);
@@ -117,6 +120,11 @@ export function Uebersicht() {
     e.preventDefault();
     setEditingName(false);
     await apiFetch("/settings/profile.name", { method: "PUT", body: JSON.stringify({ value: name.trim() }) });
+  }
+
+  async function saveBriefing() {
+    setEditingBriefing(false);
+    await apiFetch("/settings/briefing.text", { method: "PUT", body: JSON.stringify({ value: briefingText.trim() }) });
   }
 
   const todayIso = new Date().toISOString().slice(0, 10);
@@ -254,6 +262,43 @@ export function Uebersicht() {
           </Link>
         </div>
       </div>
+
+      {settingsLoaded && (
+        <GlassCard>
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-ivory">Tagesbriefing</h2>
+            {!editingBriefing && (
+              <button
+                onClick={() => setEditingBriefing(true)}
+                className="text-xs text-ivory/40 hover:text-ivory/80"
+              >
+                Bearbeiten
+              </button>
+            )}
+          </div>
+          {editingBriefing ? (
+            <textarea
+              autoFocus
+              rows={3}
+              value={briefingText}
+              onChange={(e) => setBriefingText(e.target.value)}
+              onBlur={saveBriefing}
+              placeholder="Trage hier ein, was dir heute wichtig ist – z. B. Fokus des Tages, Erinnerungen, Notizen…"
+              className="w-full resize-y rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-ivory placeholder:text-ivory/35 outline-none focus:border-lime/40"
+            />
+          ) : briefingText ? (
+            <p className="whitespace-pre-wrap text-sm text-ivory/85">{briefingText}</p>
+          ) : (
+            <p
+              onClick={() => setEditingBriefing(true)}
+              className="cursor-pointer text-sm text-ivory/40 hover:text-ivory/60"
+            >
+              Noch kein Tagesbriefing eingerichtet. Klicke auf „Bearbeiten“, um deinen eigenen Text für heute
+              einzutragen – dieser Bereich bleibt immer oben sichtbar.
+            </p>
+          )}
+        </GlassCard>
+      )}
 
       {settingsLoaded && (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{order.map((id) => WIDGETS[id]).filter(Boolean)}</div>
