@@ -4,6 +4,9 @@ import { GlassCard } from "../components/ui/GlassCard";
 import { Button } from "../components/ui/Button";
 import { Input, Select, Label, Textarea } from "../components/ui/Field";
 import { AreaBadge } from "../components/ui/AreaBadge";
+import { PageHeader } from "../components/ui/PageHeader";
+import { FilterChips } from "../components/ui/FilterChips";
+import { EmptyState } from "../components/ui/EmptyState";
 import { useAreas } from "../context/AreasContext";
 
 const EMPTY_FORM = { title: "", content: "", area: "", tags: "" };
@@ -91,27 +94,10 @@ export function Notizen() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-ivory">Notizen</h1>
-        <p className="mt-1 text-sm text-ivory/50">Angepinnte Notizen erscheinen zuerst.</p>
-      </div>
+      <PageHeader title="Notizen" description="Angepinnte Notizen erscheinen zuerst." />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-2">
-          {[{ id: "alle", label: "Alle" }, ...activeAreas].map((a) => (
-            <button
-              key={a.id}
-              onClick={() => setAreaFilter(a.id)}
-              className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
-                areaFilter === a.id
-                  ? "border-white/20 bg-white/10 text-ivory"
-                  : "border-white/10 bg-white/[0.03] text-ivory/55 hover:bg-white/[0.06]"
-              }`}
-            >
-              {a.label}
-            </button>
-          ))}
-        </div>
+        <FilterChips options={[{ id: "alle", label: "Alle" }, ...activeAreas]} value={areaFilter} onChange={setAreaFilter} />
         <div className="flex flex-wrap items-center gap-2">
           <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Titel oder Inhalt suchen…" className="!w-64" />
           <Button onClick={() => (showForm ? resetForm() : openNewForm())} variant={showForm ? "ghost" : "primary"}>
@@ -156,7 +142,7 @@ export function Notizen() {
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {notes.length === 0 && (
-          <p className="col-span-full py-8 text-center text-sm text-ivory/40">Keine Notizen gefunden.</p>
+          <EmptyState className="col-span-full" title="Keine Notizen gefunden" description="Über „+ Notiz“ deine erste Notiz anlegen." />
         )}
         {notes.map((n) => (
           <GlassCard key={n.id} className="flex flex-col !p-4">

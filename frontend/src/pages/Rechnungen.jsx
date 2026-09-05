@@ -4,6 +4,10 @@ import { GlassCard } from "../components/ui/GlassCard";
 import { Button } from "../components/ui/Button";
 import { Input, Select, Label } from "../components/ui/Field";
 import { AreaBadge } from "../components/ui/AreaBadge";
+import { PageHeader } from "../components/ui/PageHeader";
+import { FilterChips } from "../components/ui/FilterChips";
+import { StatTile } from "../components/ui/StatTile";
+import { EmptyState } from "../components/ui/EmptyState";
 import { useAreas } from "../context/AreasContext";
 
 const EMPTY_FORM = { sender_name: "", subject: "", amount: "", due_date: "", area: "", status: "offen" };
@@ -165,51 +169,20 @@ export function Rechnungen() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-ivory">Finanzen</h1>
-        <p className="mt-1 text-sm text-ivory/50">
-          Rechnungen sind vollständig nutzbar. Einnahmen, Ausgaben, Budgets und Auswertungen folgen in einer
-          späteren Etappe.
-        </p>
-      </div>
+      <PageHeader
+        title="Finanzen"
+        description="Rechnungen sind vollständig nutzbar. Einnahmen, Ausgaben, Budgets und Auswertungen folgen in einer späteren Etappe."
+      />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <GlassCard className="!p-4">
-          <p className="text-xs text-ivory/45">Offene Rechnungen</p>
-          <p className="mt-1 text-xl font-semibold text-ivory">{formatAmount(openSum)}</p>
-        </GlassCard>
-        <GlassCard className="!p-4">
-          <p className="text-xs text-ivory/45">Überfällig</p>
-          <p className={`mt-1 text-xl font-semibold ${overdueSum > 0 ? "text-status-hoch" : "text-ivory"}`}>
-            {formatAmount(overdueSum)}
-          </p>
-        </GlassCard>
-        <GlassCard className="!p-4">
-          <p className="text-xs text-ivory/45">Bezahlt (dieser Monat)</p>
-          <p className="mt-1 text-xl font-semibold text-ivory">{formatAmount(paidThisMonthSum)}</p>
-        </GlassCard>
-        <GlassCard className="!p-4">
-          <p className="text-xs text-ivory/45">Anzahl offen</p>
-          <p className="mt-1 text-xl font-semibold text-ivory">{openInvoices.length}</p>
-        </GlassCard>
+        <StatTile label="Offene Rechnungen" value={formatAmount(openSum)} />
+        <StatTile label="Überfällig" value={formatAmount(overdueSum)} tone={overdueSum > 0 ? "danger" : "default"} />
+        <StatTile label="Bezahlt (dieser Monat)" value={formatAmount(paidThisMonthSum)} />
+        <StatTile label="Anzahl offen" value={openInvoices.length} />
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-2">
-          {[{ id: "alle", label: "Alle" }, ...activeAreas].map((a) => (
-            <button
-              key={a.id}
-              onClick={() => setAreaFilter(a.id)}
-              className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
-                areaFilter === a.id
-                  ? "border-white/20 bg-white/10 text-ivory"
-                  : "border-white/10 bg-white/[0.03] text-ivory/55 hover:bg-white/[0.06]"
-              }`}
-            >
-              {a.label}
-            </button>
-          ))}
-        </div>
+        <FilterChips options={[{ id: "alle", label: "Alle" }, ...activeAreas]} value={areaFilter} onChange={setAreaFilter} />
         <div className="flex flex-wrap items-center gap-2">
           <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="!w-auto">
             <option value="alle">Alle Status</option>
@@ -293,7 +266,7 @@ export function Rechnungen() {
 
       <div className="space-y-3">
         {invoices.length === 0 && (
-          <p className="py-8 text-center text-sm text-ivory/40">Keine Rechnungen in diesem Bereich.</p>
+          <EmptyState title="Keine Rechnungen in diesem Bereich" description="Über „+ Rechnung“ manuell anlegen oder Postfächer durchsuchen." />
         )}
         {invoices.map((inv) => (
           <GlassCard key={inv.id} className="flex items-start gap-3 !p-4">

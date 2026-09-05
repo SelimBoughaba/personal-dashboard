@@ -15,6 +15,15 @@ nach Priorität) anzeigen.
 umgesetzt** – kein Navigationspunkt zeigt mehr einen deaktivierten
 „bald"-Platzhalter.
 
+**Nachträgliche Politur:** Backend und Datenbank wurden geprüft und laufen
+sauber (Installation, Migrationen, Build – siehe „Lokal starten"). Ein Bug
+wurde behoben, bei dem der Einrichtungsassistent versehentlich die volle
+Seitennavigation zeigte und sich so umgehen ließ. Die Oberfläche wurde
+konsistenter gemacht: wiederkehrende Muster (Bereichsfilter, Ansicht-Umschalter,
+Seiten-Header, leere Listen, Kennzahlen-Kacheln) sind jetzt gemeinsame
+Komponenten statt pro Seite einzeln nachgebauter Buttons, dadurch wirkt jede
+Seite wie aus einem Guss statt wie viele Einzelteile.
+
 ## Projektstruktur
 
 - `backend/` – Express-API + SQLite (`better-sqlite3`)

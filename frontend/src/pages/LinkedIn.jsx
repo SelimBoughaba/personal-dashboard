@@ -4,6 +4,9 @@ import { GlassCard } from "../components/ui/GlassCard";
 import { Button } from "../components/ui/Button";
 import { Input, Label, Select, Textarea } from "../components/ui/Field";
 import { AreaBadge } from "../components/ui/AreaBadge";
+import { PageHeader } from "../components/ui/PageHeader";
+import { FilterChips } from "../components/ui/FilterChips";
+import { EmptyState } from "../components/ui/EmptyState";
 import { useAreas } from "../context/AreasContext";
 
 const EMPTY_FORM = { content: "", area: "", status: "entwurf", scheduled_date: "" };
@@ -74,31 +77,23 @@ export function LinkedIn() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-ivory">LinkedIn-Beiträge</h1>
-        <p className="mt-1 text-sm text-ivory/50">
-          Beiträge entwerfen und zeitlich planen. <strong className="text-ivory/70">Wichtig:</strong> Es gibt keine
-          Anbindung an die LinkedIn-API – nichts wird automatisch veröffentlicht. „Veröffentlicht" markierst du
-          hier nur manuell, nachdem du den Beitrag selbst auf LinkedIn gepostet hast.
-        </p>
-      </div>
+      <PageHeader
+        title="LinkedIn-Beiträge"
+        description={
+          <>
+            Beiträge entwerfen und zeitlich planen. <strong className="text-ivory/70">Wichtig:</strong> Es gibt keine
+            Anbindung an die LinkedIn-API – nichts wird automatisch veröffentlicht. „Veröffentlicht" markierst du
+            hier nur manuell, nachdem du den Beitrag selbst auf LinkedIn gepostet hast.
+          </>
+        }
+      />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-2">
-          {[{ id: "alle", label: "Alle" }, ...Object.entries(STATUS_LABELS).map(([id, label]) => ({ id, label }))].map((s) => (
-            <button
-              key={s.id}
-              onClick={() => setStatusFilter(s.id)}
-              className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
-                statusFilter === s.id
-                  ? "border-white/20 bg-white/10 text-ivory"
-                  : "border-white/10 bg-white/[0.03] text-ivory/55 hover:bg-white/[0.06]"
-              }`}
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
+        <FilterChips
+          options={[{ id: "alle", label: "Alle" }, ...Object.entries(STATUS_LABELS).map(([id, label]) => ({ id, label }))]}
+          value={statusFilter}
+          onChange={setStatusFilter}
+        />
         <Button onClick={() => (showForm ? resetForm() : openNewForm())} variant={showForm ? "ghost" : "primary"}>
           {showForm ? "Abbrechen" : "+ Beitrag"}
         </Button>
@@ -145,7 +140,7 @@ export function LinkedIn() {
       )}
 
       <div className="space-y-3">
-        {posts.length === 0 && <p className="py-8 text-center text-sm text-ivory/40">Keine Beiträge vorhanden.</p>}
+        {posts.length === 0 && <EmptyState title="Keine Beiträge vorhanden" description="Über „+ Beitrag“ deinen ersten Entwurf anlegen." />}
         {posts.map((p) => (
           <GlassCard key={p.id} className="!p-4">
             <p className="whitespace-pre-wrap text-sm text-ivory/85">{p.content}</p>

@@ -43,7 +43,7 @@ export default {
         xs: "2px",
       },
       boxShadow: {
-        glass: "0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255,255,255,0.05)",
+        glass: "0 4px 20px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255,255,255,0.04)",
       },
       borderRadius: {
         brand: "16px",

@@ -115,14 +115,14 @@ function NavRow({ item }) {
       to={item.path}
       end={item.end}
       className={({ isActive }) =>
-        `${base} ${isActive ? "bg-white/[0.07] text-ivory" : "text-ivory/65 hover:bg-white/[0.04] hover:text-ivory"}`
+        `relative ${base} ${isActive ? "bg-white/[0.07] text-ivory" : "text-ivory/65 hover:bg-white/[0.04] hover:text-ivory"}`
       }
     >
       {({ isActive }) => (
         <>
+          {isActive && <span className="absolute -left-3 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-lime" />}
           <Icon name={item.icon} />
           <span className="flex-1">{item.label}</span>
-          {isActive && <span className="h-1.5 w-1.5 rounded-full bg-lime" />}
         </>
       )}
     </NavLink>

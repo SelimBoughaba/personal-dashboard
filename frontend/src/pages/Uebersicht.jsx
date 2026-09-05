@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { apiFetch } from "../api/client";
 import { GlassCard } from "../components/ui/GlassCard";
 import { AreaBadge } from "../components/ui/AreaBadge";
+import { StatTile } from "../components/ui/StatTile";
 
 const DEFAULT_WIDGET_ORDER = ["termine", "aufgaben", "rechnungen", "mails"];
 
@@ -136,6 +137,7 @@ export function Uebersicht() {
   const openSum = invoices.reduce((s, i) => s + (i.amount || 0), 0);
 
   const importantMails = mails.filter((m) => m.unread || m.flagged).slice(0, 4);
+  const unreadMailsCount = mails.filter((m) => m.unread).length;
 
   const WIDGETS = {
     termine: (
@@ -262,6 +264,25 @@ export function Uebersicht() {
           </Link>
         </div>
       </div>
+
+      {settingsLoaded && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <StatTile
+            label="Offene Aufgaben"
+            value={openTasks.length}
+            tone={overdueTasks.length > 0 ? "danger" : "default"}
+            hint={overdueTasks.length > 0 ? `${overdueTasks.length} überfällig` : undefined}
+          />
+          <StatTile label="Termine heute" value={!errors.events ? events.length : "–"} />
+          <StatTile
+            label="Offene Rechnungen"
+            value={!errors.invoices ? fmtEuro(openSum) : "–"}
+            tone={overdueInvoices.length > 0 ? "danger" : "default"}
+            hint={overdueInvoices.length > 0 ? `${overdueInvoices.length} überfällig` : undefined}
+          />
+          <StatTile label="Ungelesene Mails" value={!errors.mails ? unreadMailsCount : "–"} tone={unreadMailsCount > 0 ? "accent" : "default"} />
+        </div>
+      )}
 
       {settingsLoaded && (
         <GlassCard>

@@ -3,6 +3,9 @@ import { apiFetch } from "../api/client";
 import { GlassCard } from "../components/ui/GlassCard";
 import { Button } from "../components/ui/Button";
 import { Input, Select, Label } from "../components/ui/Field";
+import { PageHeader } from "../components/ui/PageHeader";
+import { FilterChips } from "../components/ui/FilterChips";
+import { EmptyState } from "../components/ui/EmptyState";
 
 const TYPE_LABELS = { gewicht: "Gewicht", schlaf: "Schlaf", sport: "Sport", sonstiges: "Sonstiges" };
 const DEFAULT_UNITS = { gewicht: "kg", schlaf: "h", sport: "min", sonstiges: "" };
@@ -93,30 +96,17 @@ export function Gesundheit() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-ivory">Gesundheit</h1>
-        <p className="mt-1 text-sm text-ivory/50">
-          Einfache manuelle Verlaufsaufzeichnung (Gewicht, Schlaf, Sport, Sonstiges). Keine Anbindung an
-          Wearables/Health-Apps – Werte werden von Hand eingetragen.
-        </p>
-      </div>
+      <PageHeader
+        title="Gesundheit"
+        description="Einfache manuelle Verlaufsaufzeichnung (Gewicht, Schlaf, Sport, Sonstiges). Keine Anbindung an Wearables/Health-Apps – Werte werden von Hand eingetragen."
+      />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-2">
-          {[{ id: "alle", label: "Alle" }, ...Object.entries(TYPE_LABELS).map(([id, label]) => ({ id, label }))].map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setTypeFilter(t.id)}
-              className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
-                typeFilter === t.id
-                  ? "border-white/20 bg-white/10 text-ivory"
-                  : "border-white/10 bg-white/[0.03] text-ivory/55 hover:bg-white/[0.06]"
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+        <FilterChips
+          options={[{ id: "alle", label: "Alle" }, ...Object.entries(TYPE_LABELS).map(([id, label]) => ({ id, label }))]}
+          value={typeFilter}
+          onChange={setTypeFilter}
+        />
         <Button onClick={() => (showForm ? resetForm() : openNewForm())} variant={showForm ? "ghost" : "primary"}>
           {showForm ? "Abbrechen" : "+ Eintrag"}
         </Button>
@@ -161,7 +151,7 @@ export function Gesundheit() {
       )}
 
       <div className="space-y-2">
-        {entries.length === 0 && <p className="py-8 text-center text-sm text-ivory/40">Keine Einträge vorhanden.</p>}
+        {entries.length === 0 && <EmptyState title="Keine Einträge vorhanden" description="Über „+ Eintrag“ deinen ersten Wert erfassen." />}
         {entries.map((e, i) => (
           <GlassCard key={e.id} className="flex items-center gap-3 !p-3">
             <span className="w-24 shrink-0 text-xs text-ivory/55">{new Date(e.entry_date).toLocaleDateString("de-DE")}</span>

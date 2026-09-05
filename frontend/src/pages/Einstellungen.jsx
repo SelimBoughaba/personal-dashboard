@@ -4,6 +4,7 @@ import { useAreas } from "../context/AreasContext";
 import { GlassCard } from "../components/ui/GlassCard";
 import { Button } from "../components/ui/Button";
 import { Input, Select, Label } from "../components/ui/Field";
+import { PageHeader } from "../components/ui/PageHeader";
 
 const SECTIONS = [
   { id: "profil", label: "Profil" },
@@ -1165,7 +1166,7 @@ export function Einstellungen() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight text-ivory">Einstellungen</h1>
+      <PageHeader title="Einstellungen" />
 
       <div className="flex flex-col gap-6 lg:flex-row">
         <nav className="flex gap-2 overflow-x-auto pb-1 lg:w-52 lg:shrink-0 lg:flex-col lg:overflow-visible lg:pb-0">

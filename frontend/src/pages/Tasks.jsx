@@ -5,6 +5,10 @@ import { Button } from "../components/ui/Button";
 import { Input, Textarea, Select, Label } from "../components/ui/Field";
 import { AreaBadge } from "../components/ui/AreaBadge";
 import { PriorityBadge } from "../components/ui/PriorityBadge";
+import { PageHeader } from "../components/ui/PageHeader";
+import { FilterChips } from "../components/ui/FilterChips";
+import { SegmentedControl } from "../components/ui/SegmentedControl";
+import { EmptyState } from "../components/ui/EmptyState";
 import { useAreas } from "../context/AreasContext";
 
 const EMPTY_FORM = { title: "", due_date: "", priority: "mittel", area: "", notes: "" };
@@ -93,39 +97,19 @@ export function Tasks() {
 
   return (
     <div className="space-y-4">
+      <PageHeader title="Aufgaben" description="Alles an einem Ort – nach Bereich filterbar, als Liste oder Kanban." />
+
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-2">
-          {[{ id: "alle", label: "Alle" }, ...activeAreas].map((a) => (
-            <button
-              key={a.id}
-              onClick={() => setAreaFilter(a.id)}
-              className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
-                areaFilter === a.id
-                  ? "border-white/20 bg-white/10 text-ivory"
-                  : "border-white/10 bg-white/[0.03] text-ivory/55 hover:bg-white/[0.06]"
-              }`}
-            >
-              {a.label}
-            </button>
-          ))}
-        </div>
+        <FilterChips options={[{ id: "alle", label: "Alle" }, ...activeAreas]} value={areaFilter} onChange={setAreaFilter} />
         <div className="flex items-center gap-2">
-          <div className="flex gap-1 rounded-full border border-white/10 bg-white/[0.03] p-0.5">
-            {[
-              { key: "liste", label: "Liste" },
-              { key: "kanban", label: "Kanban" },
-            ].map((v) => (
-              <button
-                key={v.key}
-                onClick={() => setView(v.key)}
-                className={`rounded-full px-3 py-1 text-xs transition-colors ${
-                  view === v.key ? "bg-white/10 text-ivory" : "text-ivory/55 hover:text-ivory"
-                }`}
-              >
-                {v.label}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl
+            options={[
+              { id: "liste", label: "Liste" },
+              { id: "kanban", label: "Kanban" },
+            ]}
+            value={view}
+            onChange={setView}
+          />
           {view === "liste" && (
             <Select value={sort} onChange={(e) => setSort(e.target.value)} className="!w-auto">
               <option value="due_date">Nach Fälligkeit</option>
@@ -198,7 +182,7 @@ export function Tasks() {
       {view === "liste" && (
         <div className="space-y-3">
           {tasks.length === 0 && (
-            <p className="py-8 text-center text-sm text-ivory/40">Keine Aufgaben in diesem Bereich.</p>
+            <EmptyState title="Keine Aufgaben in diesem Bereich" description="Lege über „+ Aufgabe“ deine erste Aufgabe an." />
           )}
           {tasks.map((task) => (
             <TaskCard key={task.id} task={task} onToggle={toggleStatus} onEdit={startEdit} onDelete={deleteTask} />

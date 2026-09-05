@@ -28,6 +28,16 @@ function ProtectedRoute({ children }) {
   );
 }
 
+// Die Ersteinrichtung ist ein fokussierter, linearer Assistent ohne
+// Navigation nach außen – anders als ProtectedRoute daher bewusst ohne
+// Sidebar/Layout, sonst könnte man über die Navigation mittendrin
+// "entkommen", ohne den Assistenten abzuschließen.
+function OnboardingRoute({ children }) {
+  const { authed } = useAuth();
+  if (!authed) return <Navigate to="/login" replace />;
+  return <AreasProvider>{children}</AreasProvider>;
+}
+
 function AppRoutes() {
   return (
     <Routes>
@@ -35,9 +45,9 @@ function AppRoutes() {
       <Route
         path="/einrichtung"
         element={
-          <ProtectedRoute>
+          <OnboardingRoute>
             <Onboarding />
-          </ProtectedRoute>
+          </OnboardingRoute>
         }
       />
       <Route

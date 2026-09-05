@@ -3,6 +3,8 @@ import { apiFetch } from "../api/client";
 import { GlassCard } from "../components/ui/GlassCard";
 import { Button } from "../components/ui/Button";
 import { Input, Label, Textarea } from "../components/ui/Field";
+import { PageHeader } from "../components/ui/PageHeader";
+import { EmptyState } from "../components/ui/EmptyState";
 
 const EMPTY_FORM = { title: "", content: "", tags: "" };
 
@@ -95,12 +97,10 @@ export function PromptBibliothek() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-ivory">Prompt-Bibliothek</h1>
-        <p className="mt-1 text-sm text-ivory/50">
-          Eigene Prompts sammeln, mit Tags ordnen und im Alltag per Klick in die Zwischenablage kopieren.
-        </p>
-      </div>
+      <PageHeader
+        title="Prompt-Bibliothek"
+        description="Eigene Prompts sammeln, mit Tags ordnen und im Alltag per Klick in die Zwischenablage kopieren."
+      />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Titel oder Inhalt suchen…" className="!w-64" />
@@ -135,7 +135,7 @@ export function PromptBibliothek() {
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {prompts.length === 0 && (
-          <p className="col-span-full py-8 text-center text-sm text-ivory/40">Keine Prompts gefunden.</p>
+          <EmptyState className="col-span-full" title="Keine Prompts gefunden" description="Über „+ Prompt“ deinen ersten Prompt speichern." />
         )}
         {prompts.map((p) => (
           <GlassCard key={p.id} className="flex flex-col !p-4">

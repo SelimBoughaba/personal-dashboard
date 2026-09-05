@@ -71,13 +71,16 @@
 
 @layer components {
   /* Zurückhaltendes Liquid Glass: feine helle Innenkante, dezente
-     Unschärfe, keine milchigen/schwer lesbaren Flächen. */
+     Unschärfe, keine milchigen/schwer lesbaren Flächen. Bewusst weniger
+     Blur/Glow als ein typisches "KI-generiertes" Glassmorphism-Preset –
+     wirkt dadurch eher wie eine feste Oberfläche mit Tiefe statt wie eine
+     schwebende, durchscheinende Folie. */
   .glass-panel {
-    @apply relative rounded-brand border border-white/[0.06] bg-forest-900/60 backdrop-blur-xl shadow-glass;
+    @apply relative rounded-brand border border-white/[0.07] bg-forest-900/70 backdrop-blur-md shadow-glass;
   }
   .glass-panel::before {
     content: "";
     @apply pointer-events-none absolute inset-0 rounded-brand;
-    background: linear-gradient(150deg, rgba(255, 255, 255, 0.05), transparent 45%);
+    background: linear-gradient(150deg, rgba(255, 255, 255, 0.04), transparent 40%);
   }
 }

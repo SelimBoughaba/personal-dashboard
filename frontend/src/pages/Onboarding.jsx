@@ -98,6 +98,13 @@ export function Onboarding() {
   return (
     <div className="min-h-screen px-4 py-8 sm:py-12">
       <div className="mx-auto max-w-2xl">
+        <div className="mb-6 flex items-center justify-center gap-2.5">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" className="text-ivory">
+            <path d="M3 17 L9 6 L12.5 12 L15.5 5 L21 17 Z" fill="currentColor" />
+          </svg>
+          <span className="text-sm font-semibold tracking-tight text-ivory">Dashboard</span>
+        </div>
+
         <div className="mb-6">
           <div className="mb-2 flex items-center justify-between text-xs text-ivory/40">
             <span>

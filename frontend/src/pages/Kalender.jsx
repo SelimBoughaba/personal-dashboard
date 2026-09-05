@@ -1,6 +1,10 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { apiFetch } from "../api/client";
 import { GlassCard } from "../components/ui/GlassCard";
+import { PageHeader } from "../components/ui/PageHeader";
+import { FilterChips } from "../components/ui/FilterChips";
+import { SegmentedControl } from "../components/ui/SegmentedControl";
+import { EmptyState } from "../components/ui/EmptyState";
 import { useAreas } from "../context/AreasContext";
 
 const GRID_START_HOUR = 0;
@@ -293,42 +297,19 @@ export function Kalender() {
 
   return (
     <div className="space-y-4">
+      <PageHeader title="Kalender" description="Termine aus iCloud, farblich nach Lebensbereich – nur Ansicht, kein Anlegen/Bearbeiten." />
+
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex gap-2">
-          {[
-            { key: "tag", label: "Tag" },
-            { key: "woche", label: "Woche" },
-            { key: "monat", label: "Monat" },
-          ].map((v) => (
-            <button
-              key={v.key}
-              onClick={() => setView(v.key)}
-              className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
-                view === v.key
-                  ? "border-white/20 bg-white/10 text-ivory"
-                  : "border-white/10 bg-white/[0.03] text-ivory/55 hover:bg-white/[0.06]"
-              }`}
-            >
-              {v.label}
-            </button>
-          ))}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {[{ id: "alle", label: "Alle" }, ...activeAreas].map((a) => (
-            <button
-              key={a.id}
-              onClick={() => setAreaFilter(a.id)}
-              className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition-colors ${
-                areaFilter === a.id
-                  ? "border-white/20 bg-white/10 text-ivory"
-                  : "border-white/10 bg-white/[0.03] text-ivory/55 hover:bg-white/[0.06]"
-              }`}
-            >
-              {a.color && <span className="h-1.5 w-1.5 rounded-full" style={{ background: a.color }} />}
-              {a.label}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl
+          options={[
+            { id: "tag", label: "Tag" },
+            { id: "woche", label: "Woche" },
+            { id: "monat", label: "Monat" },
+          ]}
+          value={view}
+          onChange={setView}
+        />
+        <FilterChips options={[{ id: "alle", label: "Alle" }, ...activeAreas]} value={areaFilter} onChange={setAreaFilter} />
       </div>
 
       <div className="flex items-center justify-between gap-3">
@@ -378,7 +359,7 @@ export function Kalender() {
       )}
 
       {!loading && !error && filtered.length === 0 && allDayEvents.length === 0 && (
-        <p className="py-8 text-center text-sm text-ivory/40">Keine Termine in diesem Zeitraum.</p>
+        <EmptyState title="Keine Termine in diesem Zeitraum" description="Mit den Pfeilen oder „Heute“ zu einem anderen Zeitraum wechseln." />
       )}
 
       {!loading && !error && (view === "tag" || view === "woche") && (

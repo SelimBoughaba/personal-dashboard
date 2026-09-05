@@ -4,6 +4,9 @@ import { GlassCard } from "../components/ui/GlassCard";
 import { Button } from "../components/ui/Button";
 import { Input, Select, Label, Textarea } from "../components/ui/Field";
 import { AreaBadge } from "../components/ui/AreaBadge";
+import { PageHeader } from "../components/ui/PageHeader";
+import { FilterChips } from "../components/ui/FilterChips";
+import { EmptyState } from "../components/ui/EmptyState";
 import { useAreas } from "../context/AreasContext";
 
 const EMPTY_FORM = { title: "", description: "", area: "", target_date: "", status: "aktiv", progress: "0" };
@@ -151,30 +154,13 @@ export function Ziele() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-ivory">Ziele</h1>
-        <p className="mt-1 text-sm text-ivory/50">
-          Der Fortschritt errechnet sich automatisch aus abgehakten Meilensteinen, sobald welche angelegt sind –
-          ansonsten bleibt er bei 0 %, bis Meilensteine hinzugefügt werden.
-        </p>
-      </div>
+      <PageHeader
+        title="Ziele"
+        description="Der Fortschritt errechnet sich automatisch aus abgehakten Meilensteinen, sobald welche angelegt sind – ansonsten bleibt er bei 0 %, bis Meilensteine hinzugefügt werden."
+      />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-2">
-          {[{ id: "alle", label: "Alle" }, ...activeAreas].map((a) => (
-            <button
-              key={a.id}
-              onClick={() => setAreaFilter(a.id)}
-              className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
-                areaFilter === a.id
-                  ? "border-white/20 bg-white/10 text-ivory"
-                  : "border-white/10 bg-white/[0.03] text-ivory/55 hover:bg-white/[0.06]"
-              }`}
-            >
-              {a.label}
-            </button>
-          ))}
-        </div>
+        <FilterChips options={[{ id: "alle", label: "Alle" }, ...activeAreas]} value={areaFilter} onChange={setAreaFilter} />
         <div className="flex flex-wrap items-center gap-2">
           <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="!w-auto">
             <option value="alle">Alle Status</option>
@@ -251,7 +237,7 @@ export function Ziele() {
       )}
 
       <div className="space-y-3">
-        {goals.length === 0 && <p className="py-8 text-center text-sm text-ivory/40">Keine Ziele in diesem Bereich.</p>}
+        {goals.length === 0 && <EmptyState title="Keine Ziele in diesem Bereich" description="Über „+ Ziel“ dein erstes Ziel anlegen." />}
         {goals.map((g) => (
           <GlassCard key={g.id} className="!p-4">
             <div className="flex items-start gap-3">
