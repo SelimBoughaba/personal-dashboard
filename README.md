@@ -82,6 +82,46 @@ Adresse öffnen. Für den Dauerbetrieb: `npm run build` im Frontend, danach
 liefert der Backend-Server (`npm start` in `backend/`) das gebaute Frontend
 automatisch mit aus – dann reicht eine einzige Adresse `http://<Mac-IP>:4000`.
 
+## Native macOS-App bauen
+
+Das Repository enthält eine native AppKit-/WKWebView-Hülle. Sie startet den
+Express-Server unsichtbar auf einer zufälligen, nur lokal erreichbaren Adresse,
+zeigt das React-Dashboard in einem normalen macOS-Fenster und beendet den Server
+zusammen mit der App. Node.js und alle Produktionsabhängigkeiten werden in das
+App-Bundle kopiert; zum späteren Start der fertigen App ist daher keine separate
+Node-Installation nötig.
+
+Voraussetzungen für den Build: macOS 13 oder neuer, Xcode Command Line Tools,
+Node.js und npm. Dann im Projekt-Root:
+
+```bash
+./macos/build-app.sh
+open "macos/build/Personal Dashboard.app"
+```
+
+Die fertige App liegt unter `macos/build/Personal Dashboard.app` und kann in
+den Programme-Ordner gezogen werden. Der Build ist für die Architektur des
+Macs bestimmt, auf dem das Skript läuft. Das Skript signiert lokal ad hoc; für
+die Weitergabe an andere Macs sind eine Apple-Developer-ID-Signatur und
+Notarisierung erforderlich.
+
+App-Daten und Logs liegen updatefest unter:
+
+```text
+~/Library/Application Support/Personal Dashboard/
+```
+
+Standardmäßig verwendet die App den Portal-Entwurf unter
+`macos/IconAlternatives/03-portal.png`. Ein anderes quadratisches PNG lässt
+sich beim Build direkt als App-Icon nutzen:
+
+```bash
+ICON_SOURCE=/absoluter/pfad/icon.png ./macos/build-app.sh
+```
+
+Vier vorbereitete Entwürfe liegen unter `macos/IconAlternatives/`; Hinweise
+zur Auswahl stehen in der dortigen `README.md`.
+
 ## Einstellungen
 
 Unter „Einstellungen" (auch über „Mehr" in der Sidebar erreichbar) gibt es

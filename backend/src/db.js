@@ -5,7 +5,12 @@ import { fileURLToPath } from "node:url";
 import { runMigrations } from "./migrations.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dataDir = path.join(__dirname, "..", "data");
+// Die macOS-App setzt DASHBOARD_DATA_DIR auf
+// ~/Library/Application Support/Personal Dashboard. Im klassischen
+// Browser-/Server-Betrieb bleibt der bisherige Projektpfad unverändert.
+const dataDir = process.env.DASHBOARD_DATA_DIR
+  ? path.resolve(process.env.DASHBOARD_DATA_DIR)
+  : path.join(__dirname, "..", "data");
 fs.mkdirSync(dataDir, { recursive: true });
 
 export { dataDir };

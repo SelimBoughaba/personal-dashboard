@@ -47,7 +47,17 @@ const app = express();
 // läuft: der Standard-HSTS-Header von helmet kann sonst im Browser eine
 // dauerhafte "immer HTTPS erzwingen"-Regel für den Hostnamen hinterlassen,
 // die jede spätere (unverschlüsselte) Verbindung zur App blockiert.
-app.use(helmet({ hsts: false }));
+const helmetOptions = { hsts: false };
+// WKWebView lädt das Dashboard bewusst über einen ausschließlich lokalen
+// HTTP-Server. WebKit wertet Helmets `upgrade-insecure-requests` strenger
+// als normale Browser aus und würde dabei lokale JS-/CSS-Dateien auf eine
+// nicht vorhandene HTTPS-Adresse umschreiben.
+if (process.env.DISABLE_HTTPS_UPGRADE === "1") {
+  helmetOptions.contentSecurityPolicy = {
+    directives: { "upgrade-insecure-requests": null },
+  };
+}
+app.use(helmet(helmetOptions));
 app.use(compression());
 app.use(express.json({ limit: "1mb" }));
 
@@ -94,6 +104,7 @@ app.use((err, req, res, next) => {
 });
 
 const port = process.env.PORT || 4000;
-app.listen(port, "0.0.0.0", () => {
-  console.log(`Dashboard-Server läuft auf http://0.0.0.0:${port}`);
+const host = process.env.HOST || "0.0.0.0";
+app.listen(port, host, () => {
+  console.log(`Dashboard-Server läuft auf http://${host}:${port}`);
 });
