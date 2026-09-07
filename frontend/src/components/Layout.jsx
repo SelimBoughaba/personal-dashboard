@@ -28,6 +28,17 @@ export function Layout({ children }) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
+  // Die Kopfleiste der Übersicht (Punkt 53) hat einen eigenen Such-Button,
+  // hat aber selbst keinen Zugriff auf den searchOpen-State hier in Layout -
+  // ein CustomEvent statt Prop-Drilling durch AreasProvider/Uebersicht hindurch.
+  useEffect(() => {
+    function onOpenSearch() {
+      setSearchOpen(true);
+    }
+    window.addEventListener("dashboard:open-search", onOpenSearch);
+    return () => window.removeEventListener("dashboard:open-search", onOpenSearch);
+  }, []);
+
   return (
     <div className="mx-auto flex min-h-screen max-w-7xl gap-4 px-4 pb-10 pt-4 sm:px-6 lg:gap-6">
       {/* Nur per Tastatur sichtbar (sr-only bis :focus) - erlaubt es,

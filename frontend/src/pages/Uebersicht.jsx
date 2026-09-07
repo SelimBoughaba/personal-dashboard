@@ -1,12 +1,22 @@
-import { useEffect, useState, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../api/client";
+import { localIsoDate } from "../utils/date";
+import { mergeTagesEntries, TAGESLINIE_TYPE_LABEL, TAGESLINIE_TYPE_PATH } from "../utils/tageslinie";
 import { GlassCard } from "../components/ui/GlassCard";
 import { AreaBadge } from "../components/ui/AreaBadge";
-import { StatTile } from "../components/ui/StatTile";
-import { localIsoDate } from "../utils/date";
+import { PriorityBadge } from "../components/ui/PriorityBadge";
+import { EmptyState } from "../components/ui/EmptyState";
+import { Select } from "../components/ui/Field";
+import { QuickCapture } from "../components/QuickCapture";
+import { useAreas } from "../context/AreasContext";
 
-const DEFAULT_WIDGET_ORDER = ["termine", "aufgaben", "rechnungen", "mails"];
+// Eine Arbeitsfläche statt einer Kachelwand (Punkt 53): Kopfleiste (Datum/
+// Begrüßung, Bereichsfilter, Suche, Erfassen), darunter die Tageslinie als
+// dominierende Fläche, rechts nur bei Auswahl eine Vorgangsakte - ohne
+// Auswahl höchstens eine kurze, begründete Liste nächster Schritte statt
+// einer leeren, dauerhaft reservierten Spalte. Löst die vorherige
+// Kennzahlen-/Kachelwand aus vier einzeln ein-/ausblendbaren Widgets ab.
 
 function greeting() {
   const h = new Date().getHours();
@@ -16,83 +26,64 @@ function greeting() {
   return "Gute Nacht";
 }
 
-function fmtEuro(v) {
-  return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(v);
+function daysBetween(pastIso, todayIso) {
+  const a = new Date(`${pastIso}T00:00:00`);
+  const b = new Date(`${todayIso}T00:00:00`);
+  return Math.round((b - a) / 86400000);
 }
 
-function WidgetShell({ id, title, hidden, onHide, children }) {
-  if (hidden.includes(id)) return null;
-  return (
-    <GlassCard className="flex flex-col">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-bold text-ivory">{title}</h2>
-        <button
-          onClick={() => onHide(id)}
-          className="text-ivory/55 hover:text-ivory/70"
-          title="Modul ausblenden"
-          aria-label={`${title} ausblenden`}
-        >
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-            <path d="M6 6l12 12M18 6L6 18" />
-          </svg>
-        </button>
-      </div>
-      {children}
-    </GlassCard>
-  );
+function formatShortDate(iso) {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString("de-DE", { day: "numeric", month: "short" });
 }
 
 export function Uebersicht() {
+  const { activeAreas } = useAreas();
+  const navigate = useNavigate();
+
   const [name, setName] = useState("");
   const [editingName, setEditingName] = useState(false);
   const [briefingText, setBriefingText] = useState("");
   const [editingBriefing, setEditingBriefing] = useState(false);
-  const [order, setOrder] = useState(DEFAULT_WIDGET_ORDER);
-  const [hidden, setHidden] = useState([]);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
 
   const [tasks, setTasks] = useState([]);
   const [events, setEvents] = useState([]);
   const [invoices, setInvoices] = useState([]);
-  const [mails, setMails] = useState([]);
   const [errors, setErrors] = useState({});
 
+  const [areaFilter, setAreaFilter] = useState("alle");
+  const [selectedKey, setSelectedKey] = useState(null);
+  // closed -> opening (im DOM, noch an Startposition) -> open (Zielzustand,
+  // Transition läuft) -> closing (Transition zurück, dann entfernen).
+  const [panelState, setPanelState] = useState("closed");
+
   const load = useCallback(async () => {
+    const dayStart = new Date();
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(dayStart);
+    dayEnd.setDate(dayEnd.getDate() + 1);
+    const eventParams = new URLSearchParams({ from: dayStart.toISOString(), to: dayEnd.toISOString() });
+
     const results = await Promise.allSettled([
       apiFetch("/tasks?area=alle&sort=due_date"),
-      apiFetch(
-        `/calendar/events?${new URLSearchParams({
-          from: new Date().toISOString(),
-          to: (() => {
-            const d = new Date();
-            d.setDate(d.getDate() + 1);
-            return d.toISOString();
-          })(),
-        })}`,
-      ),
-      apiFetch("/invoices?area=alle&status=offen"),
-      apiFetch("/mail/messages"),
+      apiFetch(`/calendar/events?${eventParams}`),
+      apiFetch("/invoices?area=alle&status=alle"),
       apiFetch("/settings"),
     ]);
-    const [tasksR, eventsR, invoicesR, mailsR, settingsR] = results;
+    const [tasksR, eventsR, invoicesR, settingsR] = results;
     if (tasksR.status === "fulfilled") setTasks(tasksR.value);
     if (eventsR.status === "fulfilled") setEvents(eventsR.value);
     if (invoicesR.status === "fulfilled") setInvoices(invoicesR.value);
-    if (mailsR.status === "fulfilled") setMails(mailsR.value);
     if (settingsR.status === "fulfilled") {
       const s = settingsR.value;
       setName(s["profile.name"] || "");
       setBriefingText(s["briefing.text"] || "");
-      const widgetCfg = s["dashboard.widgets"];
-      if (widgetCfg?.order?.length) setOrder(widgetCfg.order);
-      if (widgetCfg?.hidden) setHidden(widgetCfg.hidden);
     }
     setSettingsLoaded(true);
     setErrors({
       tasks: tasksR.status === "rejected" ? tasksR.reason.message : null,
       events: eventsR.status === "rejected" ? eventsR.reason.message : null,
       invoices: invoicesR.status === "rejected" ? invoicesR.reason.message : null,
-      mails: mailsR.status === "rejected" ? mailsR.reason.message : null,
     });
   }, []);
 
@@ -100,23 +91,12 @@ export function Uebersicht() {
     load();
   }, [load]);
 
-  function persistWidgets(nextOrder, nextHidden) {
-    apiFetch("/settings/dashboard.widgets", {
-      method: "PUT",
-      body: JSON.stringify({ value: { order: nextOrder, hidden: nextHidden } }),
-    });
-  }
-
-  function hideWidget(id) {
-    const next = [...hidden, id];
-    setHidden(next);
-    persistWidgets(order, next);
-  }
-
-  function showAllWidgets() {
-    setHidden([]);
-    persistWidgets(order, []);
-  }
+  // Ein per Bereichsfilter herausgefiltertes ausgewähltes Objekt darf keine
+  // verwaiste Vorgangsakte hinterlassen.
+  useEffect(() => {
+    setSelectedKey(null);
+    setPanelState("closed");
+  }, [areaFilter]);
 
   async function saveName(e) {
     e.preventDefault();
@@ -130,170 +110,143 @@ export function Uebersicht() {
   }
 
   const todayIso = localIsoDate();
-  const openTasks = tasks.filter((t) => t.status === "offen");
-  const overdueTasks = openTasks.filter((t) => t.due_date && t.due_date < todayIso);
-  const topTasks = openTasks.slice(0, 5);
 
-  const overdueInvoices = invoices.filter((i) => i.due_date && i.due_date < todayIso);
-  const openSum = invoices.reduce((s, i) => s + (i.amount || 0), 0);
+  const filteredTasks = areaFilter === "alle" ? tasks : tasks.filter((t) => t.area === areaFilter);
+  const filteredEvents = areaFilter === "alle" ? events : events.filter((e) => e.area === areaFilter);
+  const filteredInvoices = areaFilter === "alle" ? invoices : invoices.filter((i) => i.area === areaFilter);
 
-  const importantMails = mails.filter((m) => m.unread || m.flagged).slice(0, 4);
-  const unreadMailsCount = mails.filter((m) => m.unread).length;
+  const entries = useMemo(
+    () => mergeTagesEntries({ tasks: filteredTasks, events: filteredEvents, invoices: filteredInvoices, todayIso }),
+    [filteredTasks, filteredEvents, filteredInvoices, todayIso],
+  );
 
-  const WIDGETS = {
-    termine: (
-      <WidgetShell key="termine" id="termine" title="Heutige Termine" hidden={hidden} onHide={hideWidget}>
-        {errors.events && <p className="text-sm text-status-hoch">{errors.events}</p>}
-        {!errors.events && events.length === 0 && <p className="text-sm text-ivory/65">Keine Termine heute.</p>}
-        <div className="space-y-2.5">
-          {events.slice(0, 5).map((ev) => (
-            <div key={ev.id} className="flex items-center gap-2.5 text-sm">
-              <span className="w-11 shrink-0 text-xs text-ivory/65">
-                {ev.allDay
-                  ? "ganztägig"
-                  : new Date(ev.start).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}
-              </span>
-              <span className="truncate text-ivory/85">{ev.title}</span>
-            </div>
-          ))}
-        </div>
-        {events.length > 0 && (
-          <Link to="/kalender" className="mt-3 inline-block text-xs text-ivory/65 hover:text-ivory">
-            Alle Termine ansehen →
-          </Link>
-        )}
-      </WidgetShell>
-    ),
-    aufgaben: (
-      <WidgetShell key="aufgaben" id="aufgaben" title="Wichtigste Aufgaben" hidden={hidden} onHide={hideWidget}>
-        {errors.tasks && <p className="text-sm text-status-hoch">{errors.tasks}</p>}
-        {overdueTasks.length > 0 && <p className="mb-2 text-xs text-status-hoch">{overdueTasks.length} überfällig</p>}
-        {!errors.tasks && topTasks.length === 0 && <p className="text-sm text-ivory/65">Keine offenen Aufgaben.</p>}
-        <div className="space-y-2.5">
-          {topTasks.map((t) => (
-            <div key={t.id} className="flex items-center gap-2.5 text-sm">
-              <span
-                className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                  t.due_date && t.due_date < todayIso ? "bg-status-hoch" : "bg-white/20"
-                }`}
-              />
-              <span className="truncate text-ivory/85">{t.title}</span>
-            </div>
-          ))}
-        </div>
-        <Link to="/aufgaben" className="mt-3 inline-block text-xs text-ivory/65 hover:text-ivory">
-          Alle Aufgaben ansehen →
-        </Link>
-      </WidgetShell>
-    ),
-    rechnungen: (
-      <WidgetShell key="rechnungen" id="rechnungen" title="Offene Rechnungen" hidden={hidden} onHide={hideWidget}>
-        {errors.invoices && <p className="text-sm text-status-hoch">{errors.invoices}</p>}
-        {!errors.invoices && <p className="mb-2 text-2xl font-bold text-ivory">{fmtEuro(openSum)}</p>}
-        {overdueInvoices.length > 0 && (
-          <p className="mb-2 text-xs text-status-hoch">{overdueInvoices.length} überfällig</p>
-        )}
-        <div className="space-y-2.5">
-          {invoices.slice(0, 4).map((i) => (
-            <div key={i.id} className="flex items-center justify-between gap-2 text-sm">
-              <span className="truncate text-ivory/85">{i.sender_name || i.sender || "Unbekannt"}</span>
-              <span className="shrink-0 text-ivory/55">{fmtEuro(i.amount || 0)}</span>
-            </div>
-          ))}
-        </div>
-        <Link to="/finanzen" className="mt-3 inline-block text-xs text-ivory/65 hover:text-ivory">
-          Alle Rechnungen ansehen →
-        </Link>
-      </WidgetShell>
-    ),
-    mails: (
-      <WidgetShell key="mails" id="mails" title="Wichtige E-Mails" hidden={hidden} onHide={hideWidget}>
-        {errors.mails && <p className="text-sm text-ivory/65">{errors.mails}</p>}
-        {!errors.mails && importantMails.length === 0 && <p className="text-sm text-ivory/65">Nichts Ungelesenes.</p>}
-        <div className="space-y-2.5">
-          {importantMails.map((m) => (
-            <div key={m.id} className="flex items-center gap-2.5 text-sm">
-              <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${m.unread ? "bg-accent" : "bg-white/20"}`} />
-              <span className="min-w-0 flex-1 truncate text-ivory/85">{m.subject}</span>
-              <AreaBadge area={m.area} />
-            </div>
-          ))}
-        </div>
-      </WidgetShell>
-    ),
-  };
+  // "Höchstens eine kurze Liste begründeter nächster Schritte" (Punkt 53) -
+  // bewusst NICHT dieselben Einträge wie die heutige Tageslinie, sondern ein
+  // Ausblick: Überfälliges zuerst, danach hochpriorisierte anstehende
+  // Aufgaben. Jeder Eintrag nennt seinen Grund, keine unbegründete Liste.
+  const nextSteps = useMemo(() => {
+    const steps = [];
+    const overdueTasks = filteredTasks.filter((t) => t.status === "offen" && t.due_date && t.due_date < todayIso);
+    for (const t of overdueTasks.slice(0, 2)) {
+      const days = daysBetween(t.due_date, todayIso);
+      steps.push({
+        key: `task-${t.id}`,
+        title: t.title,
+        reason: `Überfällig seit ${days} ${days === 1 ? "Tag" : "Tagen"}`,
+        path: "/aufgaben",
+      });
+    }
+    const overdueInvoices = filteredInvoices.filter((i) => i.status === "offen" && i.due_date && i.due_date < todayIso);
+    for (const i of overdueInvoices) {
+      if (steps.length >= 3) break;
+      const days = daysBetween(i.due_date, todayIso);
+      steps.push({
+        key: `invoice-${i.id}`,
+        title: i.sender_name || i.subject,
+        reason: `Zahlung überfällig seit ${days} ${days === 1 ? "Tag" : "Tagen"}`,
+        path: "/finanzen",
+      });
+    }
+    if (steps.length < 3) {
+      const upcoming = filteredTasks
+        .filter((t) => t.status === "offen" && t.priority === "hoch" && t.due_date && t.due_date > todayIso)
+        .sort((a, b) => a.due_date.localeCompare(b.due_date));
+      for (const t of upcoming) {
+        if (steps.length >= 3) break;
+        steps.push({
+          key: `task-${t.id}`,
+          title: t.title,
+          reason: `Bald fällig (${formatShortDate(t.due_date)}), hohe Priorität`,
+          path: "/aufgaben",
+        });
+      }
+    }
+    return steps.slice(0, 3);
+  }, [filteredTasks, filteredInvoices, todayIso]);
+
+  const selected = entries.find((e) => e.key === selectedKey) || null;
+
+  function openEntry(key) {
+    setSelectedKey(key);
+    setPanelState("opening");
+    // Erst im nächsten Frame in den Zielzustand wechseln, damit der Browser
+    // die Startposition tatsächlich rendert, bevor die Transition beginnt.
+    requestAnimationFrame(() => requestAnimationFrame(() => setPanelState("open")));
+  }
+
+  function closeEntry() {
+    setPanelState("closing");
+    setTimeout(() => {
+      setPanelState("closed");
+      setSelectedKey(null);
+    }, 160);
+  }
+
+  const panelMounted = panelState !== "closed";
+  const panelAtTarget = panelState === "open";
+  const showRightColumn = panelMounted || nextSteps.length > 0;
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      {/* Kompakte Kopfleiste: Datum/Begrüßung, Bereichsfilter, Suche, Erfassen (Punkt 53) */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           {editingName ? (
-            <form onSubmit={saveName} className="flex items-center gap-2">
+            <form onSubmit={saveName}>
               <input
                 autoFocus
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 onBlur={saveName}
                 placeholder="Dein Name"
-                className="rounded-control border border-white/10 bg-white/[0.04] px-2 py-1 text-2xl font-bold text-ivory outline-none focus:border-accent/40"
+                className="rounded-control border border-white/10 bg-white/[0.04] px-2 py-1 text-[28px] font-bold text-ivory outline-none focus:border-accent/40"
               />
             </form>
           ) : (
             <h1
               onClick={() => setEditingName(true)}
-              className="cursor-pointer text-[28px] font-bold tracking-tight text-ivory sm:text-[34px]"
+              className="cursor-pointer text-[28px] font-bold tracking-tight text-ivory"
               title="Namen bearbeiten"
             >
               {greeting()}
               {name ? `, ${name}` : ""}.
             </h1>
           )}
-          <p className="mt-1 text-sm text-ivory/50">
+          <p className="mt-0.5 text-sm text-ivory/65">
             {new Date().toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          <Link to="/aufgaben" className="rounded-control border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-ivory/75 hover:bg-white/[0.06]">
-            + Aufgabe
-          </Link>
-          <Link to="/kalender" className="rounded-control border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-ivory/75 hover:bg-white/[0.06]">
-            + Termin
-          </Link>
-          <Link to="/finanzen" className="rounded-control border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-ivory/75 hover:bg-white/[0.06]">
-            + Rechnung
-          </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={areaFilter} onChange={(e) => setAreaFilter(e.target.value)} className="!w-auto">
+            <option value="alle">Alle Bereiche</option>
+            {activeAreas.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.label}
+              </option>
+            ))}
+          </Select>
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent("dashboard:open-search"))}
+            aria-label="Suche öffnen"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control border border-white/10 text-ivory/70 hover:bg-white/[0.06]"
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+              <circle cx="11" cy="11" r="7" />
+              <path d="M20 20l-3.5-3.5" />
+            </svg>
+          </button>
+          <QuickCapture onCreated={load} />
         </div>
       </div>
-
-      {settingsLoaded && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <StatTile
-            label="Offene Aufgaben"
-            value={openTasks.length}
-            tone={overdueTasks.length > 0 ? "danger" : "default"}
-            hint={overdueTasks.length > 0 ? `${overdueTasks.length} überfällig` : undefined}
-          />
-          <StatTile label="Termine heute" value={!errors.events ? events.length : "–"} />
-          <StatTile
-            label="Offene Rechnungen"
-            value={!errors.invoices ? fmtEuro(openSum) : "–"}
-            tone={overdueInvoices.length > 0 ? "danger" : "default"}
-            hint={overdueInvoices.length > 0 ? `${overdueInvoices.length} überfällig` : undefined}
-          />
-          <StatTile label="Ungelesene Mails" value={!errors.mails ? unreadMailsCount : "–"} tone={unreadMailsCount > 0 ? "accent" : "default"} />
-        </div>
-      )}
 
       {settingsLoaded && (
         <GlassCard>
           <div className="mb-2 flex items-center justify-between">
             <h2 className="text-sm font-bold text-ivory">Tagesbriefing</h2>
             {!editingBriefing && (
-              <button
-                onClick={() => setEditingBriefing(true)}
-                className="text-xs text-ivory/65 hover:text-ivory/80"
-              >
+              <button onClick={() => setEditingBriefing(true)} className="text-xs text-ivory/65 hover:text-ivory/80">
                 Bearbeiten
               </button>
             )}
@@ -301,7 +254,7 @@ export function Uebersicht() {
           {editingBriefing ? (
             <textarea
               autoFocus
-              rows={3}
+              rows={2}
               value={briefingText}
               onChange={(e) => setBriefingText(e.target.value)}
               onBlur={saveBriefing}
@@ -309,12 +262,9 @@ export function Uebersicht() {
               className="w-full resize-y rounded-control border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-ivory placeholder:text-ivory/35 outline-none focus:border-accent/40"
             />
           ) : briefingText ? (
-            <p className="whitespace-pre-wrap text-base text-ivory/85">{briefingText}</p>
+            <p className="whitespace-pre-wrap text-sm text-ivory/85">{briefingText}</p>
           ) : (
-            <p
-              onClick={() => setEditingBriefing(true)}
-              className="cursor-pointer text-sm text-ivory/65 hover:text-ivory/80"
-            >
+            <p onClick={() => setEditingBriefing(true)} className="cursor-pointer text-sm text-ivory/65 hover:text-ivory/80">
               Noch kein Tagesbriefing eingerichtet. Klicke auf „Bearbeiten“, um deinen eigenen Text für heute
               einzutragen – dieser Bereich bleibt immer oben sichtbar.
             </p>
@@ -322,23 +272,137 @@ export function Uebersicht() {
         </GlassCard>
       )}
 
-      {settingsLoaded && (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{order.map((id) => WIDGETS[id]).filter(Boolean)}</div>
-      )}
+      {/* Tageslinie als dominierende Arbeitsfläche + Vorgangsakte/Nächste Schritte (Punkte 53/57/58) */}
+      <div className="flex flex-col items-start gap-6 lg:flex-row">
+        <div className={`min-w-0 flex-1 ${panelMounted ? "hidden lg:block" : ""}`}>
+          {!settingsLoaded && <p className="text-sm text-ivory/65">Lädt…</p>}
+          {settingsLoaded && (errors.tasks || errors.events || errors.invoices) && (
+            <div className="mb-3 space-y-1">
+              {errors.tasks && <p className="text-sm text-status-hoch">{errors.tasks}</p>}
+              {errors.events && <p className="text-sm text-status-hoch">{errors.events}</p>}
+              {errors.invoices && <p className="text-sm text-status-hoch">{errors.invoices}</p>}
+            </div>
+          )}
+          {settingsLoaded && entries.length === 0 && (
+            <EmptyState
+              title="Nichts Dringendes für heute"
+              description="Aufgaben, Termine und fällige Rechnungen von heute erscheinen hier. Über „Erfassen“ oben legst du direkt etwas Neues an."
+            />
+          )}
+          {settingsLoaded && entries.length > 0 && (
+            <ol className="relative space-y-3 border-l border-white/10 pl-6">
+              {entries.map((entry) => {
+                const isSelected = selectedKey === entry.key;
+                return (
+                  <li key={entry.key} className="relative">
+                    <span
+                      className={`absolute -left-[29px] top-4 h-2.5 w-2.5 rounded-full border-2 border-forest-950 ${
+                        isSelected ? "bg-accent" : "bg-ivory/40"
+                      }`}
+                      aria-hidden="true"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => openEntry(entry.key)}
+                      aria-current={isSelected ? "true" : undefined}
+                      className={`glass-panel block w-full border p-3.5 text-left transition-colors duration-200 hover:bg-white/[0.04] ${
+                        isSelected ? "border-accent/40" : "border-white/[0.05]"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-xs text-ivory/65">
+                          {entry.time
+                            ? entry.time.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
+                            : "Ohne Uhrzeit"}{" "}
+                          · {TAGESLINIE_TYPE_LABEL[entry.type]}
+                        </span>
+                        {entry.area && <AreaBadge area={entry.area} />}
+                      </div>
+                      <p className="mt-1.5 text-sm font-bold text-ivory">{entry.title}</p>
+                      <p className="mt-0.5 text-xs text-ivory/65">{entry.detailLabel}</p>
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
+          )}
+        </div>
 
-      <p className="text-xs text-ivory/65">
-        Weitere Übersichts-Module (Ziele, Dokumente, Verträge &amp; Abos, Gesundheit) erscheinen hier, sobald die
-        jeweiligen Bereiche umgesetzt sind. Reihenfolge und Sichtbarkeit lassen sich unter „Einstellungen →
-        Dashboard“ anpassen.
-        {hidden.length > 0 && (
-          <>
-            {" · "}
-            <button onClick={showAllWidgets} className="text-ivory/65 underline hover:text-ivory">
-              {hidden.length} ausgeblendete{hidden.length === 1 ? "s Modul" : " Module"} wieder einblenden
-            </button>
-          </>
+        {showRightColumn && (
+          <div
+            className="w-full shrink-0 lg:sticky lg:top-4 lg:w-96"
+            style={
+              panelMounted
+                ? {
+                    transition: `transform ${panelAtTarget ? "220ms" : "160ms"} cubic-bezier(0.32,0.72,0,1), opacity ${
+                      panelAtTarget ? "220ms" : "160ms"
+                    } cubic-bezier(0.32,0.72,0,1)`,
+                    transform: panelAtTarget ? "translateX(0)" : "translateX(12px)",
+                    opacity: panelAtTarget ? 1 : 0,
+                  }
+                : undefined
+            }
+          >
+            {selected ? (
+              <div className="overlay-panel space-y-4 p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs text-ivory/65">{TAGESLINIE_TYPE_LABEL[selected.type]}</p>
+                    <h2 className="mt-0.5 text-lg font-bold text-ivory">{selected.title}</h2>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={closeEntry}
+                    aria-label="Vorgangsakte schließen"
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-control text-ivory/65 hover:bg-white/[0.06] hover:text-ivory"
+                  >
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                      <path d="M6 6l12 12M18 6L6 18" />
+                    </svg>
+                  </button>
+                </div>
+
+                <div className="space-y-2 text-sm text-ivory/80">
+                  <p>{selected.detailLabel}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {selected.area && <AreaBadge area={selected.area} />}
+                    {selected.type === "task" && selected.raw.priority && <PriorityBadge priority={selected.raw.priority} />}
+                  </div>
+                  {selected.type === "task" && selected.raw.notes && (
+                    <p className="whitespace-pre-wrap text-ivory/65">{selected.raw.notes}</p>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => navigate(TAGESLINIE_TYPE_PATH[selected.type])}
+                  className="w-full rounded-control border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-ivory/85 hover:bg-white/[0.06]"
+                >
+                  In {selected.type === "task" ? "Aufgaben" : selected.type === "event" ? "Kalender" : "Finanzen"} öffnen
+                </button>
+              </div>
+            ) : (
+              <div className="overlay-panel space-y-3 p-5">
+                <h2 className="text-sm font-bold text-ivory">Nächste Schritte</h2>
+                <ul className="space-y-1">
+                  {nextSteps.map((s) => (
+                    <li key={s.key}>
+                      <button
+                        type="button"
+                        onClick={() => navigate(s.path)}
+                        className="block w-full rounded-control px-2.5 py-2 text-left hover:bg-white/[0.05]"
+                      >
+                        <p className="truncate text-sm text-ivory">{s.title}</p>
+                        <p className="text-xs text-ivory/65">{s.reason}</p>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
         )}
-      </p>
+      </div>
     </div>
   );
 }

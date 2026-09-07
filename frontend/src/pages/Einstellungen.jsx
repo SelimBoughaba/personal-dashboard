@@ -10,7 +10,6 @@ const SECTIONS = [
   { id: "profil", label: "Profil" },
   { id: "darstellung", label: "Darstellung" },
   { id: "bereiche", label: "Lebensbereiche" },
-  { id: "dashboard", label: "Dashboard" },
   { id: "kalender", label: "Kalender" },
   { id: "email", label: "E-Mail" },
   { id: "dokumente", label: "Dokumente" },
@@ -373,99 +372,6 @@ export function BereicheSection() {
         </div>
       )}
     </div>
-  );
-}
-
-// ---------------- Dashboard ----------------
-
-const WIDGET_DEFS = [
-  { id: "termine", label: "Heutige Termine" },
-  { id: "aufgaben", label: "Wichtigste Aufgaben" },
-  { id: "rechnungen", label: "Offene Rechnungen" },
-  { id: "mails", label: "Wichtige E-Mails" },
-];
-
-function DashboardSection() {
-  const [order, setOrder] = useState(WIDGET_DEFS.map((w) => w.id));
-  const [hidden, setHidden] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    apiFetch("/settings").then((s) => {
-      const cfg = s["dashboard.widgets"];
-      if (cfg?.order?.length) setOrder(cfg.order);
-      if (cfg?.hidden) setHidden(cfg.hidden);
-      setLoading(false);
-    });
-  }, []);
-
-  async function persist(nextOrder, nextHidden) {
-    await apiFetch("/settings/dashboard.widgets", {
-      method: "PUT",
-      body: JSON.stringify({ value: { order: nextOrder, hidden: nextHidden } }),
-    });
-  }
-
-  function toggleHidden(id) {
-    const next = hidden.includes(id) ? hidden.filter((h) => h !== id) : [...hidden, id];
-    setHidden(next);
-    persist(order, next);
-  }
-
-  function move(id, direction) {
-    const next = [...order];
-    const idx = next.indexOf(id);
-    const swapWith = idx + direction;
-    if (swapWith < 0 || swapWith >= next.length) return;
-    [next[idx], next[swapWith]] = [next[swapWith], next[idx]];
-    setOrder(next);
-    persist(next, hidden);
-  }
-
-  if (loading) return <p className="text-sm text-ivory/65">Lädt…</p>;
-
-  return (
-    <GlassCard>
-      <h2 className="mb-1 text-xl font-bold text-ivory">Dashboard-Module</h2>
-      <p className="mb-4 text-sm text-ivory/50">
-        Reihenfolge und Sichtbarkeit der Übersicht-Module. Änderungen wirken sofort auf der Übersicht.
-      </p>
-      <div className="space-y-2">
-        {order.map((id, idx) => {
-          const def = WIDGET_DEFS.find((w) => w.id === id);
-          if (!def) return null;
-          return (
-            <div key={id} className="flex items-center gap-3 rounded-surface border border-white/5 bg-white/[0.02] p-3">
-              <label className="flex flex-1 items-center gap-2.5 text-sm text-ivory/85">
-                <input
-                  type="checkbox"
-                  checked={!hidden.includes(id)}
-                  onChange={() => toggleHidden(id)}
-                  className="h-4 w-4 accent-accent"
-                />
-                {def.label}
-              </label>
-              <div className="flex gap-1">
-                <button
-                  onClick={() => move(id, -1)}
-                  disabled={idx === 0}
-                  className="rounded-control border border-white/10 px-2 py-1 text-xs text-ivory/55 hover:bg-white/[0.05] disabled:opacity-30"
-                >
-                  ↑
-                </button>
-                <button
-                  onClick={() => move(id, 1)}
-                  disabled={idx === order.length - 1}
-                  className="rounded-control border border-white/10 px-2 py-1 text-xs text-ivory/55 hover:bg-white/[0.05] disabled:opacity-30"
-                >
-                  ↓
-                </button>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </GlassCard>
   );
 }
 
@@ -1206,7 +1112,6 @@ export function Einstellungen() {
           {active === "profil" && <ProfilSection />}
           {active === "darstellung" && <DarstellungSection />}
           {active === "bereiche" && <BereicheSection />}
-          {active === "dashboard" && <DashboardSection />}
           {active === "kalender" && <KalenderSection />}
           {active === "email" && <EmailSection />}
           {active === "dokumente" && <DokumenteSection />}
