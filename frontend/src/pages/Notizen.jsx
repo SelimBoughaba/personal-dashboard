@@ -158,7 +158,7 @@ export function Notizen() {
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <AreaBadge area={n.area} />
               {n.tags.map((tag) => (
-                <span key={tag} className="rounded-full bg-white/5 px-2 py-0.5 text-[10px] text-ivory/55">
+                <span key={tag} className="rounded-full bg-white/5 px-2 py-0.5 text-xs text-ivory/55">
                   {tag}
                 </span>
               ))}

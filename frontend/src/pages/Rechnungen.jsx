@@ -302,7 +302,7 @@ export function Rechnungen() {
                 <AreaBadge area={inv.area} />
                 {!inv.confirmed && (
                   <span
-                    className="rounded-full border border-status-mittel/30 bg-status-mittel/10 px-2 py-0.5 text-[10px] text-status-mittel"
+                    className="rounded-full border border-status-mittel/30 bg-status-mittel/10 px-2 py-0.5 text-xs text-status-mittel"
                     title="Automatisch aus einem E-Mail-Anhang erkannt (Betrag/Fälligkeitsdatum eine Heuristik) - noch nicht geprüft."
                   >
                     Vorschlag

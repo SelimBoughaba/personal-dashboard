@@ -243,7 +243,7 @@ export function Ziele() {
                 {g.description && <p className="mt-0.5 text-sm text-ivory/55">{g.description}</p>}
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   <AreaBadge area={g.area} />
-                  <span className="rounded-full bg-white/5 px-2 py-0.5 text-[10px] text-ivory/55">{STATUS_LABELS[g.status]}</span>
+                  <span className="rounded-full bg-white/5 px-2 py-0.5 text-xs text-ivory/55">{STATUS_LABELS[g.status]}</span>
                   {g.target_date && (
                     <span className="text-xs text-ivory/55">Ziel: {new Date(g.target_date).toLocaleDateString("de-DE")}</span>
                   )}

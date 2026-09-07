@@ -144,7 +144,7 @@ export function Dokumente() {
       />
 
       <GlassCard>
-        <h2 className="mb-3 text-base font-semibold text-ivory">Dokument hochladen</h2>
+        <h2 className="mb-3 text-xl font-semibold text-ivory">Dokument hochladen</h2>
         <form onSubmit={handleUpload} className="grid gap-3 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <Label>Datei</Label>
@@ -242,7 +242,7 @@ export function Dokumente() {
                       {new Date(doc.created_at).toLocaleDateString("de-DE")}
                     </span>
                     {doc.tags.map((tag) => (
-                      <span key={tag} className="rounded-full bg-white/5 px-2 py-0.5 text-[10px] text-ivory/55">
+                      <span key={tag} className="rounded-full bg-white/5 px-2 py-0.5 text-xs text-ivory/55">
                         {tag}
                       </span>
                     ))}

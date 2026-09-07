@@ -106,7 +106,7 @@ function NavRow({ item }) {
       <div className={`${base} cursor-default text-ivory/30`} title="In Entwicklung">
         <Icon name={item.icon} />
         <span className="flex-1">{item.label}</span>
-        <span className="rounded-full bg-white/5 px-2 py-0.5 text-[10px] text-ivory/40">bald</span>
+        <span className="rounded-full bg-white/5 px-2 py-0.5 text-xs text-ivory/40">bald</span>
       </div>
     );
   }
@@ -153,7 +153,7 @@ function SidebarContent({ onNavigate, onOpenSearch }) {
         >
           <Icon name="suche" />
           <span className="flex-1 text-left">Suchen…</span>
-          <span className="rounded-md border border-white/10 px-1.5 py-0.5 text-[10px] text-ivory/65">⌘K</span>
+          <span className="rounded-md border border-white/10 px-1.5 py-0.5 text-xs text-ivory/65">⌘K</span>
         </button>
       )}
 
@@ -218,7 +218,7 @@ function SidebarContent({ onNavigate, onOpenSearch }) {
                       title="In Entwicklung"
                     >
                       {item.label}
-                      <span className="rounded-full bg-white/5 px-1.5 py-0.5 text-[9px] text-ivory/40">bald</span>
+                      <span className="rounded-full bg-white/5 px-1.5 py-0.5 text-xs text-ivory/40">bald</span>
                     </div>
                   ),
                 )}

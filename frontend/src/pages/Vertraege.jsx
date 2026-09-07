@@ -244,7 +244,7 @@ export function Vertraege() {
               {c.provider && <p className="mt-0.5 text-sm text-ivory/55">{c.provider}</p>}
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <AreaBadge area={c.area} />
-                <span className="rounded-full bg-white/5 px-2 py-0.5 text-[10px] text-ivory/55">{STATUS_LABELS[c.status]}</span>
+                <span className="rounded-full bg-white/5 px-2 py-0.5 text-xs text-ivory/55">{STATUS_LABELS[c.status]}</span>
                 <span className="text-xs font-medium text-ivory/90">
                   {formatAmount(c.cost)} / {CYCLE_LABELS[c.billing_cycle]}
                 </span>

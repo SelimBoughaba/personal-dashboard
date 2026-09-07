@@ -241,7 +241,7 @@ export function Uebersicht() {
           ) : (
             <h1
               onClick={() => setEditingName(true)}
-              className="cursor-pointer text-2xl font-semibold tracking-tight text-ivory sm:text-3xl"
+              className="cursor-pointer font-heading text-[28px] font-semibold tracking-tight text-ivory sm:text-[34px]"
               title="Namen bearbeiten"
             >
               {greeting()}
@@ -309,7 +309,7 @@ export function Uebersicht() {
               className="w-full resize-y rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-ivory placeholder:text-ivory/35 outline-none focus:border-accent/40"
             />
           ) : briefingText ? (
-            <p className="whitespace-pre-wrap text-sm text-ivory/85">{briefingText}</p>
+            <p className="whitespace-pre-wrap font-heading text-base text-ivory/85">{briefingText}</p>
           ) : (
             <p
               onClick={() => setEditingBriefing(true)}

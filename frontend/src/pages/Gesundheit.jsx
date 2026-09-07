@@ -153,7 +153,7 @@ export function Gesundheit() {
           return (
           <GlassCard key={e.id} className={`flex items-center gap-3 !p-3 ${deleting ? "opacity-50" : ""}`}>
             <span className="w-24 shrink-0 text-xs text-ivory/55">{new Date(e.entry_date).toLocaleDateString("de-DE")}</span>
-            <span className="w-20 shrink-0 rounded-full bg-white/5 px-2 py-0.5 text-center text-[10px] text-ivory/70">
+            <span className="w-20 shrink-0 rounded-full bg-white/5 px-2 py-0.5 text-center text-xs text-ivory/70">
               {TYPE_LABELS[e.type]}
             </span>
             <span className="flex-1 text-sm text-ivory/90">

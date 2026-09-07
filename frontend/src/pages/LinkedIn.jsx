@@ -144,7 +144,7 @@ export function LinkedIn() {
             <p className="whitespace-pre-wrap text-sm text-ivory/85">{p.content}</p>
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <AreaBadge area={p.area} />
-              <span className="rounded-full bg-white/5 px-2 py-0.5 text-[10px] text-ivory/55">{STATUS_LABELS[p.status]}</span>
+              <span className="rounded-full bg-white/5 px-2 py-0.5 text-xs text-ivory/55">{STATUS_LABELS[p.status]}</span>
               {p.scheduled_date && (
                 <span className="text-xs text-ivory/55">
                   geplant für {new Date(p.scheduled_date).toLocaleDateString("de-DE")}

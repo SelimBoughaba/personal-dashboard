@@ -73,12 +73,12 @@ export function Login() {
         <GlassCard>
           {configured ? (
             <>
-              <h1 className="mb-1 text-lg font-semibold text-ivory">Willkommen zurück</h1>
+              <h1 className="mb-1 font-heading text-xl font-semibold text-ivory">Willkommen zurück</h1>
               <p className="mb-6 text-sm text-ivory/55">Bitte anmelden, um fortzufahren.</p>
             </>
           ) : (
             <>
-              <h1 className="mb-1 text-lg font-semibold text-ivory">Erste Einrichtung</h1>
+              <h1 className="mb-1 font-heading text-xl font-semibold text-ivory">Erste Einrichtung</h1>
               <p className="mb-6 text-sm text-ivory/55">
                 Lege ein Passwort für dieses Dashboard fest. Es schützt den Zugriff im Heimnetz.
               </p>

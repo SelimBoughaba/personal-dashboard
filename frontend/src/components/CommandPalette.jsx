@@ -108,7 +108,7 @@ export function CommandPalette({ open, onClose }) {
         <div className="max-h-96 overflow-y-auto p-2">
           {!query.trim() && (
             <div>
-              <p className="px-2 pb-1 pt-1 text-[10px] uppercase tracking-wide text-ivory/65">Seiten</p>
+              <p className="px-2 pb-1 pt-1 text-xs text-ivory/55">Seiten</p>
               {QUICK_LINKS.map((l) => (
                 <button
                   key={l.path}
@@ -123,7 +123,7 @@ export function CommandPalette({ open, onClose }) {
 
           {query.trim() && filteredQuickLinks.length > 0 && (
             <div>
-              <p className="px-2 pb-1 pt-1 text-[10px] uppercase tracking-wide text-ivory/65">Seiten</p>
+              <p className="px-2 pb-1 pt-1 text-xs text-ivory/55">Seiten</p>
               {filteredQuickLinks.map((l) => (
                 <button
                   key={l.path}
@@ -140,7 +140,7 @@ export function CommandPalette({ open, onClose }) {
 
           {query.trim() && !loading && Object.entries(grouped).map(([label, items]) => (
             <div key={label}>
-              <p className="px-2 pb-1 pt-2 text-[10px] uppercase tracking-wide text-ivory/65">{label}</p>
+              <p className="px-2 pb-1 pt-2 text-xs text-ivory/55">{label}</p>
               {items.map((r) => (
                 <button
                   key={`${r.type}-${r.id}`}

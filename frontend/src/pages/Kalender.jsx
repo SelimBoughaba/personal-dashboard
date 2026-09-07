@@ -212,14 +212,14 @@ function MonthGrid({ refDate, eventsByDay, allDayByDay, byId }) {
                   {dayEvents.slice(0, 3).map((ev) => (
                     <div
                       key={ev.id}
-                      className="truncate rounded px-1 py-0.5 text-[10px] text-ivory"
+                      className="truncate rounded px-1 py-0.5 text-xs text-ivory"
                       style={{ background: `${byId[ev.area]?.color || "#94a08f"}33`, borderLeft: `2px solid ${byId[ev.area]?.color || "#94a08f"}` }}
                       title={ev.title}
                     >
                       {ev.title}
                     </div>
                   ))}
-                  {dayEvents.length > 3 && <p className="text-[10px] text-ivory/65">+{dayEvents.length - 3} mehr</p>}
+                  {dayEvents.length > 3 && <p className="text-xs text-ivory/65">+{dayEvents.length - 3} mehr</p>}
                 </div>
               </div>
             );
