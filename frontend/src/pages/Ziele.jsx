@@ -143,6 +143,7 @@ export function Ziele() {
   }
 
   async function deleteGoal(id) {
+    if (!window.confirm("Dieses Ziel wirklich löschen?")) return;
     await run(`delete-${id}`, async () => {
       await apiFetch(`/goals/${id}`, { method: "DELETE" });
       await load();

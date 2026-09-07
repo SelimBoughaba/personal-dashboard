@@ -81,6 +81,7 @@ export function Notizen() {
   }
 
   async function deleteNote(id) {
+    if (!window.confirm("Diese Notiz wirklich löschen?")) return;
     await run(`delete-${id}`, async () => {
       await apiFetch(`/notes/${id}`, { method: "DELETE" });
       await load();

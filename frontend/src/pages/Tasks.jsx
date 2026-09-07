@@ -93,6 +93,7 @@ export function Tasks() {
   }
 
   async function deleteTask(id) {
+    if (!window.confirm("Diese Aufgabe wirklich löschen?")) return;
     await run(`delete-${id}`, async () => {
       await apiFetch(`/tasks/${id}`, { method: "DELETE" });
       await loadTasks();

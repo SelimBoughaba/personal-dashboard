@@ -168,6 +168,7 @@ export function Rechnungen() {
   }
 
   async function deleteInvoice(id) {
+    if (!window.confirm("Diese Rechnung wirklich löschen?")) return;
     await run(`delete-${id}`, async () => {
       await apiFetch(`/invoices/${id}`, { method: "DELETE" });
       await load();

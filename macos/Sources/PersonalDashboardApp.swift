@@ -8,7 +8,29 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
     private var serverProcess: Process?
     private var logHandle: FileHandle?
     private var isQuitting = false
-    private let port = Int.random(in: 49152...59999)
+
+    // Bevorzugt ein fester Port: WKWebsiteDataStore partitioniert nach
+    // Origin (Schema+Host+Port). Ein bei jedem Start neu ausgewürfelter
+    // Port bedeutet eine neue Origin bei jedem Start - localStorage (und
+    // damit das Anmelde-Token) wäre dadurch nie über einen Neustart hinweg
+    // gültig, obwohl websiteDataStore als .default() persistent konfiguriert
+    // ist. Nur falls der bevorzugte Port belegt ist, wird einmalig auf
+    // einen zufälligen Port aus dem dynamischen/privaten Bereich
+    // ausgewichen (dann bewusst ohne Sitzungserhalt für diesen einen Start
+    // - besser als ein komplett fehlschlagender Start).
+    private static let preferredPort = 51847
+    private static let logMaxBytes: UInt64 = 5 * 1024 * 1024
+
+    private var port = AppDelegate.preferredPort
+    private var didAttemptFallbackPort = false
+    private var hasHandedOffToWebView = false
+
+    // Pro Start neu erzeugt und dem Kindprozess als Umgebungsvariable
+    // mitgegeben; /api/health spiegelt es zurück. Ohne diesen Abgleich
+    // würde eine beliebige 200-Antwort auf dem gewählten Port (z. B. von
+    // einem völlig anderen, zufällig denselben Port belegenden Prozess)
+    // fälschlich als "eigener Server gestartet" durchgehen.
+    private let instanceToken = UUID().uuidString
 
     private var appSupportDirectory: URL {
         FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -23,14 +45,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         NSApp.setActivationPolicy(.regular)
         configureMenu()
         configureWindow()
-
-        do {
-            try startServer()
-            waitForServer(attempt: 0)
-        } catch {
-            showFatalError("Der lokale Dashboard-Server konnte nicht gestartet werden.\n\n\(error.localizedDescription)")
-        }
-
+        launchServerAndWait()
         NSApp.activate(ignoringOtherApps: true)
     }
 
@@ -68,6 +83,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         window.delegate = self
         window.center()
         window.makeKeyAndOrderFront(nil)
+        window.makeFirstResponder(webView)
 
         let loading = """
         <!doctype html><html><head><meta charset="utf-8"><style>
@@ -108,6 +124,16 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         reload.target = self
         viewMenu.addItem(reload)
         viewMenu.addItem(.separator())
+        let zoomIn = NSMenuItem(title: "Vergrößern", action: #selector(zoomIn), keyEquivalent: "=")
+        zoomIn.target = self
+        viewMenu.addItem(zoomIn)
+        let zoomOut = NSMenuItem(title: "Verkleinern", action: #selector(zoomOut), keyEquivalent: "-")
+        zoomOut.target = self
+        viewMenu.addItem(zoomOut)
+        let zoomReset = NSMenuItem(title: "Originalgröße", action: #selector(zoomReset), keyEquivalent: "0")
+        zoomReset.target = self
+        viewMenu.addItem(zoomReset)
+        viewMenu.addItem(.separator())
         viewMenu.addItem(withTitle: "Vollbild ein/aus", action: #selector(NSWindow.toggleFullScreen(_:)), keyEquivalent: "f").keyEquivalentModifierMask = [.command, .control]
         viewMenuItem.submenu = viewMenu
 
@@ -116,6 +142,27 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
 
     @objc private func reloadDashboard() {
         webView.reload()
+    }
+
+    @objc private func zoomIn() {
+        webView.pageZoom = min(webView.pageZoom + 0.1, 3.0)
+    }
+
+    @objc private func zoomOut() {
+        webView.pageZoom = max(webView.pageZoom - 0.1, 0.5)
+    }
+
+    @objc private func zoomReset() {
+        webView.pageZoom = 1.0
+    }
+
+    private func launchServerAndWait() {
+        do {
+            try startServer()
+            waitForServer(attempt: 0)
+        } catch {
+            showFatalError("Der lokale Dashboard-Server konnte nicht gestartet werden.\n\n\(error.localizedDescription)")
+        }
     }
 
     private func startServer() throws {
@@ -135,6 +182,18 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         }
 
         let logURL = appSupportDirectory.appendingPathComponent("dashboard.log")
+        // Unbegrenztes Wachstum vermeiden (Punkt 50): wird die Grenze
+        // überschritten, wird bei diesem Start neu begonnen statt für
+        // immer angehängt. Das begrenzt das Wachstum pro Start-Zyklus,
+        // nicht innerhalb einer einzelnen, sehr lange laufenden Sitzung -
+        // für den erwarteten Gebrauch (App wird zwischendurch beendet/
+        // neugestartet, nicht wochenlang durchgehend offen gehalten)
+        // ausreichend, ohne die Komplexität einer echten Log-Rotation.
+        if let attrs = try? fileManager.attributesOfItem(atPath: logURL.path),
+           let size = attrs[.size] as? UInt64,
+           size > Self.logMaxBytes {
+            try? fileManager.removeItem(at: logURL)
+        }
         if !fileManager.fileExists(atPath: logURL.path) {
             fileManager.createFile(atPath: logURL.path, contents: nil)
         }
@@ -155,17 +214,42 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         environment["PORT"] = String(port)
         environment["DASHBOARD_DATA_DIR"] = appSupportDirectory.path
         environment["DISABLE_HTTPS_UPGRADE"] = "1"
+        environment["DASHBOARD_INSTANCE_TOKEN"] = instanceToken
         environment["PATH"] = "/usr/bin:/bin:/usr/sbin:/sbin"
         process.environment = environment
         process.terminationHandler = { [weak self] process in
             DispatchQueue.main.async {
-                guard let self, !self.isQuitting, process.terminationStatus != 0 else { return }
-                self.showFatalError("Der lokale Dashboard-Server wurde unerwartet beendet. Details stehen in:\n\(self.appSupportDirectory.appendingPathComponent("dashboard.log").path)")
+                self?.handleServerExit(process: process)
             }
         }
 
         try process.run()
         serverProcess = process
+    }
+
+    private func handleServerExit(process: Process) {
+        guard !isQuitting else { return }
+
+        if !hasHandedOffToWebView && !didAttemptFallbackPort {
+            // Der bevorzugte, feste Port war vermutlich bereits belegt
+            // (Portkollision, Punkt 47) - einmalig mit einem zufälligen
+            // Port aus dem dynamischen/privaten Bereich neu versuchen,
+            // statt sofort mit einer Fehlermeldung aufzugeben. In diesem
+            // Ausweichfall bleibt die Sitzung für diesen einen Start nicht
+            // erhalten (siehe Kommentar bei preferredPort oben) - seltener,
+            // akzeptabler Kompromiss gegenüber einem harten Fehlschlag.
+            didAttemptFallbackPort = true
+            port = Int.random(in: 49152...59999)
+            launchServerAndWait()
+            return
+        }
+
+        // Auch ein "sauberer" Exit-Code 0 zählt hier als unerwartet: er
+        // bedeutet, dass der Serverprozess verschwunden ist, ohne dass wir
+        // (isQuitting) das veranlasst haben - der WebView zeigt dann eine
+        // tote Verbindung, ohne dass die Nutzerin einen Grund dafür sieht,
+        // wenn Exit-Code 0 hier stillschweigend ignoriert würde (Punkt 50).
+        showFatalError("Der lokale Dashboard-Server wurde unerwartet beendet (Exit-Code \(process.terminationStatus)). Details stehen in:\n\(appSupportDirectory.appendingPathComponent("dashboard.log").path)")
     }
 
     private func waitForServer(attempt: Int) {
@@ -177,9 +261,18 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         let healthURL = serverURL.appendingPathComponent("api/health")
         var request = URLRequest(url: healthURL)
         request.timeoutInterval = 1
-        URLSession.shared.dataTask(with: request) { [weak self] _, response, _ in
+        let expectedToken = instanceToken
+        URLSession.shared.dataTask(with: request) { [weak self] data, response, _ in
             guard let self else { return }
-            if let http = response as? HTTPURLResponse, http.statusCode == 200 {
+            var matchesOwnInstance = false
+            if let http = response as? HTTPURLResponse, http.statusCode == 200, let data {
+                if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let token = json["instanceToken"] as? String {
+                    matchesOwnInstance = token == expectedToken
+                }
+            }
+            if matchesOwnInstance {
+                self.hasHandedOffToWebView = true
                 DispatchQueue.main.async { self.webView.load(URLRequest(url: self.serverURL)) }
             } else {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -218,11 +311,25 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         }
         if navigationAction.shouldPerformDownload {
             decisionHandler(.download)
-        } else if let host = url.host, host != "127.0.0.1" && host != "localhost" {
+            return
+        }
+        // Vollständige Origin (Schema + Host + Port) prüfen, nicht nur den
+        // Host (Punkt 49) - sonst würde z. B. http://127.0.0.1:ANDERER-PORT
+        // oder https://127.0.0.1:PORT ebenfalls durchgehen, obwohl es nicht
+        // der eigene, gerade gestartete Server ist.
+        let isOwnOrigin = url.scheme == "http" && url.host == "127.0.0.1" && (url.port ?? 80) == port
+        if isOwnOrigin {
+            decisionHandler(.allow)
+        } else if url.scheme == "http" || url.scheme == "https" {
             NSWorkspace.shared.open(url)
             decisionHandler(.cancel)
         } else {
-            decisionHandler(.allow)
+            // Alle anderen Schemata (file:, data:, javascript:, beliebige
+            // dritte URL-Schemata, …) werden weder im WebView geladen noch
+            // an den Standardbrowser weitergegeben - "zusätzliche
+            // URL-Schemata nur explizit" (Punkt 49), nicht stillschweigend
+            // erlaubt, weil sie schlicht keinen Host haben.
+            decisionHandler(.cancel)
         }
     }
 
@@ -243,6 +350,47 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         """, baseURL: nil)
     }
 
+    // MARK: - WKUIDelegate: JavaScript alert/confirm/prompt
+
+    // Ohne diese drei Methoden funktionieren window.alert()/confirm()/
+    // prompt() aus dem Web-Inhalt trotz gesetztem uiDelegate NICHT (Punkt
+    // 51: "nicht voraussetzen, dass JS-confirm ohne Delegateimplementierung
+    // funktioniert") - insbesondere die im Frontend neu ergänzten
+    // Löschbestätigungen (window.confirm) würden ohne dies im nativen
+    // WebView lautlos immer "abgebrochen" zurückgeben.
+
+    func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping () -> Void) {
+        let alert = NSAlert()
+        alert.messageText = message
+        alert.addButton(withTitle: "OK")
+        alert.beginSheetModal(for: window) { _ in completionHandler() }
+    }
+
+    func webView(_ webView: WKWebView, runJavaScriptConfirmPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (Bool) -> Void) {
+        let alert = NSAlert()
+        alert.messageText = message
+        alert.addButton(withTitle: "OK")
+        alert.addButton(withTitle: "Abbrechen")
+        alert.beginSheetModal(for: window) { response in
+            completionHandler(response == .alertFirstButtonReturn)
+        }
+    }
+
+    func webView(_ webView: WKWebView, runJavaScriptTextInputPanelWithPrompt prompt: String, defaultText: String?, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (String?) -> Void) {
+        let alert = NSAlert()
+        alert.messageText = prompt
+        alert.addButton(withTitle: "OK")
+        alert.addButton(withTitle: "Abbrechen")
+        let input = NSTextField(frame: NSRect(x: 0, y: 0, width: 260, height: 24))
+        input.stringValue = defaultText ?? ""
+        alert.accessoryView = input
+        alert.beginSheetModal(for: window) { response in
+            completionHandler(response == .alertFirstButtonReturn ? input.stringValue : nil)
+        }
+    }
+
+    // MARK: - WKDownloadDelegate
+
     func webView(_ webView: WKWebView, navigationAction: WKNavigationAction, didBecome download: WKDownload) {
         download.delegate = self
     }
@@ -259,6 +407,21 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
             panel.beginSheetModal(for: self.window) { result in
                 completionHandler(result == .OK ? panel.url : nil)
             }
+        }
+    }
+
+    func download(_ download: WKDownload, didFailWithError error: Error, resumeData: Data?) {
+        // Ohne diese Methode scheitert ein Download (volle Festplatte,
+        // fehlende Berechtigung, Netzwerkfehler) bisher lautlos - die
+        // Nutzerin sieht nirgends, dass und warum es nicht geklappt hat
+        // (Punkt 51: "Downloadfehler").
+        DispatchQueue.main.async {
+            let alert = NSAlert()
+            alert.alertStyle = .warning
+            alert.messageText = "Download fehlgeschlagen"
+            alert.informativeText = error.localizedDescription
+            alert.addButton(withTitle: "OK")
+            alert.beginSheetModal(for: self.window, completionHandler: nil)
         }
     }
 }

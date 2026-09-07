@@ -74,6 +74,7 @@ export function Gesundheit() {
   }
 
   async function deleteEntry(id) {
+    if (!window.confirm("Diesen Eintrag wirklich löschen?")) return;
     await run(`delete-${id}`, async () => {
       await apiFetch(`/health-entries/${id}`, { method: "DELETE" });
       await load();

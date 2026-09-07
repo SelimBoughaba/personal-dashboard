@@ -26,9 +26,9 @@ Seite wie aus einem Guss statt wie viele Einzelteile.
 
 **Sicherheits-/Zuverlässigkeitshärtung (Paket A):** Auf Basis eines
 Prüfberichts wurden Sicherheit/Restore (Abschnitt 1), Datenkonsistenz/
-Backend (Abschnitt 2), der Kernbestand von Frontend-Ehrlichkeit (Abschnitt 3)
-und der messbare Kernbestand von Optik/Barrierefreiheit/Motion (Abschnitt 4)
-vollständig, getestet umgesetzt – Details, Testabdeckung und
+Backend (Abschnitt 2), der Kernbestand von Frontend-Ehrlichkeit (Abschnitt 3),
+der messbare Kernbestand von Optik/Barrierefreiheit/Motion (Abschnitt 4) und
+die native macOS-Hülle (Abschnitt 5) umgesetzt – Details, Testabdeckung und
 bewusst zurückgestellte Punkte stehen in
 [`SECURITY_HARDENING.md`](./SECURITY_HARDENING.md). Kurzfassung Abschnitt
 1+2: zwei bestätigte konkrete Bugs (ein Routing-Fehler, durch den „Kalender
@@ -57,8 +57,21 @@ dunklen Standard-Farbschema unter dem Mindestkontrast lagen (3,3:1 statt
 4,5:1) – beide sowie zu schwacher sekundärer Text an 56 Stellen auf
 messbar ausreichenden Kontrast angehoben, ohne die Waldgrün-Identität zu
 verändern; dazu ein fehlender Skip-Link und eine Suchpalette ohne echten
-Fokus-Trap bzw. ohne Fokus-Rückgabe beim Schließen. `cd backend &&
-npm test` führt die inzwischen 29 automatisierten Backend-Tests aus, `cd
+Fokus-Trap bzw. ohne Fokus-Rückgabe beim Schließen. Kurzfassung Abschnitt
+5 (native macOS-Hülle, `macos/`): der Server-Port wurde bisher bei jedem
+App-Start neu zufällig gewählt, wodurch die Anmeldesitzung wegen
+WebKits origin-gebundenem Speicher bei **jedem** Neustart verloren ging –
+jetzt ein fester Port mit Ausweichlogik nur im (seltenen) Kollisionsfall;
+dazu ein Health-Check ohne Identitätsprüfung, eine Navigationsprüfung, die
+nur den Host statt der vollständigen Origin kontrollierte, ein absichtlich
+ignorierter Exit-Code 0 beim Server-Absturz, fehlende native
+Löschbestätigungen (jetzt in allen 9 betroffenen Seiten ergänzt) und ein
+Build-Skript, das einen fehlgeschlagenen Rebuild bereits vor dem
+eigentlichen Kompilieren gelöscht hätte. **Wichtige Einschränkung:** Diese
+Cloud-Sitzung hat kein Xcode – die Swift-Änderungen selbst sind sorgfältig
+geschrieben, aber nicht kompiliert; vor jeder Auslieferung muss
+`./macos/build-app.sh` auf einem echten Mac laufen. `cd backend &&
+npm test` führt die inzwischen 31 automatisierten Backend-Tests aus, `cd
 frontend && npm test` 4 weitere für die Zeitzonen-Korrektur.
 
 ## Projektstruktur

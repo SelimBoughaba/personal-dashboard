@@ -105,6 +105,7 @@ export function Vertraege() {
   }
 
   async function deleteContract(id) {
+    if (!window.confirm("Diesen Vertrag wirklich löschen?")) return;
     await run(`delete-${id}`, async () => {
       await apiFetch(`/contracts/${id}`, { method: "DELETE" });
       await load();

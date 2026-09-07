@@ -3,15 +3,24 @@
 Dieser Bericht dokumentiert, was aus dem 94-Punkte-Verbesserungsprompt vom
 7. September 2026 tatsächlich umgesetzt, getestet und verifiziert wurde –
 und was bewusst zurückgestellt wurde. Ehrlich gesagt: **94 Punkte sind kein
-Ein-Sitzungs-Umfang.** Umgesetzt wurden bisher vier Runden: eine
+Ein-Sitzungs-Umfang.** Umgesetzt wurden bisher fünf Runden: eine
 vollständige, getestete Tranche aus Abschnitt 1 (Sicherheit/Restore), danach
 der komplette Abschnitt 2 (Datenkonsistenz/Backend), der Kernbestand von
 Abschnitt 3 (Frontend-Ehrlichkeit: Zeitzone, Kalenderraster,
-Barrierefreiheit, Suchpalette, Formularverknüpfung, Schreibaktions-Status)
-und zuletzt der messbare Kernbestand von Abschnitt 4 (Optik/Barrierefreiheit/
-Motion: Kontrastmessung und -korrektur, Skip-Link, Fokus-Trap in der
-Suchpalette, Zoom-/Mobil-Verifikation), jeweils mit automatisierten Tests.
-Alles andere steht unten explizit als offen.
+Barrierefreiheit, Suchpalette, Formularverknüpfung, Schreibaktions-Status),
+der messbare Kernbestand von Abschnitt 4 (Optik/Barrierefreiheit/Motion:
+Kontrastmessung und -korrektur, Skip-Link, Fokus-Trap in der Suchpalette,
+Zoom-/Mobil-Verifikation) und zuletzt Abschnitt 5 (native macOS-Hülle) –
+letzterer mit einer **wichtigen Einschränkung**, die sofort am Anfang
+stehen sollte statt versteckt zu werden: diese Cloud-Sitzung hat **keinen
+Zugriff auf Xcode oder eine macOS-Toolchain**. Die Backend- und
+Frontend-Teile von Abschnitt 5 sind wie gewohnt automatisiert getestet; die
+Swift-Änderungen an der nativen Hülle selbst sind dagegen **ungeprüft
+gegen einen Compiler** – sorgfältig anhand des Quelltexts und bekannter,
+etablierter API-Signaturen vorgenommen, aber nicht kompiliert, nicht
+ausgeführt, nicht auf einem echten Mac getestet. Details, was das konkret
+bedeutet, unten im eigenen Abschnitt. Alles andere steht unten explizit als
+offen.
 
 Hinweis zur Herkunft des Prompts: Er nennt als Zielprojekt einen lokalen
 Pfad (`/Users/selim/.codex/...`) sowie einen Prüfbericht, auf die von dieser
@@ -199,9 +208,65 @@ Dunkel- und Hellmodus.
   (kein Zugriff auf macOS/VoiceOver) – dieselbe, bereits in Abschnitt 1–2
   dokumentierte Einschränkung.
 
+## Abschnitt 5 – Native macOS-Hülle und Auslieferung (Punkte 47–52)
+
+**Wichtig zu diesem Abschnitt:** Er zerfällt in zwei völlig unterschiedlich
+belastbare Hälften. Backend (`backend/src/index.js`), Frontend (9 Seiten mit
+Löschbestätigung) und der Bash/zsh-Anteil von `macos/build-app.sh` sind wie
+in allen vorherigen Abschnitten **automatisiert getestet** –
+`node --test`/`vite build`/Playwright bzw. tatsächliche Ausführung der
+Skript-Logik in dieser Umgebung (zsh ist hier nachinstallierbar, auch ohne
+Mac). Die Änderungen an `macos/Sources/PersonalDashboardApp.swift` selbst
+sind dagegen **nicht kompiliert und nicht ausgeführt worden** – diese
+Cloud-Umgebung hat kein Xcode und keine macOS-Toolchain. Diese Swift-Änderungen
+wurden sorgfältig Zeile für Zeile gegen den bestehenden Code und bekannte,
+im Quelltext bereits an anderer Stelle verwendete bzw. gut etablierte
+WKWebView-/AppKit-API-Signaturen geschrieben, aber es gibt keine Garantie,
+dass sie beim ersten Versuch fehlerfrei kompilieren. **Vor dem Ausliefern
+zwingend:** `./macos/build-app.sh` auf einem echten Mac mit Xcode
+ausführen und die App tatsächlich starten, bevor diese Version als
+funktionierend gilt.
+
+| # | Punkt | Was gefunden und geändert wurde | Testbarkeit |
+|---|---|---|---|
+| 47 | Health-Check ohne Identitätsprüfung | **Bestätigter, konkreter Bug:** `waitForServer()` akzeptierte jede 200-Antwort auf dem gewählten Port als „eigener Server" – ein zufällig denselben Port belegender anderer Prozess, der ebenfalls mit 200 antwortet, wäre unbemerkt durchgegangen. `/api/health` spiegelt jetzt ein pro Start neu erzeugtes `DASHBOARD_INSTANCE_TOKEN` zurück (nur gesetzt von der nativen Hülle, im normalen Server-/Testbetrieb leer → keine Verhaltensänderung dort); die Swift-Seite akzeptiert eine Antwort nur noch, wenn das Token exakt übereinstimmt. | Backend-Teil: **automatisiert getestet** (`backend/test/native-shell.test.js`, 2 neue Tests). Swift-Teil (Token als Env-Var setzen, Antwort parsen und vergleichen): ungeprüft. |
+| 47 | Kein Umgang mit Portkollision selbst | Ein belegter Port ließ den Kindprozess sofort mit einem Fehler abstürzen, was direkt zu einer Fehlermeldung führte – kein Wiederholungsversuch. Jetzt: fester bevorzugter Port (51847) mit **einmaligem** automatischem Ausweichen auf einen zufälligen Port aus dem dynamischen Bereich, falls der bevorzugte Port belegt ist, bevor überhaupt eine Fehlermeldung erscheint. | Ungeprüft (Swift). |
+| 48 | Sitzung geht bei jedem Neustart verloren | **Bestätigter, konkreter Bug, vermutlich der größte UX-Fehler in diesem Abschnitt:** Der Server-Port wurde bisher bei **jedem** App-Start neu ausgewürfelt. `WKWebsiteDataStore` partitioniert nach vollständiger Origin (Schema+Host+**Port**) – eine neue Origin bei jedem Start bedeutet, dass `localStorage` (und damit das Anmelde-Token) trotz `websiteDataStore = .default()` (persistent konfiguriert) **nie** über einen Neustart hinweg gültig war. Jeder App-Start hätte einen erneuten Login verlangt. Fix: fester bevorzugter Port (siehe Punkt 47) hält die Origin über Neustarts hinweg stabil; nur im seltenen Kollisionsfall (Ausweich-Port) geht die Sitzung für diesen einen Start verloren – ein bewusst akzeptierter, seltener Kompromiss statt eines harten Fehlschlags. | Ungeprüft (Swift) – das eigentliche Origin-/WKWebsiteDataStore-Verhalten lässt sich nur in einem echten WebView auf macOS beobachten. |
+| 49 | Navigationsprüfung nur nach Host, nicht vollständiger Origin | **Bestätigter, konkreter Bug:** `decidePolicyFor` prüfte nur `url.host`, nicht Schema oder Port – `https://127.0.0.1:PORT` oder `http://127.0.0.1:ANDERER-PORT` wären ebenfalls durchgegangen. Host-lose URLs (`file:`, `data:`, `javascript:`, beliebige dritte Schemata) fielen mangels `host` sogar komplett durch die Prüfung und wurden stillschweigend **erlaubt** – das Gegenteil von „zusätzliche URL-Schemata nur explizit". Fix: vollständige Origin-Prüfung (Schema **und** Host **und** Port); alles außer der eigenen Origin und `http(s)://` (an den Standardbrowser weitergeleitet) wird jetzt abgelehnt statt stillschweigend geladen. | Ungeprüft (Swift). |
+| 50 | Exit-Code 0 wurde absichtlich ignoriert | **Bestätigter, konkreter Bug – exakt der im Prompt benannte Fall:** `terminationHandler` prüfte bisher explizit `process.terminationStatus != 0`, bevor ein Fehler angezeigt wurde. Ein unerwarteter, aber „sauberer" Exit mit Code 0 (z. B. ein Node-Bug, der zu vorzeitigem Prozessende ohne Fehlercode führt) wurde dadurch komplett stillschweigend hingenommen – der WebView hätte eine tote Verbindung gezeigt, ohne dass irgendein Hinweis erscheint. Fix entfernt diese Ausnahme; jeder unerwartete Exit (jeder Code) außer beim eigenen, kontrollierten Beenden zeigt jetzt eine Fehlermeldung mit Exit-Code und Logpfad. | Ungeprüft (Swift). |
+| 50 | Kein Wachhund gegen verwaiste Serverprozesse | Stirbt der Swift-Elternprozess nicht sauber (Absturz, „Kill erzwingen"), bekommt der Node-Kindprozess das nie mit und würde unbegrenzt als Waise weiterlaufen. Neuer, nur bei gesetztem Instanztoken aktiver Wachhund im Backend: pollt `process.ppid` alle 5s und beendet sich selbst, sobald sich die Elternprozess-ID ändert (verwaiste Prozesse werden unter POSIX auf launchd/PID 1 umgehängt – so erkennbar, ohne dass das Betriebssystem aktiv benachrichtigen muss). | **Automatisiert getestet** (Teil desselben `native-shell.test.js`, prüft dass ohne Token kein Wachhund startet und der Normalbetrieb unverändert bleibt). Der volle Waisen-Fall selbst (Elternprozess tatsächlich hart beenden) ist im Rahmen dieser Tests nicht simuliert. |
+| 50 | Unbegrenztes Log-Wachstum | `dashboard.log` wurde für immer angehängt, ohne Obergrenze. Jetzt: Log wird bei Programmstart neu begonnen, falls es 5 MB überschreitet. Begrenzt Wachstum pro Start-Zyklus, nicht innerhalb einer einzelnen, sehr lange laufenden Sitzung – bewusst einfach gehalten statt einer vollen Rotation. | Ungeprüft (Swift). |
+| 51 | JS `alert()`/`confirm()`/`prompt()` funktionierten trotz `uiDelegate` nicht | **Bestätigter, konkreter Bug – exakt die im Prompt benannte Falle:** `webView.uiDelegate = self` war gesetzt, aber keine der drei `WKUIDelegate`-Methoden für Alert-/Confirm-/Prompt-Panels war implementiert. Ohne sie geben `window.confirm()` u. Ä. aus dem Webinhalt lautlos `false`/`undefined` zurück, ohne dass irgendein Dialog erscheint. Alle drei Methoden jetzt mit `NSAlert`-Sheets implementiert – Voraussetzung dafür, dass die neuen Löschbestätigungen (siehe unten) im nativen WebView überhaupt funktionieren. | Ungeprüft (Swift). |
+| 51 | Löschbestätigung fehlte komplett | Jedes „Löschen" in der App hat bisher sofort und ohne jede Rückfrage gelöscht – ein Fehlklick verliert unwiderruflich Daten. `window.confirm(...)` vor dem eigentlichen Löschen ergänzt in allen 9 Seiten mit Lösch-Aktion (Aufgaben, Rechnungen, Dokumente, Notizen, Verträge, Ziele, LinkedIn, Prompt-Bibliothek, Gesundheit) – bei „Abbrechen" wird gar nicht erst eine Anfrage geschickt, bei „OK" läuft der bestehende Lösch-Ablauf unverändert weiter. Bewusst **nicht** angefasst: das Entfernen eines einzelnen Meilensteins innerhalb eines Ziels (`Ziele.jsx`) – geringere Tragweite als ein ganzer Datensatz, und die Bereichs-Löschung in den Einstellungen, die bereits eine eigene, ausführlichere Bestätigung mit Mengen-Aufschlüsselung hat. | **Vollständig automatisiert getestet** (Playwright, echter `window.confirm()`-Dialog: Abbrechen lässt den Datensatz und löst keinen Request aus, Bestätigen löscht ihn) – der Frontend-Teil braucht dafür keinen Mac, Chromium implementiert `confirm()` genauso wie WKWebView es tun sollte, sobald Punkt 51 (Delegate) stimmt. |
+| 51 | Fehlgeschlagene Downloads ohne Rückmeldung | `WKDownloadDelegate` implementierte nur `decideDestinationUsing`, nicht `didFailWithError` – ein fehlgeschlagener Download (volle Festplatte, Berechtigung, Netzwerkfehler) scheiterte bisher komplett lautlos. Jetzt zeigt ein `NSAlert` den Fehler an. | Ungeprüft (Swift). |
+| 51 | Kein Zoom/Textskalierung | Das „Darstellung"-Menü hatte nur „Neu laden" und Vollbild, keine Möglichkeit zur Seitenvergrößerung. Drei neue Menüpunkte (Vergrößern/Verkleinern/Originalgröße, ⌘=/⌘-/⌘0) steuern `webView.pageZoom` (0.5–3.0). | Ungeprüft (Swift). |
+| 52 | Keine gepinnte Node-Laufzeit | `build-app.sh` nutzte einfach `command -v node`, ohne jede Versionsprüfung. Neues `backend/package.json#engines` (`>=20.0.0`) plus ein Check im Build-Skript, der bei zu alter Node-Version das Bundling verweigert. | **Getestet**: Die Parsing-/Vergleichslogik (`v22.22.2 → 22 → OK`, `v18.19.0 → 18 → REJECTED` usw.) wurde in dieser Umgebung tatsächlich mit `zsh` ausgeführt (zsh lässt sich hier ohne Mac nachinstallieren) – nur die eigentlichen `xcrun`/`swiftc`/`codesign`-Schritte sind macOS-exklusiv und bleiben ungeprüft. |
+| 52 | Fehlgeschlagener Rebuild zerstörte die letzte funktionierende Version | **Bestätigter, konkreter Bug:** Das Skript räumte den Ziel-Ordner (`rm -rf`) auf, **bevor** überhaupt kompiliert wurde – ein Kompilierfehler mitten im Build hätte die zuletzt funktionierende App bereits gelöscht, ohne Ersatz. Neues Verhalten: komplettes Bundle wird in einem separaten Staging-Verzeichnis gebaut, signiert **und** verifiziert (`codesign --verify --deep --strict`); erst danach wird die vorherige Version nach `.previous` verschoben und die neue an ihre Stelle. | **Vollständig getestet** – der komplette Staging-→Verify-→Swap-Mechanismus wurde in dieser Umgebung tatsächlich mit `zsh` simuliert (Fake-Bundle statt echtem Build): ein erfolgreicher Lauf verschiebt korrekt und räumt das Staging-Verzeichnis auf; ein simulierter Fehlschlag mitten im Build lässt die alte, funktionierende „App" unangetastet und hinterlässt kein Staging-Überbleibsel. |
+| 52 | Build-Herkunft nirgends sichtbar | Kein Build-Datum, kein Commit, kein Hinweis auf lokale Änderungen irgendwo im gebauten Bundle. Build-Skript schreibt jetzt `DashboardBuildCommit`, `DashboardBuildDirty`, `DashboardBuildTimestamp` und `DashboardBuildNodeVersion` als eigene Zusatzschlüssel in die `Info.plist` der gebauten App (via `PlistBuddy`, nicht `CFBundleVersion` überladen, das macOS für Update-Vergleiche nutzt). | Git-Teil (`rev-parse`, `status --porcelain`) **getestet**, liefert in dieser Umgebung korrekt `commit=23ebdf0 dirty=mit-lokalen-aenderungen`. `PlistBuddy` selbst ist macOS-exklusiv, ungeprüft. |
+| 52 | Notarisierung/Developer-ID | Geprüft: weder Skript noch README behaupten fälschlich, notarisiert oder mit Developer-ID signiert zu sein – README nennt bereits korrekt „signiert lokal ad hoc; für Weitergabe an andere Macs sind Developer-ID-Signatur und Notarisierung erforderlich". Kein Änderungsbedarf, Punkt bereits eingehalten. | Bereits korrekt, verifiziert durch Lesen. |
+
+**Bewusst nicht umgesetzt (mit Begründung):**
+- **50, Sleep/Wake:** Kein Code zur expliziten Behandlung von
+  Systemschlaf/-aufwachen ergänzt. macOS setzt Hintergrundprozesse beim
+  Schlaf in der Regel transparent aus und lässt sie beim Aufwachen
+  weiterlaufen (kein Kill) – ob das für diese spezifische Kombination aus
+  lokalem Node-Server und WKWebView-Verbindung tatsächlich ein Problem
+  darstellt (z. B. eine hängende Netzwerkverbindung nach längerem Schlaf),
+  lässt sich ohne echte Hardware nicht verifizieren. Lieber ehrlich als
+  ungeprüft auflisten, als eine spekulative Änderung ohne jede
+  Verifikationsmöglichkeit einzubauen.
+- **51, Menüvollständigkeit:** Kein „Fenster"- oder „Hilfe"-Menü ergänzt –
+  beide sind macOS-Konvention, aber ohne konkreten gefundenen Fehler dahinter
+  reine Kosmetik, zurückgestellt.
+- **Native Smoke-Tests aus Abschnitt 6** (Start/Stop/Neustart, Portkollision,
+  Downloads, Menüs, Tastatur, VoiceOver, Offlineverhalten): **nicht
+  durchführbar in dieser Umgebung.** Das ist keine Auslassung, sondern eine
+  harte Umgebungsgrenze – ohne Mac keine native App, kein WKWebView, kein
+  VoiceOver.
+
 ## Bewusst nicht umgesetzt (mit Begründung)
 
-**Restliche Punkte aus Abschnitt 1–6 (10–12, 22 vollständig, 27, 33, 47–52):**
+**Restliche Punkte aus Abschnitt 1–6 (10–12, 22 vollständig, 27, 33):**
 nicht angefasst (30–32, 34, 36 wurden geprüft, siehe Abschnitt 3 oben – dort
 zählt „geprüft und bestätigt" nicht als „nicht angefasst", auch wenn kein
 Code geändert wurde). Auswahl der wichtigsten Lücken für eine Folgerunde:
@@ -241,11 +306,13 @@ Code geändert wurde). Auswahl der wichtigsten Lücken für eine Folgerunde:
   geprüft, keine konkrete Inkonsistenz gefunden. **43** (nutzerdefinierte
   Bereichsfarben) und die native VoiceOver-Abnahme (Teil von 45) bleiben
   aus den oben genannten Gründen offen.
-- **47–52 (native macOS-Hülle):** `macos/Sources/PersonalDashboardApp.swift`
-  wurde gelesen, aber nicht verändert. **In dieser Cloud-Linux-Umgebung
-  existiert kein Xcode/macOS-Toolchain** – die Swift-App kann hier weder
-  gebaut noch ausgeführt noch mit VoiceOver getestet werden. Jede Aussage
-  über „funktioniert nativ" wäre unbelegt und wird deshalb nicht gemacht.
+- **47–52 (native macOS-Hülle):** inzwischen bearbeitet, siehe eigener
+  Abschnitt „Abschnitt 5" oben – mit der dort direkt am Anfang genannten
+  Einschränkung: die Backend-/Frontend-/Build-Skript-Anteile sind getestet,
+  die Swift-Änderungen selbst sind **ungeprüft gegen einen Compiler** (kein
+  Xcode/macOS-Toolchain in dieser Cloud-Umgebung). Jede Aussage über
+  „funktioniert nativ" bliebe unbelegt und wird deshalb nicht gemacht –
+  Verifikation auf einem echten Mac ist vor jeder Auslieferung Pflicht.
 
 **Abschnitte 7–11 (42 neue Design-/Produkt-/Backend-Punkte, „Nachtblau"):**
 **nicht umgesetzt.** Das ist kein Versehen, sondern folgt der eigenen
@@ -262,6 +329,15 @@ möglicherweise falschen Grundlage umzusetzen.
 
 ## Bekannte offene Punkte aus dieser Runde selbst
 
+- **Größter offener Punkt dieser Runde:** Die komplette Datei
+  `macos/Sources/PersonalDashboardApp.swift` wurde in Abschnitt 5 geändert,
+  ohne dass auch nur ein einziges Mal `swiftc` darüber gelaufen ist – diese
+  Umgebung hat keine macOS-Toolchain. Die Änderungen wurden mit großer
+  Sorgfalt anhand bekannter, im Rest der Datei bereits verwendeter bzw.
+  gut dokumentierter API-Signaturen geschrieben, aber „sorgfältig gelesen"
+  ist kein Ersatz für „kompiliert und gestartet". Vor jeder tatsächlichen
+  Auslieferung dieser Version muss `./macos/build-app.sh` auf einem echten
+  Mac laufen und die App danach tatsächlich geöffnet werden.
 - Beim Playwright-Testlauf für Abschnitt 3 traten wiederholt
   `ERR_CONNECTION_RESET`/503-Fehler beim Laden von `fonts.googleapis.com`
   auf (Manrope-Schriftart-Preconnect in `index.html`) – das liegt an der
@@ -310,11 +386,13 @@ möglicherweise falschen Grundlage umzusetzen.
 2. Falls später wirklich benötigt: volle Cent-Spalten-Migration für Geld
    (Punkt 23) und vollständig vereinheitlichte Zod-Validierung über alle
    Routen (Punkt 22) – beides mit eigenem, vom Nutzer bestätigtem Anlauf.
-3. Abschnitte 5 und 47–52 (native Hülle) nur auf einem echten Mac mit
-   Xcode möglich – dort auch die in Abschnitt 6 geforderten nativen
-   Smoke-Tests (VoiceOver, Sleep/Wake, Portkollision) durchführen; das ist
-   auch der einzige Weg zur vollständigen Abnahme von Punkt 45
-   (VoiceOver) aus Abschnitt 4.
+3. **Vor jeder Auslieferung zwingend:** `./macos/build-app.sh` auf einem
+   echten Mac mit Xcode ausführen und die Swift-Änderungen aus Abschnitt 5
+   tatsächlich kompilieren/starten – sie sind bisher nur gegen den
+   Quelltext gelesen, nicht gebaut. Dort auch die in Abschnitt 6
+   geforderten nativen Smoke-Tests (VoiceOver, Sleep/Wake, Portkollision)
+   durchführen; das ist auch der einzige Weg zur vollständigen Abnahme von
+   Punkt 45 (VoiceOver) aus Abschnitt 4.
 4. Abschnitte 7–11 erst nach Klärung, ob die Nachtblau-Neuausrichtung
    tatsächlich gewollt ist (siehe Diskrepanz oben), und dann in den in §10
    vorgeschlagenen Paketen B–F, nicht als Ganzes.

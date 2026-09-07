@@ -61,7 +61,18 @@ if (process.env.DISABLE_HTTPS_UPGRADE === "1") {
 app.use(helmet(helmetOptions));
 app.use(compression());
 
-app.get("/api/health", (req, res) => res.json({ ok: true }));
+// Die native macOS-Hülle startet den Server auf einem zufälligen Port und
+// wartet auf eine 200-Antwort hier, bevor sie den WebView darauf zeigt. Ein
+// beliebiger anderer Prozess, der zufällig denselben Port belegt und selbst
+// mit 200 antwortet, würde ohne dieses Token fälschlich als "eigener
+// Server" durchgehen. DASHBOARD_INSTANCE_TOKEN wird nur von der nativen
+// Hülle gesetzt (ein pro Start neu erzeugtes Zufallstoken) - im normalen
+// Server-/Testbetrieb ist die Variable leer und die Antwort bleibt wie
+// bisher.
+const instanceToken = process.env.DASHBOARD_INSTANCE_TOKEN || null;
+app.get("/api/health", (req, res) => {
+  res.json(instanceToken ? { ok: true, instanceToken } : { ok: true });
+});
 
 // backupRouter bringt für POST /preview und /restore einen eigenen, größeren
 // JSON-Parser mit (ein vollständiges Backup kann das globale 1-MB-Limit
@@ -153,4 +164,28 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   }
   process.on("SIGTERM", () => shutdown("SIGTERM"));
   process.on("SIGINT", () => shutdown("SIGINT"));
+
+  // Nur relevant unter der nativen macOS-Hülle (erkennbar am Instanztoken):
+  // Stirbt der übergeordnete Swift-Prozess nicht sauber (Absturz, "Kill
+  // erzwingen" im Activity Monitor), bekommt dieser Kindprozess nie
+  // applicationWillTerminate/SIGTERM mit und würde als Waise unbegrenzt
+  // weiterlaufen und den Port belegt halten. Unter POSIX wird ein
+  // verwaister Prozess auf einen neuen Elternprozess (i. d. R. launchd,
+  // PID 1) umgehängt - das lässt sich durch Polling von process.ppid
+  // erkennen, ohne dass das Betriebssystem uns aktiv benachrichtigen muss.
+  // Im normalen Server-/Testbetrieb (kein Instanztoken) bleibt das aus,
+  // damit z. B. ein Terminal-Tab-Wechsel im Dev-Modus nicht fälschlich als
+  // Elternwechsel gilt.
+  if (instanceToken) {
+    const parentPidAtStart = process.ppid;
+    const watchdog = setInterval(() => {
+      if (process.ppid !== parentPidAtStart) {
+        console.log(
+          "Übergeordneter Prozess (native Hülle) nicht mehr vorhanden – beende, um keinen verwaisten Serverprozess zu hinterlassen.",
+        );
+        shutdown("PARENT_GONE");
+      }
+    }, 5000);
+    watchdog.unref();
+  }
 }
