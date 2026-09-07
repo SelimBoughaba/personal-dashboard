@@ -1,9 +1,8 @@
 import { Router } from "express";
-import path from "node:path";
 import fs from "node:fs";
 import multer from "multer";
 import { db, isValidArea, getDefaultAreaId } from "../db.js";
-import { getDocumentsDir, generateStoredName } from "../documentStorage.js";
+import { getDocumentsDir, generateStoredName, resolveStoredDocumentPath } from "../documentStorage.js";
 
 export const documentsRouter = Router();
 
@@ -94,7 +93,16 @@ documentsRouter.get("/:id/download", (req, res) => {
   const doc = db.prepare("SELECT * FROM documents WHERE id = ?").get(req.params.id);
   if (!doc) return res.status(404).json({ error: "Dokument nicht gefunden." });
 
-  const filePath = path.join(getDocumentsDir(), doc.stored_name);
+  // stored_name kommt aus der DB, nicht direkt vom Client – trotzdem wird
+  // hier erneut geprüft (Format + tatsächliches Enthaltensein im
+  // konfigurierten Speicherordner), statt der Datenbank blind zu vertrauen.
+  // Ein manipulierter oder wiederhergestellter Datensatz mit unerwartetem
+  // stored_name darf nie zu einem Dateizugriff außerhalb des Ordners führen.
+  const filePath = resolveStoredDocumentPath(doc.stored_name);
+  if (!filePath) {
+    console.error(`Dokument ${doc.id}: ungültiger stored_name "${doc.stored_name}", Download verweigert.`);
+    return res.status(500).json({ error: "Dokument ist beschädigt (ungültiger Dateiverweis)." });
+  }
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({ error: "Datei fehlt auf der Platte (wurde außerhalb der App gelöscht?)." });
   }
@@ -131,9 +139,17 @@ documentsRouter.delete("/:id", (req, res) => {
   const doc = db.prepare("SELECT * FROM documents WHERE id = ?").get(req.params.id);
   if (!doc) return res.status(404).json({ error: "Dokument nicht gefunden." });
 
+  const filePath = resolveStoredDocumentPath(doc.stored_name);
   db.prepare("DELETE FROM documents WHERE id = ?").run(req.params.id);
-  const filePath = path.join(getDocumentsDir(), doc.stored_name);
-  fs.unlink(filePath, () => {});
+  if (filePath) {
+    fs.unlink(filePath, (err) => {
+      if (err && err.code !== "ENOENT") {
+        console.error(`Datei zu Dokument ${doc.id} konnte nicht gelöscht werden:`, err);
+      }
+    });
+  } else {
+    console.error(`Dokument ${doc.id}: ungültiger stored_name "${doc.stored_name}", Datei nicht gelöscht.`);
+  }
 
   res.status(204).send();
 });

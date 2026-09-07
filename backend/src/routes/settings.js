@@ -18,22 +18,13 @@ settingsRouter.get("/", (req, res) => {
   res.json(all);
 });
 
-settingsRouter.put("/:key", (req, res) => {
-  const { key } = req.params;
-  if (SENSITIVE_KEYS.has(key)) {
-    return res.status(400).json({ error: "Dieser Schlüssel wird über eine eigene Route verwaltet." });
-  }
-  setSetting(key, req.body?.value ?? null);
-  res.json({ key, value: getSetting(key) });
-});
-
-settingsRouter.delete("/:key", (req, res) => {
-  if (SENSITIVE_KEYS.has(req.params.key)) {
-    return res.status(400).json({ error: "Dieser Schlüssel wird über eine eigene Route verwaltet." });
-  }
-  deleteSetting(req.params.key);
-  res.status(204).send();
-});
+// Die generischen PUT/DELETE /:key-Routen stehen bewusst am Ende dieser
+// Datei (nach allen spezifischen Unterrouten wie /calendar, /mail/*). Express
+// matcht Routen in Registrierungsreihenfolge, und ein einzelnes Pfadsegment
+// wie "/calendar" oder "/mail" würde sonst vom generischen /:key-Handler
+// abgefangen, bevor der spezifische Handler überhaupt zum Zug kommt – z. B.
+// hätte DELETE /calendar dann still calendar.icloud NICHT gelöscht (Bug:
+// gemeldeter Erfolg, aber Zugangsdaten blieben gespeichert).
 
 // ---------- Kalender (iCloud) ----------
 
@@ -166,4 +157,24 @@ settingsRouter.post("/mail/test", async (req, res) => {
 settingsRouter.put("/mail/area-rules", (req, res) => {
   setSetting("mail.area_rules", req.body?.rules || {});
   res.json({ rules: getSetting("mail.area_rules", {}) });
+});
+
+// ---------- Generische Einzelwerte (muss nach allen spezifischen Routen
+// oben stehen, siehe Kommentar an deren Anfang) ----------
+
+settingsRouter.put("/:key", (req, res) => {
+  const { key } = req.params;
+  if (SENSITIVE_KEYS.has(key)) {
+    return res.status(400).json({ error: "Dieser Schlüssel wird über eine eigene Route verwaltet." });
+  }
+  setSetting(key, req.body?.value ?? null);
+  res.json({ key, value: getSetting(key) });
+});
+
+settingsRouter.delete("/:key", (req, res) => {
+  if (SENSITIVE_KEYS.has(req.params.key)) {
+    return res.status(400).json({ error: "Dieser Schlüssel wird über eine eigene Route verwaltet." });
+  }
+  deleteSetting(req.params.key);
+  res.status(204).send();
 });

@@ -59,9 +59,20 @@ if (process.env.DISABLE_HTTPS_UPGRADE === "1") {
 }
 app.use(helmet(helmetOptions));
 app.use(compression());
-app.use(express.json({ limit: "1mb" }));
 
 app.get("/api/health", (req, res) => res.json({ ok: true }));
+
+// backupRouter bringt für POST /preview und /restore einen eigenen, größeren
+// JSON-Parser mit (ein vollständiges Backup kann das globale 1-MB-Limit
+// unten sprengen). Deshalb muss dieser Router VOR dem globalen
+// express.json() montiert werden, sonst hätte der globale Parser den Body
+// bereits verarbeitet (bzw. bei Überschreitung des 1-MB-Limits abgelehnt),
+// bevor backupRouter überhaupt zum Zug kommt. requireAuth liest nur den
+// Authorization-Header und braucht dafür keinen geparsten Body.
+app.use("/api/backup", requireAuth, backupRouter);
+
+app.use(express.json({ limit: "1mb" }));
+
 app.use("/api/auth", authRouter);
 app.use("/api/tasks", requireAuth, tasksRouter);
 app.use("/api/calendar", requireAuth, calendarRouter);
@@ -69,7 +80,6 @@ app.use("/api/mail", requireAuth, mailRouter);
 app.use("/api/invoices", requireAuth, invoicesRouter);
 app.use("/api/areas", requireAuth, areasRouter);
 app.use("/api/settings", requireAuth, settingsRouter);
-app.use("/api/backup", requireAuth, backupRouter);
 app.use("/api/documents", requireAuth, documentsRouter);
 app.use("/api/contracts", requireAuth, contractsRouter);
 app.use("/api/goals", requireAuth, goalsRouter);
@@ -103,8 +113,16 @@ app.use((err, req, res, next) => {
   res.status(status).json({ error: "Es ist ein unerwarteter Fehler aufgetreten." });
 });
 
-const port = process.env.PORT || 4000;
-const host = process.env.HOST || "0.0.0.0";
-app.listen(port, host, () => {
-  console.log(`Dashboard-Server läuft auf http://${host}:${port}`);
-});
+export { app };
+
+// Nur lauschen, wenn diese Datei direkt gestartet wird (npm start/dev) –
+// nicht, wenn sie (z. B. von Tests) importiert wird, um die fertig
+// konfigurierte app-Instanz gegen eine eigene, isolierte Testdatenbank
+// laufen zu lassen.
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const port = process.env.PORT || 4000;
+  const host = process.env.HOST || "0.0.0.0";
+  app.listen(port, host, () => {
+    console.log(`Dashboard-Server läuft auf http://${host}:${port}`);
+  });
+}

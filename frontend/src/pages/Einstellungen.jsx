@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { apiFetch, getToken } from "../api/client";
+import { apiFetch, getToken, setToken, clearOfflineCache } from "../api/client";
 import { useAreas } from "../context/AreasContext";
 import { GlassCard } from "../components/ui/GlassCard";
 import { Button } from "../components/ui/Button";
@@ -945,10 +945,16 @@ function DatenschutzSection() {
       return;
     }
     try {
-      await apiFetch("/auth/password", {
+      // Ein Passwortwechsel beendet serverseitig alle zuvor ausgestellten
+      // Sitzungen (auch die eigene) – die Antwort enthält deshalb ein
+      // frisches Token, das hier sofort übernommen wird, damit man sich
+      // nicht selbst aussperrt.
+      const result = await apiFetch("/auth/password", {
         method: "PATCH",
         body: JSON.stringify({ currentPassword, newPassword }),
       });
+      if (result?.token) setToken(result.token);
+      await clearOfflineCache();
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
@@ -1096,6 +1102,9 @@ function SicherungSection() {
     setError("");
     try {
       await apiFetch("/backup/restore", { method: "POST", body: JSON.stringify({ data: pendingData, confirm: true }) });
+      // Der komplette Datenbestand wurde gerade ersetzt – ein noch
+      // gecachter alter Offline-Stand wäre jetzt irreführend.
+      await clearOfflineCache();
       setDone(true);
       setPreview(null);
       setPendingData(null);

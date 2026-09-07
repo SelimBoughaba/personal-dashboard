@@ -26,11 +26,36 @@ export function getDocumentsDir() {
   return resolved;
 }
 
+// Muss exakt zu generateStoredName() unten passen. Zentral definiert, damit
+// jede Stelle, die stored_name in einen Dateisystempfad einsetzt (Download,
+// Löschen, Backup-Wiederherstellung), dasselbe strenge Format prüfen kann,
+// statt dem Wert aus der Datenbank blind zu vertrauen.
+export const STORED_NAME_PATTERN = /^\d+-[0-9a-f]{16}(\.[a-zA-Z0-9]{1,20})?$/;
+
 // Erzeugt einen kollisionsfreien, dateisystemsicheren Namen für die
 // Ablage auf der Platte, unabhängig vom (nutzerkontrollierten) Original-
 // Dateinamen. So sind Pfad-Traversal oder Sonderzeichen im Originalnamen
 // nie ein Problem.
 export function generateStoredName(originalName) {
-  const ext = path.extname(originalName || "").slice(0, 20).replace(/[^a-zA-Z0-9.]/g, "");
-  return `${Date.now()}-${crypto.randomBytes(8).toString("hex")}${ext}`;
+  let ext = path.extname(originalName || "").slice(0, 20).replace(/[^a-zA-Z0-9.]/g, "");
+  // Ein Originalname wie "readme." liefert von path.extname() nur ".";
+  // ohne mindestens ein Zeichen dahinter wäre das Ergebnis nicht mehr
+  // STORED_NAME_PATTERN-konform.
+  if (ext.length <= 1) ext = "";
+  const name = `${Date.now()}-${crypto.randomBytes(8).toString("hex")}${ext}`;
+  return name;
+}
+
+// Löst stored_name sicher zu einem absoluten Pfad innerhalb des aktuell
+// konfigurierten Dokumentenordners auf, oder gibt null zurück. Zwei
+// unabhängige Prüfungen (Format + tatsächliches Enthaltensein im
+// aufgelösten Zielordner) statt nur einer, an jeder Stelle, die diese Datei
+// tatsächlich anfasst (Download, Löschen, Restore-Validierung in
+// backupSchemas.js) – nicht nur beim Upload.
+export function resolveStoredDocumentPath(storedName) {
+  if (typeof storedName !== "string" || !STORED_NAME_PATTERN.test(storedName)) return null;
+  const dir = path.resolve(getDocumentsDir());
+  const resolved = path.resolve(dir, storedName);
+  if (resolved !== dir && !resolved.startsWith(dir + path.sep)) return null;
+  return resolved;
 }

@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback } from "react";
-import { getToken, setToken, apiFetch } from "../api/client";
+import { getToken, setToken, apiFetch, clearOfflineCache } from "../api/client";
 
 const AuthContext = createContext(null);
 
@@ -29,6 +29,7 @@ export function AuthProvider({ children }) {
   const logout = useCallback(() => {
     setToken(null);
     setAuthed(false);
+    clearOfflineCache();
   }, []);
 
   return (

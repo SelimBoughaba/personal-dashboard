@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import { getJwtSecret } from "../configStore.js";
+import { getJwtSecret, getTokenVersion } from "../configStore.js";
 
 export function requireAuth(req, res, next) {
   const header = req.headers.authorization || "";
@@ -10,7 +10,14 @@ export function requireAuth(req, res, next) {
   }
 
   try {
-    req.user = jwt.verify(token, getJwtSecret());
+    const payload = jwt.verify(token, getJwtSecret());
+    // Ein Token, das vor dem letzten Passwortwechsel ausgestellt wurde, ist
+    // ungültig, selbst wenn Signatur/Ablaufdatum für sich genommen noch
+    // gültig wären (siehe configStore.js#bumpTokenVersion).
+    if (payload.v !== getTokenVersion()) {
+      return res.status(401).json({ error: "Sitzung ungültig oder abgelaufen." });
+    }
+    req.user = payload;
     next();
   } catch {
     return res.status(401).json({ error: "Sitzung ungültig oder abgelaufen." });

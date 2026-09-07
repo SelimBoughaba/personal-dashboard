@@ -24,6 +24,25 @@ export function setSetting(key, value) {
   ).run(key, JSON.stringify(value));
 }
 
+// Atomarer Compare-and-Set: schreibt den Wert nur, wenn der Schlüssel noch
+// nicht existiert, und meldet zurück, ob DIESER Aufruf gewonnen hat. Läuft
+// als einzelnes synchrones SQLite-Statement (better-sqlite3 ist synchron,
+// SQLite serialisiert Schreibzugriffe ohnehin) – zwischen Prüfung und
+// Schreiben gibt es dadurch keine Lücke, in der ein zweiter, gleichzeitiger
+// Aufruf dieselbe Prüfung ebenfalls "erfolgreich" sehen könnte. Wichtig für
+// die Ersteinrichtung (Punkt 6): zwei parallele Setup-Versuche dürfen nicht
+// beide erfolgreich sein.
+export function setSettingIfAbsent(key, value) {
+  const info = db
+    .prepare(
+      `INSERT INTO settings (key, value, updated_at)
+       SELECT ?, ?, datetime('now')
+       WHERE NOT EXISTS (SELECT 1 FROM settings WHERE key = ?)`,
+    )
+    .run(key, JSON.stringify(value), key);
+  return info.changes === 1;
+}
+
 export function deleteSetting(key) {
   db.prepare("DELETE FROM settings WHERE key = ?").run(key);
 }
@@ -111,4 +130,21 @@ export function getJwtSecret() {
   const generated = crypto.randomBytes(32).toString("hex");
   setSetting("auth.jwt_secret", generated);
   return generated;
+}
+
+// Session-/Token-Version: wird bei jedem Passwortwechsel erhöht und in
+// jedes neu ausgestellte JWT eingebettet (siehe routes/auth.js). requireAuth
+// vergleicht die Version im Token mit dem aktuellen Wert – ein Token mit
+// veralteter Version gilt als ungültig, auch wenn Signatur und Ablaufdatum
+// noch passen würden. So beendet ein Passwortwechsel wirklich alle zuvor
+// ausgestellten Tokens, nicht nur das lokal im Browser gespeicherte.
+export function getTokenVersion() {
+  const stored = getSetting("auth.token_version");
+  return typeof stored === "number" && Number.isInteger(stored) ? stored : 0;
+}
+
+export function bumpTokenVersion() {
+  const next = getTokenVersion() + 1;
+  setSetting("auth.token_version", next);
+  return next;
 }

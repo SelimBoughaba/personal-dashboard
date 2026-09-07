@@ -9,6 +9,22 @@ export function setToken(token) {
   else localStorage.removeItem(TOKEN_KEY);
 }
 
+// Leert den Service-Worker-Cache mit zuletzt gesehenen API-Antworten (siehe
+// vite.config.js#OFFLINE_CACHEABLE_PREFIXES). Wird bei Logout, nach einem
+// Passwortwechsel und nach einer Wiederherstellung aufgerufen, damit nach
+// einem Konto-/Datenwechsel keine veralteten Offline-Daten vom vorherigen
+// Zustand sichtbar bleiben. Best effort: Cache Storage ist nicht überall
+// verfügbar (z. B. manche eingebetteten WebViews) und darf den eigentlichen
+// Vorgang nie blockieren.
+export async function clearOfflineCache() {
+  if (typeof caches === "undefined") return;
+  try {
+    await caches.delete("api-cache");
+  } catch {
+    // ignorieren – siehe Kommentar oben
+  }
+}
+
 export async function apiFetch(path, options = {}) {
   const token = getToken();
   const isFormData = options.body instanceof FormData;
@@ -26,6 +42,7 @@ export async function apiFetch(path, options = {}) {
 
   if (res.status === 401) {
     setToken(null);
+    clearOfflineCache();
     window.location.href = "/login";
     throw new Error("Nicht angemeldet.");
   }

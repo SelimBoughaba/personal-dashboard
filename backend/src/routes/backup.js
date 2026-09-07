@@ -1,7 +1,16 @@
 import { Router } from "express";
+import express from "express";
 import { db } from "../db.js";
+import { validateTable, validateSettings, findDanglingAreaRef } from "../backupSchemas.js";
 
 export const backupRouter = Router();
+
+// Ein volles Backup (v. a. Dokument-Metadaten, Notizen, Rechnungen über
+// Jahre) kann leicht über das globale 1-MB-JSON-Limit aus index.js wachsen –
+// das eigene Backup wäre dann nicht mehr wiederherstellbar. Nur diese Route
+// bekommt ein größeres, aber weiterhin begrenztes Budget (kein unbegrenztes
+// globales Limit).
+const backupJsonParser = express.json({ limit: "40mb" });
 
 const BACKUP_VERSION = 8;
 // Ältere Backup-Versionen kannten neuere Tabellen (documents, contracts, ...)
@@ -18,8 +27,26 @@ const OPTIONAL_TABLES = [
   { key: "prompts", sinceVersion: 7 },
   { key: "linkedin_posts", sinceVersion: 8 },
 ];
+const REQUIRED_TABLES = ["tasks", "invoices", "areas"];
+
+// Zugangsdaten und Auth-Zustand sind kein "gewöhnlicher" Nutzerinhalt:
+// - Beim Export nie mit ausliefern, sonst landen bcrypt-Hash und
+//   JWT-Signaturschlüssel in jeder Backup-Datei (die laut README ohnehin
+//   Kalender-/Mail-Zugangsdaten im Klartext enthält – hier soll wenigstens
+//   nicht zusätzlich die eigene Anmeldung mit exportiert werden).
+// - Beim Restore nie übernehmen, sonst würde ein altes Backup das aktuelle
+//   Passwort/den aktuellen Session-Schlüssel still zurücksetzen, oder eine
+//   manipulierte Datei einen selbst gewählten JWT-Schlüssel einschleusen.
+const EXCLUDED_SETTINGS_KEYS = ["auth.password_hash", "auth.jwt_secret", "auth.token_version"];
 
 function buildBackup() {
+  const settingsRows = db.prepare("SELECT key, value FROM settings").all();
+  const settings = {};
+  for (const row of settingsRows) {
+    if (EXCLUDED_SETTINGS_KEYS.includes(row.key)) continue;
+    settings[row.key] = row.value;
+  }
+
   return {
     version: BACKUP_VERSION,
     exported_at: new Date().toISOString(),
@@ -36,35 +63,68 @@ function buildBackup() {
     health_entries: db.prepare("SELECT * FROM health_entries").all(),
     prompts: db.prepare("SELECT * FROM prompts").all(),
     linkedin_posts: db.prepare("SELECT * FROM linkedin_posts").all(),
-    settings: Object.fromEntries(
-      db.prepare("SELECT key, value FROM settings").all().map((r) => [r.key, r.value]),
-    ),
+    settings,
   };
 }
 
+// Prüft Struktur, Typen und Wertebereiche jeder Tabelle (siehe
+// backupSchemas.js) sowie Bereichsreferenzen. Vorschau und Wiederherstellung
+// verwenden exakt dieselbe Funktion, damit eine Datei, die die Vorschau
+// besteht, beim tatsächlichen Restore nicht überraschend doch abgelehnt wird.
+// Gibt bei Erfolg die bereinigten (auf die erwarteten Felder reduzierten)
+// Tabellen zurück.
 function validateBackup(data) {
-  if (!data || typeof data !== "object") return "Datei ist kein gültiges Backup (kein JSON-Objekt).";
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    return { ok: false, error: "Datei ist kein gültiges Backup (kein JSON-Objekt)." };
+  }
   if (!SUPPORTED_VERSIONS.includes(data.version)) {
-    return `Nicht unterstützte Backup-Version (${data.version}).`;
+    return { ok: false, error: `Nicht unterstützte Backup-Version (${data.version}).` };
   }
-  for (const key of ["tasks", "invoices", "areas"]) {
-    if (!Array.isArray(data[key])) return `Feld "${key}" fehlt oder ist keine Liste.`;
-  }
+
+  const tablesToValidate = [...REQUIRED_TABLES];
   for (const { key, sinceVersion } of OPTIONAL_TABLES) {
-    if (data.version >= sinceVersion && !Array.isArray(data[key])) {
-      return `Feld "${key}" fehlt oder ist keine Liste.`;
+    if (data.version >= sinceVersion) tablesToValidate.push(key);
+  }
+
+  const clean = {};
+  for (const table of tablesToValidate) {
+    if (!Array.isArray(data[table])) {
+      return { ok: false, error: `Feld "${table}" fehlt oder ist keine Liste.` };
     }
+    if (data[table].length > 200000) {
+      return { ok: false, error: `Feld "${table}" enthält zu viele Einträge.` };
+    }
+    const result = validateTable(table, data[table]);
+    if (!result.ok) return result;
+    clean[table] = result.rows;
   }
-  if (typeof data.settings !== "object" || data.settings === null) {
-    return `Feld "settings" fehlt oder ist kein Objekt.`;
+  // Tabellen aus neueren, hier nicht unterstützten Versionen einfach nicht
+  // mit übernehmen (bleiben unangetastet) statt sie ungeprüft durchzureichen.
+
+  const settingsResult = validateSettings(data.settings);
+  if (!settingsResult.ok) return settingsResult;
+  clean.settings = settingsResult.settings;
+
+  const areaIds = new Set(clean.areas.map((a) => a.id));
+  if (areaIds.size !== clean.areas.length) {
+    return { ok: false, error: "areas: doppelte Bereichs-ID im Backup." };
   }
-  return null;
+  for (const table of tablesToValidate) {
+    if (table === "areas") continue;
+    const dangling = findDanglingAreaRef(table, clean[table], areaIds);
+    if (dangling) return { ok: false, error: dangling };
+  }
+
+  clean.version = data.version;
+  clean.exported_at = typeof data.exported_at === "string" ? data.exported_at : null;
+  return { ok: true, data: clean };
 }
 
-// Lädt das komplette lokale Backup als Datei herunter. Enthält auch
-// gespeicherte Zugangsdaten (Kalender/Mail) im Klartext, genau wie die
-// lokale Datenbank selbst – die Datei sollte entsprechend sicher
-// aufbewahrt werden (z. B. auf einem verschlüsselten Volume).
+// Lädt das komplette lokale Backup als Datei herunter. Enthält weiterhin
+// gespeicherte Kalender-/Mail-Zugangsdaten im Klartext (siehe README), aber
+// nicht mehr den eigenen Passwort-Hash/JWT-Schlüssel (siehe oben) – die
+// Datei sollte trotzdem sicher aufbewahrt werden (z. B. auf einem
+// verschlüsselten Volume).
 backupRouter.get("/", (req, res) => {
   const backup = buildBackup();
   res.setHeader("Content-Type", "application/json");
@@ -77,25 +137,25 @@ backupRouter.get("/", (req, res) => {
 
 // Validiert eine hochgeladene Backup-Datei und liefert nur eine Vorschau
 // (Anzahl Einträge), ohne irgendetwas zu verändern.
-backupRouter.post("/preview", (req, res) => {
-  const data = req.body?.data;
-  const error = validateBackup(data);
-  if (error) return res.status(400).json({ valid: false, error });
+backupRouter.post("/preview", backupJsonParser, (req, res) => {
+  const result = validateBackup(req.body?.data);
+  if (!result.ok) return res.status(400).json({ valid: false, error: result.error });
+  const { data } = result;
 
   res.json({
     valid: true,
-    exported_at: data.exported_at || null,
+    exported_at: data.exported_at,
     counts: {
       tasks: data.tasks.length,
       invoices: data.invoices.length,
       areas: data.areas.length,
-      documents: Array.isArray(data.documents) ? data.documents.length : 0,
-      contracts: Array.isArray(data.contracts) ? data.contracts.length : 0,
-      goals: Array.isArray(data.goals) ? data.goals.length : 0,
-      notes: Array.isArray(data.notes) ? data.notes.length : 0,
-      health_entries: Array.isArray(data.health_entries) ? data.health_entries.length : 0,
-      prompts: Array.isArray(data.prompts) ? data.prompts.length : 0,
-      linkedin_posts: Array.isArray(data.linkedin_posts) ? data.linkedin_posts.length : 0,
+      documents: data.documents?.length || 0,
+      contracts: data.contracts?.length || 0,
+      goals: data.goals?.length || 0,
+      notes: data.notes?.length || 0,
+      health_entries: data.health_entries?.length || 0,
+      prompts: data.prompts?.length || 0,
+      linkedin_posts: data.linkedin_posts?.length || 0,
       settings: Object.keys(data.settings).length,
     },
   });
@@ -104,23 +164,39 @@ backupRouter.post("/preview", (req, res) => {
 // Ersetzt den kompletten lokalen Datenbestand durch den Inhalt des
 // Backups. Erfordert confirm:true, damit ein versehentlicher Aufruf ohne
 // vorherige Warnung im Frontend nicht möglich ist.
-backupRouter.post("/restore", (req, res) => {
-  const { data, confirm } = req.body || {};
-  const error = validateBackup(data);
-  if (error) return res.status(400).json({ error });
-  if (!confirm) {
+backupRouter.post("/restore", backupJsonParser, (req, res) => {
+  const { data: rawData, confirm } = req.body || {};
+  const result = validateBackup(rawData);
+  if (!result.ok) return res.status(400).json({ error: result.error });
+  if (confirm !== true) {
     return res.status(400).json({ error: "Bestätigung erforderlich (confirm: true) – überschreibt alle lokalen Daten." });
   }
+  const data = result.data;
 
   const run = db.transaction(() => {
-    db.exec("DELETE FROM tasks; DELETE FROM invoices; DELETE FROM areas; DELETE FROM settings;");
-    if (Array.isArray(data.documents)) db.exec("DELETE FROM documents;");
-    if (Array.isArray(data.contracts)) db.exec("DELETE FROM contracts;");
-    if (Array.isArray(data.goals)) db.exec("DELETE FROM goals;");
-    if (Array.isArray(data.notes)) db.exec("DELETE FROM notes;");
-    if (Array.isArray(data.health_entries)) db.exec("DELETE FROM health_entries;");
-    if (Array.isArray(data.prompts)) db.exec("DELETE FROM prompts;");
-    if (Array.isArray(data.linkedin_posts)) db.exec("DELETE FROM linkedin_posts;");
+    // settings bewusst NICHT pauschal gelöscht: auth.* (Passwort-Hash,
+    // JWT-Schlüssel, Session-Version) muss die aktuell laufende Anmeldung
+    // überleben, siehe EXCLUDED_SETTINGS_KEYS oben. Alle anderen
+    // Einstellungen werden gezielt ersetzt (nicht nur ergänzt), damit ein
+    // Restore weiterhin ein vollständiger Zustandswechsel ist.
+    db.exec("DELETE FROM tasks; DELETE FROM invoices; DELETE FROM areas;");
+    const preserved = {};
+    for (const key of EXCLUDED_SETTINGS_KEYS) {
+      const row = db.prepare("SELECT value FROM settings WHERE key = ?").get(key);
+      if (row) preserved[key] = row.value;
+    }
+    db.exec("DELETE FROM settings;");
+    for (const [key, value] of Object.entries(preserved)) {
+      db.prepare("INSERT INTO settings (key, value) VALUES (?, ?)").run(key, value);
+    }
+
+    if (data.documents) db.exec("DELETE FROM documents;");
+    if (data.contracts) db.exec("DELETE FROM contracts;");
+    if (data.goals) db.exec("DELETE FROM goals;");
+    if (data.notes) db.exec("DELETE FROM notes;");
+    if (data.health_entries) db.exec("DELETE FROM health_entries;");
+    if (data.prompts) db.exec("DELETE FROM prompts;");
+    if (data.linkedin_posts) db.exec("DELETE FROM linkedin_posts;");
 
     const insertArea = db.prepare(
       "INSERT INTO areas (id, label, color, sort_order, is_default, archived, created_at, updated_at) VALUES (@id, @label, @color, @sort_order, @is_default, @archived, @created_at, @updated_at)",
@@ -138,17 +214,17 @@ backupRouter.post("/restore", (req, res) => {
     );
     for (const invoice of data.invoices) insertInvoice.run(invoice);
 
-    if (Array.isArray(data.documents)) {
+    if (data.documents) {
       const insertDocument = db.prepare(
         `INSERT INTO documents (id, title, file_name, stored_name, mime_type, size, area, tags, created_at, updated_at)
          VALUES (@id, @title, @file_name, @stored_name, @mime_type, @size, @area, @tags, @created_at, @updated_at)`,
       );
       for (const document of data.documents) {
-        insertDocument.run({ ...document, tags: typeof document.tags === "string" ? document.tags : JSON.stringify(document.tags || []) });
+        insertDocument.run({ ...document, tags: typeof document.tags === "string" ? document.tags : JSON.stringify(document.tags) });
       }
     }
 
-    if (Array.isArray(data.contracts)) {
+    if (data.contracts) {
       const insertContract = db.prepare(
         `INSERT INTO contracts (id, title, provider, area, cost, billing_cycle, cancellation_period_days, next_renewal_date, status, notes, created_at, updated_at)
          VALUES (@id, @title, @provider, @area, @cost, @billing_cycle, @cancellation_period_days, @next_renewal_date, @status, @notes, @created_at, @updated_at)`,
@@ -156,27 +232,27 @@ backupRouter.post("/restore", (req, res) => {
       for (const contract of data.contracts) insertContract.run(contract);
     }
 
-    if (Array.isArray(data.goals)) {
+    if (data.goals) {
       const insertGoal = db.prepare(
         `INSERT INTO goals (id, title, description, area, target_date, status, progress, milestones, created_at, updated_at)
          VALUES (@id, @title, @description, @area, @target_date, @status, @progress, @milestones, @created_at, @updated_at)`,
       );
       for (const goal of data.goals) {
-        insertGoal.run({ ...goal, milestones: typeof goal.milestones === "string" ? goal.milestones : JSON.stringify(goal.milestones || []) });
+        insertGoal.run({ ...goal, milestones: typeof goal.milestones === "string" ? goal.milestones : JSON.stringify(goal.milestones) });
       }
     }
 
-    if (Array.isArray(data.notes)) {
+    if (data.notes) {
       const insertNote = db.prepare(
         `INSERT INTO notes (id, title, content, area, tags, pinned, created_at, updated_at)
          VALUES (@id, @title, @content, @area, @tags, @pinned, @created_at, @updated_at)`,
       );
       for (const note of data.notes) {
-        insertNote.run({ ...note, tags: typeof note.tags === "string" ? note.tags : JSON.stringify(note.tags || []) });
+        insertNote.run({ ...note, tags: typeof note.tags === "string" ? note.tags : JSON.stringify(note.tags) });
       }
     }
 
-    if (Array.isArray(data.health_entries)) {
+    if (data.health_entries) {
       const insertHealthEntry = db.prepare(
         `INSERT INTO health_entries (id, entry_date, type, value, unit, note, created_at, updated_at)
          VALUES (@id, @entry_date, @type, @value, @unit, @note, @created_at, @updated_at)`,
@@ -184,17 +260,17 @@ backupRouter.post("/restore", (req, res) => {
       for (const entry of data.health_entries) insertHealthEntry.run(entry);
     }
 
-    if (Array.isArray(data.prompts)) {
+    if (data.prompts) {
       const insertPrompt = db.prepare(
         `INSERT INTO prompts (id, title, content, area, tags, pinned, created_at, updated_at)
          VALUES (@id, @title, @content, @area, @tags, @pinned, @created_at, @updated_at)`,
       );
       for (const prompt of data.prompts) {
-        insertPrompt.run({ ...prompt, tags: typeof prompt.tags === "string" ? prompt.tags : JSON.stringify(prompt.tags || []) });
+        insertPrompt.run({ ...prompt, tags: typeof prompt.tags === "string" ? prompt.tags : JSON.stringify(prompt.tags) });
       }
     }
 
-    if (Array.isArray(data.linkedin_posts)) {
+    if (data.linkedin_posts) {
       const insertPost = db.prepare(
         `INSERT INTO linkedin_posts (id, content, area, status, scheduled_date, created_at, updated_at)
          VALUES (@id, @content, @area, @status, @scheduled_date, @created_at, @updated_at)`,
@@ -202,9 +278,11 @@ backupRouter.post("/restore", (req, res) => {
       for (const post of data.linkedin_posts) insertPost.run(post);
     }
 
-    const insertSetting = db.prepare("INSERT INTO settings (key, value) VALUES (?, ?)");
     for (const [key, value] of Object.entries(data.settings)) {
-      insertSetting.run(key, typeof value === "string" ? value : JSON.stringify(value));
+      db.prepare("INSERT INTO settings (key, value) VALUES (?, ?)").run(
+        key,
+        typeof value === "string" ? value : JSON.stringify(value),
+      );
     }
   });
 

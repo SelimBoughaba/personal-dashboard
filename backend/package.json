@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "node --watch-path=./src src/index.js",
     "start": "node src/index.js",
-    "hash-password": "node src/scripts/hashPassword.js"
+    "hash-password": "node src/scripts/hashPassword.js",
+    "test": "node --test"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -21,6 +22,7 @@
     "multer": "^2.3.0",
     "node-ical": "^0.20.1",
     "pdf-parse": "^1.1.1",
-    "tsdav": "^2.1.3"
+    "tsdav": "^2.1.3",
+    "zod": "^3.25.76"
   }
 }
