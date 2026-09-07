@@ -8,6 +8,7 @@ import { PageHeader } from "../components/ui/PageHeader";
 import { FilterChips } from "../components/ui/FilterChips";
 import { StatTile } from "../components/ui/StatTile";
 import { EmptyState } from "../components/ui/EmptyState";
+import { KostenverlaufChart } from "../components/KostenverlaufChart";
 import { useAreas } from "../context/AreasContext";
 import { localIsoDate } from "../utils/date";
 import { useAsyncAction } from "../hooks/useAsyncAction";
@@ -50,6 +51,12 @@ export function Rechnungen() {
   }, [load]);
 
   const todayIso = localIsoDate();
+  // Kostenverlauf zeigt fällige Beträge unabhängig vom Bezahlt-Status (eine
+  // bezahlte Rechnung war trotzdem ein Kostenpunkt in ihrem Monat), aber
+  // respektiert den Bereichsfilter - dieselbe Auswahl wie in der Liste
+  // darunter.
+  const chartInvoices = areaFilter === "alle" ? allInvoices : allInvoices.filter((i) => i.area === areaFilter);
+  const chartAreaLabel = areaFilter === "alle" ? null : activeAreas.find((a) => a.id === areaFilter)?.label;
   const openInvoices = allInvoices.filter((i) => i.status === "offen");
   const overdueInvoices = openInvoices.filter((i) => i.due_date && i.due_date < todayIso);
   const openSum = openInvoices.reduce((s, i) => s + (i.amount || 0), 0);
@@ -195,6 +202,8 @@ export function Rechnungen() {
         <StatTile label="Bezahlt (dieser Monat)" value={formatAmount(paidThisMonthSum)} />
         <StatTile label="Anzahl offen" value={openInvoices.length} />
       </div>
+
+      <KostenverlaufChart invoices={chartInvoices} areaLabel={chartAreaLabel} />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <FilterChips options={[{ id: "alle", label: "Alle" }, ...activeAreas]} value={areaFilter} onChange={setAreaFilter} />
