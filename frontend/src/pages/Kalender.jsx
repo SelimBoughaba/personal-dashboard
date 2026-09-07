@@ -205,7 +205,7 @@ function MonthGrid({ refDate, eventsByDay, allDayByDay, byId }) {
                 key={dayKey}
                 className={`min-h-[100px] border-l border-white/10 p-1.5 first:border-l-0 ${isOtherMonth ? "opacity-40" : ""}`}
               >
-                <p className={`mb-1 text-xs ${isToday ? "inline-flex h-5 w-5 items-center justify-center rounded-full bg-lime text-ink" : "text-ivory/60"}`}>
+                <p className={`mb-1 text-xs ${isToday ? "inline-flex h-5 w-5 items-center justify-center rounded-full bg-accent text-ink" : "text-ivory/60"}`}>
                   {day.getDate()}
                 </p>
                 <div className="space-y-0.5">

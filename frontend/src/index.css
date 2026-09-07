@@ -3,59 +3,64 @@
 @tailwind utilities;
 
 :root {
-  /* Dunkles Theme (Standard). RGB-Tripel ohne rgb()-Wrapper, damit
-     Tailwinds <alpha-value>-Platzhalter (siehe tailwind.config.js) die
-     Deckkraft aus der jeweiligen Utility-Klasse einsetzen kann. */
-  --color-forest-950: 7 31 25;
-  --color-forest-900: 13 44 36;
-  --color-forest-800: 23 68 56;
-  --color-forest-700: 31 82 69;
-  --color-ivory: 243 241 233;
-  --color-paper: 233 231 223;
-  /* Gegenüber dem Ausgangswert (96 112 104, ~3.3:1 auf dunklem Grund)
-     aufgehellt: Formular-Labels (text-muted) erreichen erst ab ~4.5:1
-     zuverlässig WCAG-2.2-AA für normalen Text - gemessen gegen die
-     tatsächliche zusammengesetzte Kartenfarbe, nicht nur den Roh-Hexwert. */
-  --color-muted: 123 142 132;
+  /* Nachtblau-Palette (Punkt 54 der Design-Erweiterung vom 7.9.2026).
+     RGB-Tripel ohne rgb()-Wrapper, damit Tailwinds <alpha-value>-
+     Platzhalter (siehe tailwind.config.js) die Deckkraft aus der
+     jeweiligen Utility-Klasse einsetzen kann. Canvas/Fläche/angehobene
+     Fläche/Haupttext/sekundärer Text/Akzent sind die im Prompt exakt
+     vorgegebenen Startwerte - dieselben Token-Namen wie vorher (forest-*,
+     ivory, muted, lime→accent), keine neue Farbbibliothek. */
+  --color-forest-950: 7 20 33; /* Canvas #071421 */
+  --color-forest-900: 9 27 43; /* Fläche #091B2B */
+  --color-forest-800: 16 38 58; /* angehobene Fläche #10263A */
+  --color-forest-700: 22 49 73; /* eine Stufe heller, aktuell nicht direkt genutzt */
+  --color-ivory: 232 223 206; /* Haupttext #E8DFCE */
+  --color-paper: 183 171 157; /* wie sekundärer Text, aktuell nicht direkt genutzt */
+  --color-muted: 183 171 157; /* sekundärer Text #B7AB9D */
   --color-white: 255 255 255;
-  /* Fokusring: in Dunkel identisch zu lime (hoher Kontrast, 14.7:1).
-     Eigene Variable statt direkt "lime", weil lime im Hellmodus (siehe
-     unten) durch eine dunklere Variante ersetzt werden muss. */
-  --color-focus: 200 255 82;
-  /* Status-/Fehlertextfarben. In Dunkel identisch zu den bisherigen
-     Werten (bereits ausreichend Kontrast), im Hellmodus eigene, dunklere
-     Varianten (siehe [data-theme="light"] unten). */
+  /* Fokusring und Akzent: entsättigtes Türkis #47B1AF, gemessen 7.2:1
+     gegen Canvas/Fläche. Eigene Variable statt direkt "accent", weil der
+     Fokusring im Hellmodus (siehe unten) durch eine dunklere Variante
+     ersetzt werden muss. */
+  --color-focus: 71 177 175;
+  /* Status-/Fehlertextfarben gegen die neuen Nachtblau-Flächen erneut
+     gemessen (4.99-8.25:1 gegen Canvas/Fläche/angehobene Fläche) -
+     unverändert übernommen, da bereits ausreichend Kontrast. */
   --color-status-hoch: 226 114 91;
   --color-status-mittel: 217 164 65;
   --color-status-niedrig: 139 168 136;
 }
 
-/* Helles Theme: dieselben Namen, umgekehrte Rollen (z. B. wird die
-   "weiße" Glas-Überlagerung zu einer dunklen, die vorher helle
-   Fließtextfarbe "ivory" zu dunklem Text). Jede bestehende Utility-Klasse
-   (text-ivory, bg-forest-900/60, bg-white/[0.05], ...) passt sich dadurch
-   automatisch an, ohne einzelne Komponenten anfassen zu müssen. */
+/* Helles Theme: "dieselbe Identität auf warmem Papier, kein bloßes
+   Invertieren" (Punkt 54). Die Gestaltungsherleitung nennt fünf
+   Farbrollen: nachtblauer Schreibtisch (= Dunkelmodus-Canvas oben),
+   warmes Dokumentpapier (= Canvas hier), tiefe blaue Tinte (= Haupttext
+   hier), blaugraue Register (= angehobene Fläche hier), entsättigtes
+   Türkis (= Akzent, in beiden Modi nahezu gleich). Jede bestehende
+   Utility-Klasse (text-ivory, bg-forest-900/60, bg-white/[0.05], ...)
+   passt sich dadurch automatisch an, ohne einzelne Komponenten
+   anfassen zu müssen. */
 [data-theme="light"] {
-  --color-forest-950: 246 244 238;
-  --color-forest-900: 255 255 255;
-  --color-forest-800: 214 224 218;
-  --color-forest-700: 190 205 197;
-  --color-ivory: 16 34 28;
-  --color-paper: 214 219 210;
-  --color-muted: 74 88 80;
-  --color-white: 16 34 28;
-  /* lime (200 255 82) hat auf dem hellen Hintergrund nur ~1.1:1 Kontrast -
+  --color-forest-950: 244 239 227; /* warmes Dokumentpapier #F4EFE3 */
+  --color-forest-900: 255 252 246; /* helleres warmes Weiß #FFFCF6 */
+  --color-forest-800: 214 223 230; /* blaugraues Register #D6DFE6 */
+  --color-forest-700: 176 192 204; /* dunklere Registerstufe #B0C0CC */
+  --color-ivory: 11 30 46; /* tiefe blaue Tinte #0B1E2E */
+  --color-paper: 69 84 96;
+  --color-muted: 69 84 96; /* gedämpftes Blaugrau #455460 */
+  --color-white: 11 30 46;
+  /* Unverändertes Türkis hat auf dem warmen Papier nur ~2.2:1 Kontrast -
      ein per Tastatur navigierender Mensch würde den Fokusring im
-     Hellmodus praktisch nicht sehen. Ersatzwert: der dunkle,
-     markenkonsistente forest-800-Ton (Waldgrün), gemessen ~9.9:1. */
-  --color-focus: 23 68 56;
-  /* Dieselben Statusfarben wie im Dunkelmodus liegen auf hellem Grund nur
-     bei 2.0-2.8:1 (z. B. Fehlermeldungen kaum lesbar). Dunklere Varianten
-     derselben Farbfamilie, gemessen auf ~4.5:1+ gegen den tatsächlichen
-     hellen Seitenhintergrund. */
-  --color-status-hoch: 200 63 35;
-  --color-status-mittel: 142 102 28;
-  --color-status-niedrig: 88 117 85;
+     Hellmodus kaum sehen. Dunklere Variante #186D6B, gemessen 5.3-6.0:1
+     gegen Canvas/Fläche. */
+  --color-focus: 24 109 107;
+  /* Dieselben Statusfarben wie im Dunkelmodus liegen auf dem warmen
+     Papier nur bei 4.37-4.50:1 (teils knapp unter WCAG-2.2-AA). Dunklere
+     Varianten derselben Farbfamilie, gemessen auf 5.06-7.30:1 gegen
+     Canvas und Fläche. */
+  --color-status-hoch: 184 56 28;
+  --color-status-mittel: 125 90 18;
+  --color-status-niedrig: 63 92 60;
 }
 
 @layer base {
@@ -68,7 +73,7 @@
     background-attachment: fixed;
   }
   ::selection {
-    background: rgba(200, 255, 82, 0.28);
+    background: rgba(71, 177, 175, 0.28);
   }
   :focus-visible {
     outline: 2px solid theme("colors.focus");

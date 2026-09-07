@@ -213,7 +213,7 @@ export function Uebersicht() {
         <div className="space-y-2.5">
           {importantMails.map((m) => (
             <div key={m.id} className="flex items-center gap-2.5 text-sm">
-              <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${m.unread ? "bg-lime" : "bg-white/20"}`} />
+              <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${m.unread ? "bg-accent" : "bg-white/20"}`} />
               <span className="min-w-0 flex-1 truncate text-ivory/85">{m.subject}</span>
               <AreaBadge area={m.area} />
             </div>
@@ -235,7 +235,7 @@ export function Uebersicht() {
                 onChange={(e) => setName(e.target.value)}
                 onBlur={saveName}
                 placeholder="Dein Name"
-                className="rounded-lg border border-white/10 bg-white/[0.04] px-2 py-1 text-2xl font-semibold text-ivory outline-none focus:border-lime/40"
+                className="rounded-lg border border-white/10 bg-white/[0.04] px-2 py-1 text-2xl font-semibold text-ivory outline-none focus:border-accent/40"
               />
             </form>
           ) : (
@@ -306,7 +306,7 @@ export function Uebersicht() {
               onChange={(e) => setBriefingText(e.target.value)}
               onBlur={saveBriefing}
               placeholder="Trage hier ein, was dir heute wichtig ist – z. B. Fokus des Tages, Erinnerungen, Notizen…"
-              className="w-full resize-y rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-ivory placeholder:text-ivory/35 outline-none focus:border-lime/40"
+              className="w-full resize-y rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-ivory placeholder:text-ivory/35 outline-none focus:border-accent/40"
             />
           ) : briefingText ? (
             <p className="whitespace-pre-wrap text-sm text-ivory/85">{briefingText}</p>

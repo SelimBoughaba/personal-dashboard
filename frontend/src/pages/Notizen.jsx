@@ -149,7 +149,7 @@ export function Notizen() {
                 onClick={() => togglePin(n)}
                 disabled={pinning || deleting}
                 title={n.pinned ? "Nicht mehr anpinnen" : "Anpinnen"}
-                className={`shrink-0 text-lg disabled:opacity-40 ${n.pinned ? "text-lime" : "text-ivory/55 hover:text-ivory/70"}`}
+                className={`shrink-0 text-lg disabled:opacity-40 ${n.pinned ? "text-accent" : "text-ivory/55 hover:text-ivory/70"}`}
               >
                 {n.pinned ? "★" : "☆"}
               </button>

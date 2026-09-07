@@ -3,7 +3,7 @@ import { GlassCard } from "./GlassCard";
 const TONES = {
   default: "text-ivory",
   danger: "text-status-hoch",
-  accent: "text-lime",
+  accent: "text-accent",
 };
 
 export function StatTile({ label, value, tone = "default", hint, className = "" }) {

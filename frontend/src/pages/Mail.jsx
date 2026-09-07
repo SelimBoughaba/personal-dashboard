@@ -65,7 +65,7 @@ export function Mail() {
         {filtered.map((m) => (
           <GlassCard key={m.id} className="flex items-center gap-3 !p-4">
             <span
-              className={`h-2 w-2 shrink-0 rounded-full ${m.unread ? "bg-lime" : "bg-white/10"}`}
+              className={`h-2 w-2 shrink-0 rounded-full ${m.unread ? "bg-accent" : "bg-white/10"}`}
               title={m.unread ? "Ungelesen" : "Gelesen"}
             />
             <div className="min-w-0 flex-1">

@@ -16,7 +16,7 @@ const STATUS_LABELS = { aktiv: "Aktiv", erreicht: "Erreicht", abgebrochen: "Abge
 function ProgressBar({ value }) {
   return (
     <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
-      <div className="h-full rounded-full bg-lime" style={{ width: `${value}%` }} />
+      <div className="h-full rounded-full bg-accent" style={{ width: `${value}%` }} />
     </div>
   );
 }
@@ -46,7 +46,7 @@ function MilestoneChecklist({ goal, onChange }) {
             type="checkbox"
             checked={m.done}
             onChange={() => toggle(m.id)}
-            className="h-4 w-4 rounded border-white/20 bg-white/5 accent-lime"
+            className="h-4 w-4 rounded border-white/20 bg-white/5 accent-accent"
           />
           <span className={`flex-1 ${m.done ? "text-ivory/40 line-through" : "text-ivory/80"}`}>{m.text}</span>
           <button onClick={() => remove(m.id)} className="text-ivory/55 hover:text-status-hoch">

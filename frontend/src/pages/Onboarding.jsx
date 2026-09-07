@@ -114,7 +114,7 @@ export function Onboarding() {
           </div>
           <div className="h-1.5 overflow-hidden rounded-full bg-white/5">
             <div
-              className="h-full rounded-full bg-lime transition-all duration-200"
+              className="h-full rounded-full bg-accent transition-all duration-200"
               style={{ width: `${((stepIndex + 1) / STEPS.length) * 100}%` }}
             />
           </div>

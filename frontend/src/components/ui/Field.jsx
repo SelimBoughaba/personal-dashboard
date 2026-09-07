@@ -1,7 +1,7 @@
 import { useId, cloneElement } from "react";
 
 const fieldClass =
-  "w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-ivory placeholder:text-muted focus:border-lime/40 focus:outline-none focus:ring-1 focus:ring-lime/40";
+  "w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-ivory placeholder:text-muted focus:border-accent/40 focus:outline-none focus:ring-1 focus:ring-accent/40";
 
 export function Input({ className = "", ...props }) {
   return <input className={`${fieldClass} ${className}`} {...props} />;

@@ -7,14 +7,15 @@ export default {
         sans: ["Manrope", "ui-sans-serif", "system-ui", "sans-serif"],
       },
       colors: {
-        // Evermont-Markenpalette. forest/ivory/paper/muted/white sind über
-        // CSS-Variablen definiert (siehe index.css :root und
-        // [data-theme="light"]), damit ein Light Mode möglich ist, ohne in
-        // jeder einzelnen Komponente Klassen umzuschreiben - dieselbe
-        // Utility-Klasse (z. B. bg-forest-950, text-ivory/60,
-        // bg-white/[0.05]) rendert je nach Theme automatisch die passende
-        // Farbe. ink/lime/area/status bleiben bewusst themenunabhängig
-        // fest (Kontrastfarbe auf hellen Akzentflächen bzw. Akzentfarben).
+        // Nachtblau-Palette (Design-Erweiterung vom 7.9.2026, Punkt 54).
+        // forest/ivory/paper/muted/white sind über CSS-Variablen definiert
+        // (siehe index.css :root und [data-theme="light"]), damit ein Light
+        // Mode möglich ist, ohne in jeder einzelnen Komponente Klassen
+        // umzuschreiben - dieselbe Utility-Klasse (z. B. bg-forest-950,
+        // text-ivory/60, bg-white/[0.05]) rendert je nach Theme automatisch
+        // die passende Farbe. ink/accent/area/status bleiben bewusst
+        // themenunabhängig fest (Kontrastfarbe auf Akzentflächen bzw.
+        // Akzentfarben). "accent" hieß vor der Nachtblau-Umstellung "lime".
         white: "rgb(var(--color-white) / <alpha-value>)",
         forest: {
           950: "rgb(var(--color-forest-950) / <alpha-value>)",
@@ -24,14 +25,15 @@ export default {
         },
         ivory: "rgb(var(--color-ivory) / <alpha-value>)",
         paper: "rgb(var(--color-paper) / <alpha-value>)",
-        ink: "#10221c",
+        ink: "#071421",
         muted: "rgb(var(--color-muted) / <alpha-value>)",
-        lime: "#c8ff52",
+        accent: "#47B1AF",
         // Fokusring und Status-/Fehlertextfarben MÜSSEN themenabhängig sein
-        // (siehe index.css): lime und die ursprünglichen Statusfarben haben
-        // im Hellmodus gemessen nur 1.1-2.8:1 Kontrast gegen den hellen
-        // Hintergrund - im Dunkelmodus bleiben beide unverändert (dieselben
-        // RGB-Werte wie vorher als Variable hinterlegt).
+        // (siehe index.css): das unveränderte Türkis und die ursprünglichen
+        // Statusfarben haben im Hellmodus gemessen nur 2.2-4.5:1 Kontrast
+        // gegen den hellen Hintergrund - im Dunkelmodus bleiben beide
+        // unverändert (dieselben RGB-Werte wie vorher als Variable
+        // hinterlegt).
         focus: "rgb(var(--color-focus) / <alpha-value>)",
         area: {
           corelegal: "#e8b866",

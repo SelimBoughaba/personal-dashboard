@@ -120,7 +120,7 @@ function NavRow({ item }) {
     >
       {({ isActive }) => (
         <>
-          {isActive && <span className="absolute -left-3 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-lime" />}
+          {isActive && <span className="absolute -left-3 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-accent" />}
           <Icon name={item.icon} />
           <span className="flex-1">{item.label}</span>
         </>

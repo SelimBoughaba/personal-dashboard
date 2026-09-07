@@ -136,7 +136,7 @@ function DarstellungSection() {
             onClick={() => setThemeValue("dark")}
             className={`rounded-xl border px-4 py-2 text-sm transition-colors duration-200 ${
               theme === "dark"
-                ? "border-lime/40 bg-lime/10 text-ivory"
+                ? "border-accent/40 bg-accent/10 text-ivory"
                 : "border-white/10 bg-white/[0.02] text-ivory/60 hover:bg-white/[0.05]"
             }`}
           >
@@ -147,7 +147,7 @@ function DarstellungSection() {
             onClick={() => setThemeValue("light")}
             className={`rounded-xl border px-4 py-2 text-sm transition-colors duration-200 ${
               theme === "light"
-                ? "border-lime/40 bg-lime/10 text-ivory"
+                ? "border-accent/40 bg-accent/10 text-ivory"
                 : "border-white/10 bg-white/[0.02] text-ivory/60 hover:bg-white/[0.05]"
             }`}
           >
@@ -160,7 +160,7 @@ function DarstellungSection() {
           type="checkbox"
           checked={reducedMotion}
           onChange={(e) => toggle(e.target.checked)}
-          className="h-4 w-4 rounded accent-lime"
+          className="h-4 w-4 rounded accent-accent"
         />
         Bewegung reduzieren (weniger Animationen)
       </label>
@@ -276,7 +276,7 @@ export function BereicheSection() {
                   name="default-area"
                   checked={!!area.is_default}
                   onChange={() => updateArea(area.id, { is_default: true })}
-                  className="accent-lime"
+                  className="accent-accent"
                 />
                 Standard
               </label>
@@ -322,7 +322,7 @@ export function BereicheSection() {
                 key={c}
                 onClick={() => setNewColor(c)}
                 style={{ background: c }}
-                className={`h-7 w-7 rounded-full border-2 ${newColor === c ? "border-lime" : "border-transparent"}`}
+                className={`h-7 w-7 rounded-full border-2 ${newColor === c ? "border-accent" : "border-transparent"}`}
                 aria-label={`Farbe ${c}`}
               />
             ))}
@@ -441,7 +441,7 @@ function DashboardSection() {
                   type="checkbox"
                   checked={!hidden.includes(id)}
                   onChange={() => toggleHidden(id)}
-                  className="h-4 w-4 accent-lime"
+                  className="h-4 w-4 accent-accent"
                 />
                 {def.label}
               </label>
@@ -546,7 +546,7 @@ export function KalenderSection() {
         Apple-ID-Passwort verwenden.
       </p>
       {configured && (
-        <p className="mb-4 rounded-lg border border-lime/20 bg-lime/5 px-3 py-2 text-sm text-ivory/75">
+        <p className="mb-4 rounded-lg border border-accent/20 bg-accent/5 px-3 py-2 text-sm text-ivory/75">
           Verbunden als <strong className="text-ivory">{username}</strong>.
         </p>
       )}
@@ -923,7 +923,7 @@ export function BenachrichtigungenSection() {
           type="checkbox"
           checked={remindersEnabled}
           onChange={(e) => toggle(e.target.checked)}
-          className="h-4 w-4 accent-lime"
+          className="h-4 w-4 accent-accent"
         />
         In-App-Erinnerungen anzeigen
       </label>

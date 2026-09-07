@@ -246,7 +246,7 @@ function TaskCard({ task, onToggle, onEdit, onDelete, toggling = false, deleting
         checked={task.status === "erledigt"}
         onChange={() => onToggle(task)}
         disabled={toggling || deleting}
-        className="mt-1 h-4 w-4 rounded border-white/20 bg-white/5 accent-lime disabled:cursor-not-allowed disabled:opacity-50"
+        className="mt-1 h-4 w-4 rounded border-white/20 bg-white/5 accent-accent disabled:cursor-not-allowed disabled:opacity-50"
       />
       <div className="flex-1 min-w-0">
         <p className={`font-medium ${task.status === "erledigt" ? "text-ivory/40 line-through" : "text-ivory"}`}>
