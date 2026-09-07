@@ -160,7 +160,7 @@ export function Onboarding() {
                 type="file"
                 accept=".csv"
                 onChange={handleCsvUpload}
-                className="text-sm text-ivory/70 file:mr-3 file:rounded-lg file:border file:border-white/10 file:bg-white/[0.04] file:px-3 file:py-1.5 file:text-ivory/80"
+                className="text-sm text-ivory/70 file:mr-3 file:rounded-control file:border file:border-white/10 file:bg-white/[0.04] file:px-3 file:py-1.5 file:text-ivory/80"
               />
               {csvMessage && <p className="mt-3 text-sm text-ivory/70">{csvMessage}</p>}
             </div>

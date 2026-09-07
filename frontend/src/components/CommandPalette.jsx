@@ -95,7 +95,7 @@ export function CommandPalette({ open, onClose }) {
         role="dialog"
         aria-modal="true"
         aria-label="Suche"
-        className="glass-panel w-full max-w-lg overflow-hidden rounded-brand"
+        className="overlay-panel w-full max-w-lg overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <input
@@ -113,7 +113,7 @@ export function CommandPalette({ open, onClose }) {
                 <button
                   key={l.path}
                   onClick={() => go(l.path)}
-                  className="block w-full rounded-lg px-3 py-2 text-left text-sm text-ivory/80 hover:bg-white/[0.06]"
+                  className="block w-full rounded-control px-3 py-2 text-left text-sm text-ivory/80 hover:bg-white/[0.06]"
                 >
                   {l.title}
                 </button>
@@ -128,7 +128,7 @@ export function CommandPalette({ open, onClose }) {
                 <button
                   key={l.path}
                   onClick={() => go(l.path)}
-                  className="block w-full rounded-lg px-3 py-2 text-left text-sm text-ivory/80 hover:bg-white/[0.06]"
+                  className="block w-full rounded-control px-3 py-2 text-left text-sm text-ivory/80 hover:bg-white/[0.06]"
                 >
                   {l.title}
                 </button>
@@ -145,7 +145,7 @@ export function CommandPalette({ open, onClose }) {
                 <button
                   key={`${r.type}-${r.id}`}
                   onClick={() => go(r.path)}
-                  className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-white/[0.06]"
+                  className="block w-full rounded-control px-3 py-2 text-left text-sm hover:bg-white/[0.06]"
                 >
                   <span className="text-ivory/85">{r.title}</span>
                   {r.subtitle && <span className="ml-2 text-xs text-ivory/65">{r.subtitle}</span>}

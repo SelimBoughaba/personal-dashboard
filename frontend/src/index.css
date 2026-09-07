@@ -101,17 +101,21 @@
 }
 
 @layer components {
-  /* Zurückhaltendes Liquid Glass: feine helle Innenkante, dezente
-     Unschärfe, keine milchigen/schwer lesbaren Flächen. Bewusst weniger
-     Blur/Glow als ein typisches "KI-generiertes" Glassmorphism-Preset –
-     wirkt dadurch eher wie eine feste Oberfläche mit Tiefe statt wie eine
-     schwebende, durchscheinende Folie. */
+  /* Punkt 56: "keine gläsernen Container" - Hierarchie entsteht über
+     Flächenhelligkeit (Fläche ist heller als Canvas) und sparsame
+     Trennlinien, nicht über Unschärfe/Glow/Schatten. Ersetzt das frühere
+     "Liquid Glass" (Blur, Glasrand, Glanz-Verlauf, Schatten an jeder
+     Karte). */
   .glass-panel {
-    @apply relative rounded-brand border border-white/[0.07] bg-forest-900/70 backdrop-blur-md shadow-glass;
+    @apply rounded-surface border border-white/[0.05] bg-forest-900;
   }
-  .glass-panel::before {
-    content: "";
-    @apply pointer-events-none absolute inset-0 rounded-brand;
-    background: linear-gradient(150deg, rgba(255, 255, 255, 0.04), transparent 40%);
+}
+
+@layer components {
+  /* Nur für echte Overlays (Dialoge, Sidebar-Drawer): Schatten "allenfalls
+     an echten Overlays" (Punkt 56) - hier bewusst beibehalten, weil diese
+     Flächen über anderem Inhalt schweben und sich davon absetzen müssen. */
+  .overlay-panel {
+    @apply rounded-dialog border border-white/[0.07] bg-forest-900 shadow-glass;
   }
 }

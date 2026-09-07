@@ -151,7 +151,7 @@ export function Dokumente() {
             <input
               ref={fileInputRef}
               type="file"
-              className="block w-full text-sm text-ivory/70 file:mr-3 file:rounded-lg file:border-0 file:bg-white/10 file:px-3 file:py-1.5 file:text-ivory file:hover:bg-white/15"
+              className="block w-full text-sm text-ivory/70 file:mr-3 file:rounded-control file:border-0 file:bg-white/10 file:px-3 file:py-1.5 file:text-ivory file:hover:bg-white/15"
             />
           </div>
           <FormField label="Titel (optional, sonst Dateiname)">

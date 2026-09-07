@@ -235,7 +235,7 @@ export function Uebersicht() {
                 onChange={(e) => setName(e.target.value)}
                 onBlur={saveName}
                 placeholder="Dein Name"
-                className="rounded-lg border border-white/10 bg-white/[0.04] px-2 py-1 text-2xl font-semibold text-ivory outline-none focus:border-accent/40"
+                className="rounded-control border border-white/10 bg-white/[0.04] px-2 py-1 text-2xl font-semibold text-ivory outline-none focus:border-accent/40"
               />
             </form>
           ) : (
@@ -254,13 +254,13 @@ export function Uebersicht() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Link to="/aufgaben" className="rounded-brand border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-ivory/75 hover:bg-white/[0.06]">
+          <Link to="/aufgaben" className="rounded-control border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-ivory/75 hover:bg-white/[0.06]">
             + Aufgabe
           </Link>
-          <Link to="/kalender" className="rounded-brand border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-ivory/75 hover:bg-white/[0.06]">
+          <Link to="/kalender" className="rounded-control border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-ivory/75 hover:bg-white/[0.06]">
             + Termin
           </Link>
-          <Link to="/finanzen" className="rounded-brand border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-ivory/75 hover:bg-white/[0.06]">
+          <Link to="/finanzen" className="rounded-control border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-ivory/75 hover:bg-white/[0.06]">
             + Rechnung
           </Link>
         </div>
@@ -306,7 +306,7 @@ export function Uebersicht() {
               onChange={(e) => setBriefingText(e.target.value)}
               onBlur={saveBriefing}
               placeholder="Trage hier ein, was dir heute wichtig ist – z. B. Fokus des Tages, Erinnerungen, Notizen…"
-              className="w-full resize-y rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-ivory placeholder:text-ivory/35 outline-none focus:border-accent/40"
+              className="w-full resize-y rounded-control border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-ivory placeholder:text-ivory/35 outline-none focus:border-accent/40"
             />
           ) : briefingText ? (
             <p className="whitespace-pre-wrap font-heading text-base text-ivory/85">{briefingText}</p>

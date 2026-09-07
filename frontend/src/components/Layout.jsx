@@ -35,7 +35,7 @@ export function Layout({ children }) {
           überspringen und direkt zum Seiteninhalt zu springen. */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-brand focus:bg-ivory focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-ink"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-control focus:bg-ivory focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-ink"
         {...(searchOpen ? { inert: "" } : {})}
       >
         Zum Hauptinhalt springen
@@ -62,7 +62,7 @@ export function Layout({ children }) {
             type="button"
             onClick={() => setMobileOpen(true)}
             aria-label="Menü öffnen"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-ivory/80 hover:bg-white/[0.06]"
+            className="flex h-8 w-8 items-center justify-center rounded-control text-ivory/80 hover:bg-white/[0.06]"
           >
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
               <path d="M4 7h16M4 12h16M4 17h16" />
@@ -73,7 +73,7 @@ export function Layout({ children }) {
             type="button"
             onClick={() => setSearchOpen(true)}
             aria-label="Suche öffnen"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-ivory/80 hover:bg-white/[0.06]"
+            className="flex h-8 w-8 items-center justify-center rounded-control text-ivory/80 hover:bg-white/[0.06]"
           >
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
               <circle cx="11" cy="11" r="7" />

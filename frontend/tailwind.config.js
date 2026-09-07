@@ -55,11 +55,20 @@ export default {
       backdropBlur: {
         xs: "2px",
       },
+      // Schatten nur an echten Overlays (Punkt 56) - "glass" bleibt der
+      // Name aus Kompatibilitätsgründen, wird aber nur noch von
+      // .overlay-panel verwendet (Dialoge/Sidebar-Drawer), nicht mehr von
+      // gewöhnlichen Karten.
       boxShadow: {
-        glass: "0 4px 20px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255,255,255,0.04)",
+        glass: "0 8px 28px rgba(0, 0, 0, 0.35)",
       },
+      // Wenige Radien statt eines einzelnen für alles (Punkt 56):
+      // control (Buttons, Eingabefelder) ~6px, surface (Karten) ~10px,
+      // dialog (echte Overlays) ~14px.
       borderRadius: {
-        brand: "16px",
+        control: "6px",
+        surface: "10px",
+        dialog: "14px",
       },
     },
   },

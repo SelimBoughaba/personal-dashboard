@@ -9,7 +9,7 @@ const VARIANTS = {
 export function Button({ variant = "primary", className = "", ...props }) {
   return (
     <button
-      className={`rounded-brand px-4 py-2 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${VARIANTS[variant]} ${className}`}
+      className={`rounded-control px-4 py-2 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${VARIANTS[variant]} ${className}`}
       {...props}
     />
   );

@@ -100,7 +100,7 @@ const MORE_ITEMS = [
 ];
 
 function NavRow({ item }) {
-  const base = "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors duration-200";
+  const base = "flex items-center gap-3 rounded-control px-3 py-2.5 text-sm transition-colors duration-200";
   if (!item.enabled) {
     return (
       <div className={`${base} cursor-default text-ivory/30`} title="In Entwicklung">
@@ -149,7 +149,7 @@ function SidebarContent({ onNavigate, onOpenSearch }) {
             e.stopPropagation();
             onOpenSearch();
           }}
-          className="mb-3 flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-ivory/50 transition-colors duration-200 hover:bg-white/[0.05]"
+          className="mb-3 flex items-center gap-3 rounded-control border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-ivory/50 transition-colors duration-200 hover:bg-white/[0.05]"
         >
           <Icon name="suche" />
           <span className="flex-1 text-left">Suchen…</span>
@@ -169,7 +169,7 @@ function SidebarContent({ onNavigate, onOpenSearch }) {
               e.stopPropagation();
               setMoreOpen((v) => !v);
             }}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-ivory/65 transition-colors duration-200 hover:bg-white/[0.04] hover:text-ivory"
+            className="flex w-full items-center gap-3 rounded-control px-3 py-2.5 text-sm text-ivory/65 transition-colors duration-200 hover:bg-white/[0.04] hover:text-ivory"
           >
             <Icon name="mehr" />
             <span className="flex-1 text-left">Mehr</span>
@@ -204,7 +204,7 @@ function SidebarContent({ onNavigate, onOpenSearch }) {
                       key={item.label}
                       to={item.path}
                       className={({ isActive }) =>
-                        `flex items-center justify-between rounded-lg px-2.5 py-2 text-[13px] transition-colors duration-200 ${
+                        `flex items-center justify-between rounded-control px-2.5 py-2 text-[13px] transition-colors duration-200 ${
                           isActive ? "text-ivory" : "text-ivory/65 hover:text-ivory"
                         }`
                       }
@@ -214,7 +214,7 @@ function SidebarContent({ onNavigate, onOpenSearch }) {
                   ) : (
                     <div
                       key={item.label}
-                      className="flex items-center justify-between rounded-lg px-2.5 py-2 text-[13px] text-ivory/30"
+                      className="flex items-center justify-between rounded-control px-2.5 py-2 text-[13px] text-ivory/30"
                       title="In Entwicklung"
                     >
                       {item.label}
@@ -234,7 +234,7 @@ function SidebarContent({ onNavigate, onOpenSearch }) {
           e.stopPropagation();
           logout();
         }}
-        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-ivory/55 transition-colors duration-200 hover:bg-white/[0.04] hover:text-ivory"
+        className="flex items-center gap-3 rounded-control px-3 py-2.5 text-sm text-ivory/55 transition-colors duration-200 hover:bg-white/[0.04] hover:text-ivory"
       >
         <Icon name="logout" />
         Abmelden
@@ -255,7 +255,7 @@ export function Sidebar({ mobileOpen, onCloseMobile, onOpenSearch }) {
       {mobileOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div className="absolute inset-0 bg-black/50" onClick={onCloseMobile} />
-          <aside className="glass-panel absolute inset-y-3 left-3 flex w-64 flex-col p-3">
+          <aside className="overlay-panel absolute inset-y-3 left-3 flex w-64 flex-col p-3">
             <SidebarContent onNavigate={onCloseMobile} onOpenSearch={onOpenSearch} />
           </aside>
         </div>

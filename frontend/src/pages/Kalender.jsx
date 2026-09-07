@@ -109,7 +109,7 @@ function EventBlock({ ev, areaColor, compact }) {
   const widthPct = 100 / ev.totalCols;
   return (
     <div
-      className="absolute overflow-hidden rounded-lg px-1.5 py-0.5 text-[11px] leading-tight text-ivory shadow"
+      className="absolute overflow-hidden rounded-control px-1.5 py-0.5 text-[11px] leading-tight text-ivory shadow"
       style={{
         top,
         height,
@@ -332,20 +332,20 @@ export function Kalender() {
           <button
             onClick={() => setRefDate((d) => step(view, d, -1))}
             aria-label="Zurück"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-ivory/70 hover:bg-white/[0.06]"
+            className="flex h-8 w-8 items-center justify-center rounded-control text-ivory/70 hover:bg-white/[0.06]"
           >
             ‹
           </button>
           <button
             onClick={() => setRefDate(new Date())}
-            className="rounded-lg border border-white/10 px-2.5 py-1 text-xs text-ivory/70 hover:bg-white/[0.06]"
+            className="rounded-control border border-white/10 px-2.5 py-1 text-xs text-ivory/70 hover:bg-white/[0.06]"
           >
             Heute
           </button>
           <button
             onClick={() => setRefDate((d) => step(view, d, 1))}
             aria-label="Weiter"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-ivory/70 hover:bg-white/[0.06]"
+            className="flex h-8 w-8 items-center justify-center rounded-control text-ivory/70 hover:bg-white/[0.06]"
           >
             ›
           </button>
@@ -363,7 +363,7 @@ export function Kalender() {
             {allDayEvents.map((ev) => (
               <span
                 key={ev.id}
-                className="rounded-lg px-2 py-1 text-xs text-ivory"
+                className="rounded-control px-2 py-1 text-xs text-ivory"
                 style={{ background: `${byId[ev.area]?.color || "#94a08f"}33`, borderLeft: `3px solid ${byId[ev.area]?.color || "#94a08f"}` }}
               >
                 {ev.title}

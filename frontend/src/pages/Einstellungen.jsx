@@ -124,9 +124,9 @@ function DarstellungSection() {
   return (
     <GlassCard>
       <h2 className="mb-1 text-xl font-semibold text-ivory">Darstellung</h2>
-      <p className="mb-4 text-sm text-ivory/50">
-        Schriftart und Grundlayout (Manrope, Liquid Glass) sind bewusst einheitlich vorgegeben. Farbschema und
-        Bewegung lassen sich hier anpassen.
+      <p className="mb-4 text-sm text-ivory/65">
+        Schriftart und Grundlayout (Manrope/Fraunces, flache Flächen statt Glaseffekte) sind bewusst einheitlich
+        vorgegeben. Farbschema und Bewegung lassen sich hier anpassen.
       </p>
       <div className="mb-5">
         <Label>Farbschema</Label>
@@ -134,7 +134,7 @@ function DarstellungSection() {
           <button
             type="button"
             onClick={() => setThemeValue("dark")}
-            className={`rounded-xl border px-4 py-2 text-sm transition-colors duration-200 ${
+            className={`rounded-control border px-4 py-2 text-sm transition-colors duration-200 ${
               theme === "dark"
                 ? "border-accent/40 bg-accent/10 text-ivory"
                 : "border-white/10 bg-white/[0.02] text-ivory/60 hover:bg-white/[0.05]"
@@ -145,7 +145,7 @@ function DarstellungSection() {
           <button
             type="button"
             onClick={() => setThemeValue("light")}
-            className={`rounded-xl border px-4 py-2 text-sm transition-colors duration-200 ${
+            className={`rounded-control border px-4 py-2 text-sm transition-colors duration-200 ${
               theme === "light"
                 ? "border-accent/40 bg-accent/10 text-ivory"
                 : "border-white/10 bg-white/[0.02] text-ivory/60 hover:bg-white/[0.05]"
@@ -257,12 +257,12 @@ export function BereicheSection() {
         <h2 className="mb-4 text-xl font-semibold text-ivory">Lebensbereiche</h2>
         <div className="space-y-2">
           {areas.map((area, idx) => (
-            <div key={area.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-white/5 bg-white/[0.02] p-3">
+            <div key={area.id} className="flex flex-wrap items-center gap-3 rounded-surface border border-white/5 bg-white/[0.02] p-3">
               <input
                 type="color"
                 value={area.color}
                 onChange={(e) => updateArea(area.id, { color: e.target.value })}
-                className="h-8 w-8 shrink-0 cursor-pointer rounded-lg border border-white/10 bg-transparent"
+                className="h-8 w-8 shrink-0 cursor-pointer rounded-control border border-white/10 bg-transparent"
                 title="Farbe"
               />
               <Input
@@ -282,7 +282,7 @@ export function BereicheSection() {
               </label>
               <button
                 onClick={() => updateArea(area.id, { archived: !area.archived })}
-                className="shrink-0 rounded-lg border border-white/10 px-2 py-1 text-xs text-ivory/55 hover:bg-white/[0.05]"
+                className="shrink-0 rounded-control border border-white/10 px-2 py-1 text-xs text-ivory/55 hover:bg-white/[0.05]"
               >
                 {area.archived ? "Reaktivieren" : "Archivieren"}
               </button>
@@ -290,14 +290,14 @@ export function BereicheSection() {
                 <button
                   onClick={() => move(area.id, -1)}
                   disabled={idx === 0}
-                  className="rounded-lg border border-white/10 px-2 py-1 text-xs text-ivory/55 hover:bg-white/[0.05] disabled:opacity-30"
+                  className="rounded-control border border-white/10 px-2 py-1 text-xs text-ivory/55 hover:bg-white/[0.05] disabled:opacity-30"
                 >
                   ↑
                 </button>
                 <button
                   onClick={() => move(area.id, 1)}
                   disabled={idx === areas.length - 1}
-                  className="rounded-lg border border-white/10 px-2 py-1 text-xs text-ivory/55 hover:bg-white/[0.05] disabled:opacity-30"
+                  className="rounded-control border border-white/10 px-2 py-1 text-xs text-ivory/55 hover:bg-white/[0.05] disabled:opacity-30"
                 >
                   ↓
                 </button>
@@ -333,7 +333,7 @@ export function BereicheSection() {
 
       {reassignFor && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <GlassCard className="w-full max-w-sm">
+          <div className="overlay-panel w-full max-w-sm p-5">
             <h3 className="mb-2 text-xl font-semibold text-ivory">„{reassignFor.label}“ löschen</h3>
             <p className="mb-4 text-sm text-ivory/60">
               Diesem Bereich sind noch{" "}
@@ -369,7 +369,7 @@ export function BereicheSection() {
                 Verschieben &amp; löschen
               </Button>
             </div>
-          </GlassCard>
+          </div>
         </div>
       )}
     </div>
@@ -435,7 +435,7 @@ function DashboardSection() {
           const def = WIDGET_DEFS.find((w) => w.id === id);
           if (!def) return null;
           return (
-            <div key={id} className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.02] p-3">
+            <div key={id} className="flex items-center gap-3 rounded-surface border border-white/5 bg-white/[0.02] p-3">
               <label className="flex flex-1 items-center gap-2.5 text-sm text-ivory/85">
                 <input
                   type="checkbox"
@@ -449,14 +449,14 @@ function DashboardSection() {
                 <button
                   onClick={() => move(id, -1)}
                   disabled={idx === 0}
-                  className="rounded-lg border border-white/10 px-2 py-1 text-xs text-ivory/55 hover:bg-white/[0.05] disabled:opacity-30"
+                  className="rounded-control border border-white/10 px-2 py-1 text-xs text-ivory/55 hover:bg-white/[0.05] disabled:opacity-30"
                 >
                   ↑
                 </button>
                 <button
                   onClick={() => move(id, 1)}
                   disabled={idx === order.length - 1}
-                  className="rounded-lg border border-white/10 px-2 py-1 text-xs text-ivory/55 hover:bg-white/[0.05] disabled:opacity-30"
+                  className="rounded-control border border-white/10 px-2 py-1 text-xs text-ivory/55 hover:bg-white/[0.05] disabled:opacity-30"
                 >
                   ↓
                 </button>
@@ -546,7 +546,7 @@ export function KalenderSection() {
         Apple-ID-Passwort verwenden.
       </p>
       {configured && (
-        <p className="mb-4 rounded-lg border border-accent/20 bg-accent/5 px-3 py-2 text-sm text-ivory/75">
+        <p className="mb-4 rounded-surface border border-accent/20 bg-accent/5 px-3 py-2 text-sm text-ivory/75">
           Verbunden als <strong className="text-ivory">{username}</strong>.
         </p>
       )}
@@ -631,7 +631,7 @@ function MailAccountRow({ account, onChange, onRemove }) {
   }
 
   return (
-    <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
+    <div className="rounded-surface border border-white/5 bg-white/[0.02] p-3">
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-medium text-ivory">{account.label}</span>
         <span className="text-xs text-ivory/65">{account.user} · {account.host}</span>
@@ -639,7 +639,7 @@ function MailAccountRow({ account, onChange, onRemove }) {
         <div className="ml-auto flex gap-2">
           <button
             onClick={() => onChange({ paused: !account.paused })}
-            className="rounded-lg border border-white/10 px-2 py-1 text-xs text-ivory/55 hover:bg-white/[0.05]"
+            className="rounded-control border border-white/10 px-2 py-1 text-xs text-ivory/55 hover:bg-white/[0.05]"
           >
             {account.paused ? "Fortsetzen" : "Pausieren"}
           </button>
@@ -791,9 +791,9 @@ export function EmailSection() {
         <div className="mb-3 space-y-2">
           {Object.entries(rules).map(([match, area]) => (
             <div key={match} className="flex items-center gap-2 text-sm">
-              <span className="flex-1 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-ivory/80">{match}</span>
+              <span className="flex-1 rounded-control border border-white/10 bg-white/[0.03] px-3 py-1.5 text-ivory/80">{match}</span>
               <span className="text-ivory/65">→</span>
-              <span className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-ivory/80">
+              <span className="rounded-control border border-white/10 bg-white/[0.03] px-3 py-1.5 text-ivory/80">
                 {activeAreas.find((a) => a.id === area)?.label || area}
               </span>
               <button onClick={() => removeRule(match)} className="text-ivory/65 hover:text-status-hoch">
@@ -1151,7 +1151,7 @@ function SicherungSection() {
         {done && <p className="mt-3 text-sm text-ivory/70">Wiederherstellung abgeschlossen.</p>}
 
         {preview && (
-          <div className="mt-4 rounded-xl border border-status-hoch/25 bg-status-hoch/5 p-4">
+          <div className="mt-4 rounded-surface border border-status-hoch/25 bg-status-hoch/5 p-4">
             <p className="mb-2 text-sm text-ivory/80">
               Backup vom {preview.exported_at ? new Date(preview.exported_at).toLocaleString("de-DE") : "unbekannt"}:{" "}
               {preview.counts.tasks} Aufgabe(n), {preview.counts.invoices} Rechnung(en), {preview.counts.areas}{" "}
@@ -1193,7 +1193,7 @@ export function Einstellungen() {
             <button
               key={s.id}
               onClick={() => setActive(s.id)}
-              className={`shrink-0 whitespace-nowrap rounded-xl px-3 py-2 text-left text-sm transition-colors duration-200 ${
+              className={`shrink-0 whitespace-nowrap rounded-control px-3 py-2 text-left text-sm transition-colors duration-200 ${
                 active === s.id ? "bg-white/10 text-ivory" : "text-ivory/55 hover:bg-white/[0.04]"
               }`}
             >
