@@ -2,16 +2,18 @@ import { useEffect, useState, useCallback } from "react";
 import { apiFetch } from "../api/client";
 import { GlassCard } from "../components/ui/GlassCard";
 import { Button } from "../components/ui/Button";
-import { Input, Select, Label } from "../components/ui/Field";
+import { Input, Select, FormField } from "../components/ui/Field";
 import { PageHeader } from "../components/ui/PageHeader";
 import { FilterChips } from "../components/ui/FilterChips";
 import { EmptyState } from "../components/ui/EmptyState";
+import { localIsoDate } from "../utils/date";
+import { useAsyncAction } from "../hooks/useAsyncAction";
 
 const TYPE_LABELS = { gewicht: "Gewicht", schlaf: "Schlaf", sport: "Sport", sonstiges: "Sonstiges" };
 const DEFAULT_UNITS = { gewicht: "kg", schlaf: "h", sport: "min", sonstiges: "" };
 
 function todayIso() {
-  return new Date().toISOString().slice(0, 10);
+  return localIsoDate();
 }
 
 const EMPTY_FORM = { entry_date: todayIso(), type: "gewicht", value: "", unit: DEFAULT_UNITS.gewicht, note: "" };
@@ -23,6 +25,7 @@ export function Gesundheit() {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState("");
+  const { run, isPending, error: actionError } = useAsyncAction();
 
   const load = useCallback(async () => {
     const params = new URLSearchParams();
@@ -59,7 +62,7 @@ export function Gesundheit() {
   async function handleSubmit(ev) {
     ev.preventDefault();
     setError("");
-    try {
+    await run("submit", async () => {
       if (editingId) {
         await apiFetch(`/health-entries/${editingId}`, { method: "PATCH", body: JSON.stringify(form) });
       } else {
@@ -67,19 +70,14 @@ export function Gesundheit() {
       }
       resetForm();
       await load();
-    } catch (err) {
-      setError(err.message);
-    }
+    });
   }
 
   async function deleteEntry(id) {
-    setError("");
-    try {
+    await run(`delete-${id}`, async () => {
       await apiFetch(`/health-entries/${id}`, { method: "DELETE" });
       await load();
-    } catch (err) {
-      setError(err.message);
-    }
+    });
   }
 
   // Trend gegenüber dem vorherigen Eintrag desselben Typs (Liste ist nach
@@ -112,17 +110,15 @@ export function Gesundheit() {
         </Button>
       </div>
 
-      {error && <p className="text-sm text-status-hoch">{error}</p>}
+      {(error || actionError) && <p className="text-sm text-status-hoch">{error || actionError}</p>}
 
       {showForm && (
         <GlassCard>
           <form onSubmit={handleSubmit} className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <Label>Datum</Label>
+            <FormField label="Datum">
               <Input type="date" value={form.entry_date} onChange={(e) => setForm({ ...form, entry_date: e.target.value })} required />
-            </div>
-            <div>
-              <Label>Typ</Label>
+            </FormField>
+            <FormField label="Typ">
               <Select value={form.type} onChange={(e) => changeType(e.target.value)}>
                 {Object.entries(TYPE_LABELS).map(([k, l]) => (
                   <option key={k} value={k}>
@@ -130,21 +126,20 @@ export function Gesundheit() {
                   </option>
                 ))}
               </Select>
-            </div>
-            <div>
-              <Label>Wert</Label>
+            </FormField>
+            <FormField label="Wert">
               <Input type="number" step="0.01" value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} />
-            </div>
-            <div>
-              <Label>Einheit</Label>
+            </FormField>
+            <FormField label="Einheit">
               <Input value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} />
-            </div>
-            <div className="sm:col-span-2">
-              <Label>Notiz</Label>
+            </FormField>
+            <FormField label="Notiz" className="sm:col-span-2">
               <Input value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
-            </div>
+            </FormField>
             <div className="sm:col-span-2">
-              <Button type="submit">{editingId ? "Speichern" : "Anlegen"}</Button>
+              <Button type="submit" disabled={isPending("submit")}>
+                {isPending("submit") ? "Speichert…" : editingId ? "Speichern" : "Anlegen"}
+              </Button>
             </div>
           </form>
         </GlassCard>
@@ -152,8 +147,10 @@ export function Gesundheit() {
 
       <div className="space-y-2">
         {entries.length === 0 && <EmptyState title="Keine Einträge vorhanden" description="Über „+ Eintrag“ deinen ersten Wert erfassen." />}
-        {entries.map((e, i) => (
-          <GlassCard key={e.id} className="flex items-center gap-3 !p-3">
+        {entries.map((e, i) => {
+          const deleting = isPending(`delete-${e.id}`);
+          return (
+          <GlassCard key={e.id} className={`flex items-center gap-3 !p-3 ${deleting ? "opacity-50" : ""}`}>
             <span className="w-24 shrink-0 text-xs text-ivory/55">{new Date(e.entry_date).toLocaleDateString("de-DE")}</span>
             <span className="w-20 shrink-0 rounded-full bg-white/5 px-2 py-0.5 text-center text-[10px] text-ivory/70">
               {TYPE_LABELS[e.type]}
@@ -164,15 +161,21 @@ export function Gesundheit() {
               {e.note && <span className="ml-2 text-ivory/50">· {e.note}</span>}
             </span>
             <div className="flex shrink-0 gap-1">
-              <Button variant="ghost" className="!px-2 !py-1 text-xs" onClick={() => startEdit(e)}>
+              <Button variant="ghost" className="!px-2 !py-1 text-xs" onClick={() => startEdit(e)} disabled={deleting}>
                 Bearbeiten
               </Button>
-              <Button variant="danger" className="!px-2 !py-1 text-xs" onClick={() => deleteEntry(e.id)}>
-                Löschen
+              <Button
+                variant="danger"
+                className="!px-2 !py-1 text-xs"
+                onClick={() => deleteEntry(e.id)}
+                disabled={deleting}
+              >
+                {deleting ? "Löscht…" : "Löschen"}
               </Button>
             </div>
           </GlassCard>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

@@ -36,13 +36,27 @@ export function CommandPalette({ open, onClose }) {
       return;
     }
     setLoading(true);
+    // AbortController statt nur Debounce: das Debounce-Timeout verhindert
+    // zusätzliche Anfragen bei schnellem Tippen, aber eine bereits
+    // laufende Anfrage einer älteren Eingabe konnte trotzdem noch nach
+    // einer neueren, schnelleren Antwort zurückkommen und deren Ergebnisse
+    // mit veralteten überschreiben. abort() bricht die alte Anfrage ab,
+    // sobald sich die Eingabe erneut ändert.
+    const controller = new AbortController();
     const handle = setTimeout(() => {
-      apiFetch(`/search?q=${encodeURIComponent(query.trim())}`)
+      apiFetch(`/search?q=${encodeURIComponent(query.trim())}`, { signal: controller.signal })
         .then(setResults)
-        .catch(() => setResults([]))
-        .finally(() => setLoading(false));
+        .catch((err) => {
+          if (err.name !== "AbortError") setResults([]);
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setLoading(false);
+        });
     }, 200);
-    return () => clearTimeout(handle);
+    return () => {
+      clearTimeout(handle);
+      controller.abort();
+    };
   }, [query, open]);
 
   useEffect(() => {

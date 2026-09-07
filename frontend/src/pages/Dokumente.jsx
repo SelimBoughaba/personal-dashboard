@@ -2,12 +2,13 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { apiFetch, getToken } from "../api/client";
 import { GlassCard } from "../components/ui/GlassCard";
 import { Button } from "../components/ui/Button";
-import { Input, Select, Label } from "../components/ui/Field";
+import { Input, Select, Label, FormField } from "../components/ui/Field";
 import { AreaBadge } from "../components/ui/AreaBadge";
 import { PageHeader } from "../components/ui/PageHeader";
 import { FilterChips } from "../components/ui/FilterChips";
 import { EmptyState } from "../components/ui/EmptyState";
 import { useAreas } from "../context/AreasContext";
+import { useAsyncAction } from "../hooks/useAsyncAction";
 
 function formatSize(bytes) {
   if (bytes < 1024) return `${bytes} B`;
@@ -28,6 +29,7 @@ export function Dokumente() {
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({ title: "", area: "", tags: "" });
   const fileInputRef = useRef(null);
+  const { run, isPending, error: actionError } = useAsyncAction();
 
   const load = useCallback(async () => {
     const params = new URLSearchParams();
@@ -112,7 +114,7 @@ export function Dokumente() {
   async function saveEdit(e) {
     e.preventDefault();
     setError("");
-    try {
+    await run("edit-save", async () => {
       await apiFetch(`/documents/${editingId}`, {
         method: "PATCH",
         body: JSON.stringify({
@@ -123,19 +125,14 @@ export function Dokumente() {
       });
       setEditingId(null);
       await load();
-    } catch (err) {
-      setError(err.message);
-    }
+    });
   }
 
   async function deleteDocument(id) {
-    setError("");
-    try {
+    await run(`delete-${id}`, async () => {
       await apiFetch(`/documents/${id}`, { method: "DELETE" });
       await load();
-    } catch (err) {
-      setError(err.message);
-    }
+    });
   }
 
   return (
@@ -156,12 +153,10 @@ export function Dokumente() {
               className="block w-full text-sm text-ivory/70 file:mr-3 file:rounded-lg file:border-0 file:bg-white/10 file:px-3 file:py-1.5 file:text-ivory file:hover:bg-white/15"
             />
           </div>
-          <div>
-            <Label>Titel (optional, sonst Dateiname)</Label>
+          <FormField label="Titel (optional, sonst Dateiname)">
             <Input value={uploadTitle} onChange={(e) => setUploadTitle(e.target.value)} placeholder="z. B. Mietvertrag 2026" />
-          </div>
-          <div>
-            <Label>Bereich</Label>
+          </FormField>
+          <FormField label="Bereich">
             <Select value={uploadArea} onChange={(e) => setUploadArea(e.target.value)}>
               {activeAreas.map((a) => (
                 <option key={a.id} value={a.id}>
@@ -169,11 +164,10 @@ export function Dokumente() {
                 </option>
               ))}
             </Select>
-          </div>
-          <div className="sm:col-span-2">
-            <Label>Tags (mit Komma trennen)</Label>
+          </FormField>
+          <FormField label="Tags (mit Komma trennen)" className="sm:col-span-2">
             <Input value={uploadTags} onChange={(e) => setUploadTags(e.target.value)} placeholder="z. B. Vertrag, Wohnung" />
-          </div>
+          </FormField>
           <div className="sm:col-span-2">
             <Button type="submit" disabled={uploading}>
               {uploading ? "Lädt hoch…" : "Hochladen"}
@@ -182,7 +176,7 @@ export function Dokumente() {
         </form>
       </GlassCard>
 
-      {error && <p className="text-sm text-status-hoch">{error}</p>}
+      {(error || actionError) && <p className="text-sm text-status-hoch">{error || actionError}</p>}
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <FilterChips options={[{ id: "alle", label: "Alle" }, ...activeAreas]} value={areaFilter} onChange={setAreaFilter} />
@@ -202,12 +196,10 @@ export function Dokumente() {
           editingId === doc.id ? (
             <GlassCard key={doc.id} className="!p-4">
               <form onSubmit={saveEdit} className="grid gap-3 sm:grid-cols-3">
-                <div>
-                  <Label>Titel</Label>
+                <FormField label="Titel">
                   <Input value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} />
-                </div>
-                <div>
-                  <Label>Bereich</Label>
+                </FormField>
+                <FormField label="Bereich">
                   <Select value={editForm.area} onChange={(e) => setEditForm({ ...editForm, area: e.target.value })}>
                     {activeAreas.map((a) => (
                       <option key={a.id} value={a.id}>
@@ -215,49 +207,75 @@ export function Dokumente() {
                       </option>
                     ))}
                   </Select>
-                </div>
-                <div>
-                  <Label>Tags</Label>
+                </FormField>
+                <FormField label="Tags">
                   <Input value={editForm.tags} onChange={(e) => setEditForm({ ...editForm, tags: e.target.value })} />
-                </div>
+                </FormField>
                 <div className="flex gap-2 sm:col-span-3">
-                  <Button type="submit">Speichern</Button>
-                  <Button type="button" variant="ghost" onClick={() => setEditingId(null)}>
+                  <Button type="submit" disabled={isPending("edit-save")}>
+                    {isPending("edit-save") ? "Speichert…" : "Speichern"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setEditingId(null)}
+                    disabled={isPending("edit-save")}
+                  >
                     Abbrechen
                   </Button>
                 </div>
               </form>
             </GlassCard>
           ) : (
-            <GlassCard key={doc.id} className="flex items-start gap-3 !p-4">
-              <div className="min-w-0 flex-1">
-                <p className="font-medium text-ivory">{doc.title}</p>
-                <p className="mt-0.5 truncate text-sm text-ivory/55">{doc.file_name}</p>
-                <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <AreaBadge area={doc.area} />
-                  <span className="text-xs text-ivory/45">{formatSize(doc.size)}</span>
-                  <span className="text-xs text-ivory/45">
-                    {new Date(doc.created_at).toLocaleDateString("de-DE")}
-                  </span>
-                  {doc.tags.map((tag) => (
-                    <span key={tag} className="rounded-full bg-white/5 px-2 py-0.5 text-[10px] text-ivory/55">
-                      {tag}
+            (() => {
+              const deleting = isPending(`delete-${doc.id}`);
+              return (
+              <GlassCard key={doc.id} className={`flex items-start gap-3 !p-4 ${deleting ? "opacity-50" : ""}`}>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-ivory">{doc.title}</p>
+                  <p className="mt-0.5 truncate text-sm text-ivory/55">{doc.file_name}</p>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <AreaBadge area={doc.area} />
+                    <span className="text-xs text-ivory/45">{formatSize(doc.size)}</span>
+                    <span className="text-xs text-ivory/45">
+                      {new Date(doc.created_at).toLocaleDateString("de-DE")}
                     </span>
-                  ))}
+                    {doc.tags.map((tag) => (
+                      <span key={tag} className="rounded-full bg-white/5 px-2 py-0.5 text-[10px] text-ivory/55">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
-              <div className="flex shrink-0 gap-1">
-                <Button variant="ghost" className="!px-2 !py-1 text-xs" onClick={() => handleDownload(doc)}>
-                  Herunterladen
-                </Button>
-                <Button variant="ghost" className="!px-2 !py-1 text-xs" onClick={() => startEdit(doc)}>
-                  Bearbeiten
-                </Button>
-                <Button variant="danger" className="!px-2 !py-1 text-xs" onClick={() => deleteDocument(doc.id)}>
-                  Löschen
-                </Button>
-              </div>
-            </GlassCard>
+                <div className="flex shrink-0 gap-1">
+                  <Button
+                    variant="ghost"
+                    className="!px-2 !py-1 text-xs"
+                    onClick={() => handleDownload(doc)}
+                    disabled={deleting}
+                  >
+                    Herunterladen
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="!px-2 !py-1 text-xs"
+                    onClick={() => startEdit(doc)}
+                    disabled={deleting}
+                  >
+                    Bearbeiten
+                  </Button>
+                  <Button
+                    variant="danger"
+                    className="!px-2 !py-1 text-xs"
+                    onClick={() => deleteDocument(doc.id)}
+                    disabled={deleting}
+                  >
+                    {deleting ? "Löscht…" : "Löschen"}
+                  </Button>
+                </div>
+              </GlassCard>
+              );
+            })()
           ),
         )}
       </div>

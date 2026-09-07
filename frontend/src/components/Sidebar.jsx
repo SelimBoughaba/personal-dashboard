@@ -188,6 +188,13 @@ function SidebarContent({ onNavigate, onOpenSearch }) {
           <div
             className="grid overflow-hidden transition-all duration-200 ease-out"
             style={{ gridTemplateRows: moreOpen ? "1fr" : "0fr" }}
+            // Visuell eingeklappt heißt nicht automatisch aus Tab-Reihenfolge
+            // und Accessibility-Baum entfernt – ohne inert bleiben die
+            // Links per Tab erreichbar, obwohl sie (fast) unsichtbar sind.
+            // Bedingtes Spreaden statt inert={!moreOpen}: bei älteren
+            // React-Versionen würde inert={false} als Attribut inert="false"
+            // gerendert, was der Browser trotzdem als "inert" liest.
+            {...(moreOpen ? {} : { inert: "" })}
           >
             <div className="min-h-0">
               <div className="ml-8 mt-1 space-y-0.5 border-l border-white/10 pl-3">

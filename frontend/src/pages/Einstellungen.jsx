@@ -3,7 +3,7 @@ import { apiFetch, getToken, setToken, clearOfflineCache } from "../api/client";
 import { useAreas } from "../context/AreasContext";
 import { GlassCard } from "../components/ui/GlassCard";
 import { Button } from "../components/ui/Button";
-import { Input, Select, Label } from "../components/ui/Field";
+import { Input, Select, Label, FormField } from "../components/ui/Field";
 import { PageHeader } from "../components/ui/PageHeader";
 
 const SECTIONS = [
@@ -61,8 +61,7 @@ export function ProfilSection() {
     <GlassCard>
       <h2 className="mb-4 text-base font-semibold text-ivory">Profil</h2>
       <form onSubmit={save} className="max-w-sm space-y-4">
-        <div>
-          <Label>Name</Label>
+        <FormField label="Name">
           {/* onBlur speichert automatisch, damit im Einrichtungsassistenten
               nichts verloren geht, auch ohne expliziten Klick auf "Speichern". */}
           <Input
@@ -71,9 +70,8 @@ export function ProfilSection() {
             onBlur={(e) => persist({ name: e.target.value })}
             placeholder="Dein Name"
           />
-        </div>
-        <div>
-          <Label>Anrede</Label>
+        </FormField>
+        <FormField label="Anrede">
           <Select
             value={salutation}
             onChange={(e) => {
@@ -84,7 +82,7 @@ export function ProfilSection() {
             <option value="du">Du</option>
             <option value="sie">Sie</option>
           </Select>
-        </div>
+        </FormField>
         <div>
           <Button type="submit">Speichern</Button>
           <SavedHint show={saved} />
@@ -314,10 +312,9 @@ export function BereicheSection() {
         {error && <p className="mt-3 text-sm text-status-hoch">{error}</p>}
 
         <form onSubmit={addArea} className="mt-5 flex flex-wrap items-end gap-3 border-t border-white/5 pt-4">
-          <div className="flex-1">
-            <Label>Neuer Bereich</Label>
+          <FormField label="Neuer Bereich" className="flex-1">
             <Input value={newLabel} onChange={(e) => setNewLabel(e.target.value)} placeholder="z. B. Familie" />
-          </div>
+          </FormField>
           <div className="flex gap-1.5">
             {PALETTE.map((c) => (
               <button
@@ -554,19 +551,17 @@ export function KalenderSection() {
         </p>
       )}
       <form onSubmit={save} className="max-w-sm space-y-4">
-        <div>
-          <Label>Apple-ID</Label>
+        <FormField label="Apple-ID">
           <Input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="du@icloud.com" />
-        </div>
-        <div>
-          <Label>App-spezifisches Passwort</Label>
+        </FormField>
+        <FormField label="App-spezifisches Passwort">
           <Input
             type="password"
             value={appPassword}
             onChange={(e) => setAppPassword(e.target.value)}
             placeholder={configured ? "•••• (unverändert lassen)" : "xxxx-xxxx-xxxx-xxxx"}
           />
-        </div>
+        </FormField>
 
         {activeAreas.length > 0 && (
           <div>
@@ -764,30 +759,24 @@ export function EmailSection() {
         {error && <p className="mt-3 text-sm text-status-hoch">{error}</p>}
 
         <form onSubmit={addAccount} className="mt-5 grid gap-3 border-t border-white/5 pt-4 sm:grid-cols-2">
-          <div>
-            <Label>Kennung</Label>
+          <FormField label="Kennung">
             <Input value={newAccount.id} onChange={(e) => setNewAccount({ ...newAccount, id: e.target.value })} placeholder="ionos" />
-          </div>
-          <div>
-            <Label>Anzeigename</Label>
+          </FormField>
+          <FormField label="Anzeigename">
             <Input value={newAccount.label} onChange={(e) => setNewAccount({ ...newAccount, label: e.target.value })} placeholder="IONOS" />
-          </div>
-          <div>
-            <Label>IMAP-Host</Label>
+          </FormField>
+          <FormField label="IMAP-Host">
             <Input value={newAccount.host} onChange={(e) => setNewAccount({ ...newAccount, host: e.target.value })} placeholder="imap.ionos.de" />
-          </div>
-          <div>
-            <Label>Port</Label>
+          </FormField>
+          <FormField label="Port">
             <Input type="number" value={newAccount.port} onChange={(e) => setNewAccount({ ...newAccount, port: e.target.value })} />
-          </div>
-          <div>
-            <Label>Benutzername</Label>
+          </FormField>
+          <FormField label="Benutzername">
             <Input value={newAccount.user} onChange={(e) => setNewAccount({ ...newAccount, user: e.target.value })} placeholder="du@domain.de" />
-          </div>
-          <div>
-            <Label>Passwort</Label>
+          </FormField>
+          <FormField label="Passwort">
             <Input type="password" value={newAccount.password} onChange={(e) => setNewAccount({ ...newAccount, password: e.target.value })} />
-          </div>
+          </FormField>
           <div className="sm:col-span-2">
             <Button type="submit">Postfach hinzufügen</Button>
           </div>
@@ -882,10 +871,9 @@ export function DokumenteSection() {
         vorhandene Dateien automatisch in den neuen Ordner verschoben.
       </p>
       <form onSubmit={save} className="flex max-w-md items-end gap-2">
-        <div className="flex-1">
-          <Label>Speicherordner</Label>
+        <FormField label="Speicherordner" className="flex-1">
           <Input value={folder} onChange={(e) => setFolder(e.target.value)} />
-        </div>
+        </FormField>
         <Button type="submit" disabled={saving}>
           {saving ? "Verschiebe…" : "Speichern"}
         </Button>
@@ -1005,18 +993,15 @@ function DatenschutzSection() {
       <GlassCard>
         <h2 className="mb-4 text-base font-semibold text-ivory">Passwort ändern</h2>
         <form onSubmit={changePassword} className="max-w-sm space-y-4">
-          <div>
-            <Label>Aktuelles Passwort</Label>
+          <FormField label="Aktuelles Passwort">
             <Input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
-          </div>
-          <div>
-            <Label>Neues Passwort</Label>
+          </FormField>
+          <FormField label="Neues Passwort">
             <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
-          </div>
-          <div>
-            <Label>Neues Passwort bestätigen</Label>
+          </FormField>
+          <FormField label="Neues Passwort bestätigen">
             <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
-          </div>
+          </FormField>
           {error && <p className="text-sm text-status-hoch">{error}</p>}
           <div>
             <Button type="submit">Passwort ändern</Button>

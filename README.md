@@ -25,21 +25,32 @@ Komponenten statt pro Seite einzeln nachgebauter Buttons, dadurch wirkt jede
 Seite wie aus einem Guss statt wie viele Einzelteile.
 
 **Sicherheits-/Zuverlässigkeitshärtung (Paket A):** Auf Basis eines
-Prüfberichts wurden Sicherheit/Restore (Abschnitt 1) und Datenkonsistenz/
-Backend (Abschnitt 2) vollständig, getestet umgesetzt – Details,
-Testabdeckung und bewusst zurückgestellte Punkte stehen in
-[`SECURITY_HARDENING.md`](./SECURITY_HARDENING.md). Kurzfassung: zwei
-bestätigte konkrete Bugs (ein Routing-Fehler, durch den „Kalender trennen"
-die iCloud-Zugangsdaten nie wirklich löschte; ein `Promise.all`, durch das
-ein einzelner defekter Kalender die Termine aller anderen mit verschwinden
-ließ), ein Race Condition in der Ersteinrichtung, striktere (typisierte)
-Backup-Validierung inkl. Pfadsicherheit, vollständige Bereichsreferenz-
-Integrität über alle Module, eine echte Speicherordner-Migration statt
-bloßem Zeigerwechsel, stabile IMAP-UIDs für die Rechnungserkennung,
-Scan-Vorschläge als solche gekennzeichnet, CSV-Robustheit (inkl.
-Formel-Injection-Schutz) und sofortiger Sitzungs-Widerruf bei
-Passwortwechsel. `cd backend && npm test` führt die inzwischen 29
-automatisierten Tests aus.
+Prüfberichts wurden Sicherheit/Restore (Abschnitt 1), Datenkonsistenz/
+Backend (Abschnitt 2) und der Kernbestand von Frontend-Ehrlichkeit
+(Abschnitt 3) vollständig, getestet umgesetzt – Details, Testabdeckung und
+bewusst zurückgestellte Punkte stehen in
+[`SECURITY_HARDENING.md`](./SECURITY_HARDENING.md). Kurzfassung Abschnitt
+1+2: zwei bestätigte konkrete Bugs (ein Routing-Fehler, durch den „Kalender
+trennen" die iCloud-Zugangsdaten nie wirklich löschte; ein `Promise.all`,
+durch das ein einzelner defekter Kalender die Termine aller anderen mit
+verschwinden ließ), ein Race Condition in der Ersteinrichtung, striktere
+(typisierte) Backup-Validierung inkl. Pfadsicherheit, vollständige
+Bereichsreferenz-Integrität über alle Module, eine echte Speicherordner-
+Migration statt bloßem Zeigerwechsel, stabile IMAP-UIDs für die
+Rechnungserkennung, Scan-Vorschläge als solche gekennzeichnet,
+CSV-Robustheit (inkl. Formel-Injection-Schutz) und sofortiger
+Sitzungs-Widerruf bei Passwortwechsel. Kurzfassung Abschnitt 3: ein
+Zeitzonen-Bug, durch den kurz nach Mitternacht Lokalzeit „heute fällig"
+falsch berechnet wurde (UTC- statt Lokalzeit-Vergleich, betraf Kalender,
+Übersicht, Rechnungen, Gesundheit); ganztägige Termine fehlten in der
+Kalender-Monatsansicht komplett; ein per Tastatur/Screenreader erreichbares,
+aber unsichtbares eingeklapptes Menü; eine Suchpalette, bei der eine
+veraltete Antwort eine neuere überschreiben konnte; fehlende
+Label/Feld-Verknüpfung auf den meisten Formularseiten; und
+Schreibaktionen (Umschalten/Löschen/Anlegen), die Fehler stillschweigend
+verschluckten und per Doppelklick doppelt auslösbar waren. `cd backend &&
+npm test` führt die inzwischen 29 automatisierten Backend-Tests aus, `cd
+frontend && npm test` 4 weitere für die neue Zeitzonen-Korrektur.
 
 ## Projektstruktur
 
@@ -475,13 +486,14 @@ iPhone automatisch beim nächsten Öffnen.
 
 ## Bekannte Einschränkungen
 
-- **Barrierefreiheit (Formular-Labels):** Auf dem Login-/Setup-Bildschirm
-  sind `<label>` und `<input>` korrekt über `htmlFor`/`id` verknüpft
-  (Screenreader lesen das Feld korrekt vor, Klick aufs Label fokussiert das
-  Feld). In den übrigen Formularen der App (Aufgaben, Rechnungen, alle
-  Einstellungs-Unterseiten) fehlt diese Verknüpfung noch teilweise – die
-  Felder sind visuell und per Tab-Reihenfolge nutzbar, aber nicht überall
-  optimal für Screenreader beschriftet. Geplante schrittweise Behebung.
+- **Barrierefreiheit (Formular-Labels):** `<label>` und Eingabefeld sind
+  inzwischen über die neue `FormField`-Komponente (`useId()`-basiert) an
+   62 von 68 Stellen über 10 Seiten automatisch verknüpft (Login-/
+  Setup-Bildschirm war bereits vorher manuell korrekt). Wenige Ausnahmen
+  bleiben unverknüpft, weil eine automatische Umstellung dort unsicher
+  gewesen wäre (native Datei-Auswahl, Mehrfach-Feld-Gruppen wie die
+  Kalendername-je-Bereich-Liste) – siehe `SECURITY_HARDENING.md` für die
+  vollständige Liste.
 - Kein Verschlüsselungs-Layer für die in der Datenbank gespeicherten
   Zugangsdaten (siehe oben).
 - Kalender: nur Ansicht, kein Anlegen/Bearbeiten von Terminen in der App
@@ -519,8 +531,9 @@ Einschränkungen" oben) und bei Bedarf eigene künftige Etappen wären:
   zugriff auf CalDAV), ICS-Import/-Export, Konflikterkennung
 - Unteraufgaben/Abhängigkeiten, frei definierbare Kanban-Spalten
 - Verschlüsselung der in der Datenbank gespeicherten Zugangsdaten
-- Vollständige `htmlFor`/`id`-Verknüpfung in allen Formularen (aktuell
-  nur auf dem Login-/Setup-Bildschirm umgesetzt)
+- Verbleibende `htmlFor`/`id`-Ausnahmen (Datei-Upload, Mehrfach-Feld-
+  Gruppen) und Formular-„ungespeicherte Änderungen"-Warnung beim
+  Seitenverlassen
 - Google Calendar/Gmail-OAuth, native Apple-Calendar-Integration,
   Outlook/Microsoft-365-Postfächer
 - Verschlüsseltes Backup (aktuell Klartext-JSON, siehe „Backup &

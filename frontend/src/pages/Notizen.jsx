@@ -2,12 +2,13 @@ import { useEffect, useState, useCallback } from "react";
 import { apiFetch } from "../api/client";
 import { GlassCard } from "../components/ui/GlassCard";
 import { Button } from "../components/ui/Button";
-import { Input, Select, Label, Textarea } from "../components/ui/Field";
+import { Input, Select, Textarea, FormField } from "../components/ui/Field";
 import { AreaBadge } from "../components/ui/AreaBadge";
 import { PageHeader } from "../components/ui/PageHeader";
 import { FilterChips } from "../components/ui/FilterChips";
 import { EmptyState } from "../components/ui/EmptyState";
 import { useAreas } from "../context/AreasContext";
+import { useAsyncAction } from "../hooks/useAsyncAction";
 
 const EMPTY_FORM = { title: "", content: "", area: "", tags: "" };
 
@@ -20,6 +21,7 @@ export function Notizen() {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState("");
+  const { run, isPending, error: actionError } = useAsyncAction();
 
   const load = useCallback(async () => {
     const params = new URLSearchParams();
@@ -60,7 +62,7 @@ export function Notizen() {
       area: form.area,
       tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
     };
-    try {
+    await run("submit", async () => {
       if (editingId) {
         await apiFetch(`/notes/${editingId}`, { method: "PATCH", body: JSON.stringify(payload) });
       } else {
@@ -68,28 +70,21 @@ export function Notizen() {
       }
       resetForm();
       await load();
-    } catch (err) {
-      setError(err.message);
-    }
+    });
   }
 
   async function togglePin(note) {
-    try {
+    await run(`pin-${note.id}`, async () => {
       await apiFetch(`/notes/${note.id}`, { method: "PATCH", body: JSON.stringify({ pinned: !note.pinned }) });
       await load();
-    } catch (err) {
-      setError(err.message);
-    }
+    });
   }
 
   async function deleteNote(id) {
-    setError("");
-    try {
+    await run(`delete-${id}`, async () => {
       await apiFetch(`/notes/${id}`, { method: "DELETE" });
       await load();
-    } catch (err) {
-      setError(err.message);
-    }
+    });
   }
 
   return (
@@ -106,21 +101,18 @@ export function Notizen() {
         </div>
       </div>
 
-      {error && <p className="text-sm text-status-hoch">{error}</p>}
+      {(error || actionError) && <p className="text-sm text-status-hoch">{error || actionError}</p>}
 
       {showForm && (
         <GlassCard>
           <form onSubmit={handleSubmit} className="grid gap-3 sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <Label>Titel</Label>
+            <FormField label="Titel" className="sm:col-span-2">
               <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-            </div>
-            <div className="sm:col-span-2">
-              <Label>Inhalt</Label>
+            </FormField>
+            <FormField label="Inhalt" className="sm:col-span-2">
               <Textarea rows={5} value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} />
-            </div>
-            <div>
-              <Label>Bereich</Label>
+            </FormField>
+            <FormField label="Bereich">
               <Select value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })}>
                 {activeAreas.map((a) => (
                   <option key={a.id} value={a.id}>
@@ -128,13 +120,14 @@ export function Notizen() {
                   </option>
                 ))}
               </Select>
-            </div>
-            <div>
-              <Label>Tags (mit Komma trennen)</Label>
+            </FormField>
+            <FormField label="Tags (mit Komma trennen)">
               <Input value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} />
-            </div>
+            </FormField>
             <div className="sm:col-span-2">
-              <Button type="submit">{editingId ? "Speichern" : "Anlegen"}</Button>
+              <Button type="submit" disabled={isPending("submit")}>
+                {isPending("submit") ? "Speichert…" : editingId ? "Speichern" : "Anlegen"}
+              </Button>
             </div>
           </form>
         </GlassCard>
@@ -144,14 +137,18 @@ export function Notizen() {
         {notes.length === 0 && (
           <EmptyState className="col-span-full" title="Keine Notizen gefunden" description="Über „+ Notiz“ deine erste Notiz anlegen." />
         )}
-        {notes.map((n) => (
-          <GlassCard key={n.id} className="flex flex-col !p-4">
+        {notes.map((n) => {
+          const pinning = isPending(`pin-${n.id}`);
+          const deleting = isPending(`delete-${n.id}`);
+          return (
+          <GlassCard key={n.id} className={`flex flex-col !p-4 ${deleting ? "opacity-50" : ""}`}>
             <div className="flex items-start justify-between gap-2">
               <p className="font-medium text-ivory">{n.title || "(ohne Titel)"}</p>
               <button
                 onClick={() => togglePin(n)}
+                disabled={pinning || deleting}
                 title={n.pinned ? "Nicht mehr anpinnen" : "Anpinnen"}
-                className={`shrink-0 text-lg ${n.pinned ? "text-lime" : "text-ivory/25 hover:text-ivory/60"}`}
+                className={`shrink-0 text-lg disabled:opacity-40 ${n.pinned ? "text-lime" : "text-ivory/25 hover:text-ivory/60"}`}
               >
                 {n.pinned ? "★" : "☆"}
               </button>
@@ -166,15 +163,21 @@ export function Notizen() {
               ))}
             </div>
             <div className="mt-3 flex gap-1">
-              <Button variant="ghost" className="!px-2 !py-1 text-xs" onClick={() => startEdit(n)}>
+              <Button variant="ghost" className="!px-2 !py-1 text-xs" onClick={() => startEdit(n)} disabled={deleting}>
                 Bearbeiten
               </Button>
-              <Button variant="danger" className="!px-2 !py-1 text-xs" onClick={() => deleteNote(n.id)}>
-                Löschen
+              <Button
+                variant="danger"
+                className="!px-2 !py-1 text-xs"
+                onClick={() => deleteNote(n.id)}
+                disabled={deleting}
+              >
+                {deleting ? "Löscht…" : "Löschen"}
               </Button>
             </div>
           </GlassCard>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

@@ -2,12 +2,13 @@ import { useEffect, useState, useCallback } from "react";
 import { apiFetch } from "../api/client";
 import { GlassCard } from "../components/ui/GlassCard";
 import { Button } from "../components/ui/Button";
-import { Input, Select, Label } from "../components/ui/Field";
+import { Input, Select, FormField } from "../components/ui/Field";
 import { AreaBadge } from "../components/ui/AreaBadge";
 import { PageHeader } from "../components/ui/PageHeader";
 import { FilterChips } from "../components/ui/FilterChips";
 import { EmptyState } from "../components/ui/EmptyState";
 import { useAreas } from "../context/AreasContext";
+import { useAsyncAction } from "../hooks/useAsyncAction";
 
 const EMPTY_FORM = {
   title: "",
@@ -49,6 +50,7 @@ export function Vertraege() {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState("");
+  const { run, isPending, error: actionError } = useAsyncAction();
 
   const load = useCallback(async () => {
     const params = new URLSearchParams({ area: areaFilter, status: statusFilter });
@@ -91,7 +93,7 @@ export function Vertraege() {
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
-    try {
+    await run("submit", async () => {
       if (editingId) {
         await apiFetch(`/contracts/${editingId}`, { method: "PATCH", body: JSON.stringify(form) });
       } else {
@@ -99,19 +101,14 @@ export function Vertraege() {
       }
       resetForm();
       await load();
-    } catch (err) {
-      setError(err.message);
-    }
+    });
   }
 
   async function deleteContract(id) {
-    setError("");
-    try {
+    await run(`delete-${id}`, async () => {
       await apiFetch(`/contracts/${id}`, { method: "DELETE" });
       await load();
-    } catch (err) {
-      setError(err.message);
-    }
+    });
   }
 
   const soonToCancel = contracts.filter((c) => {
@@ -166,25 +163,21 @@ export function Vertraege() {
         </div>
       </div>
 
-      {error && <p className="text-sm text-status-hoch">{error}</p>}
+      {(error || actionError) && <p className="text-sm text-status-hoch">{error || actionError}</p>}
 
       {showForm && (
         <GlassCard>
           <form onSubmit={handleSubmit} className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <Label>Titel</Label>
+            <FormField label="Titel">
               <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
-            </div>
-            <div>
-              <Label>Anbieter</Label>
+            </FormField>
+            <FormField label="Anbieter">
               <Input value={form.provider} onChange={(e) => setForm({ ...form, provider: e.target.value })} />
-            </div>
-            <div>
-              <Label>Kosten (EUR)</Label>
+            </FormField>
+            <FormField label="Kosten (EUR)">
               <Input type="number" step="0.01" value={form.cost} onChange={(e) => setForm({ ...form, cost: e.target.value })} />
-            </div>
-            <div>
-              <Label>Abrechnungszyklus</Label>
+            </FormField>
+            <FormField label="Abrechnungszyklus">
               <Select value={form.billing_cycle} onChange={(e) => setForm({ ...form, billing_cycle: e.target.value })}>
                 {Object.entries(CYCLE_LABELS).map(([k, l]) => (
                   <option key={k} value={k}>
@@ -192,25 +185,22 @@ export function Vertraege() {
                   </option>
                 ))}
               </Select>
-            </div>
-            <div>
-              <Label>Nächste Verlängerung/Fälligkeit</Label>
+            </FormField>
+            <FormField label="Nächste Verlängerung/Fälligkeit">
               <Input
                 type="date"
                 value={form.next_renewal_date}
                 onChange={(e) => setForm({ ...form, next_renewal_date: e.target.value })}
               />
-            </div>
-            <div>
-              <Label>Kündigungsfrist (Tage vorher)</Label>
+            </FormField>
+            <FormField label="Kündigungsfrist (Tage vorher)">
               <Input
                 type="number"
                 value={form.cancellation_period_days}
                 onChange={(e) => setForm({ ...form, cancellation_period_days: e.target.value })}
               />
-            </div>
-            <div>
-              <Label>Bereich</Label>
+            </FormField>
+            <FormField label="Bereich">
               <Select value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })}>
                 {activeAreas.map((a) => (
                   <option key={a.id} value={a.id}>
@@ -218,9 +208,8 @@ export function Vertraege() {
                   </option>
                 ))}
               </Select>
-            </div>
-            <div>
-              <Label>Status</Label>
+            </FormField>
+            <FormField label="Status">
               <Select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
                 {Object.entries(STATUS_LABELS).map(([k, l]) => (
                   <option key={k} value={k}>
@@ -228,13 +217,14 @@ export function Vertraege() {
                   </option>
                 ))}
               </Select>
-            </div>
-            <div className="sm:col-span-2">
-              <Label>Notizen</Label>
+            </FormField>
+            <FormField label="Notizen" className="sm:col-span-2">
               <Input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-            </div>
+            </FormField>
             <div className="sm:col-span-2">
-              <Button type="submit">{editingId ? "Speichern" : "Anlegen"}</Button>
+              <Button type="submit" disabled={isPending("submit")}>
+                {isPending("submit") ? "Speichert…" : editingId ? "Speichern" : "Anlegen"}
+              </Button>
             </div>
           </form>
         </GlassCard>
@@ -244,8 +234,10 @@ export function Vertraege() {
         {contracts.length === 0 && (
           <EmptyState title="Keine Verträge in diesem Bereich" description="Über „+ Vertrag“ deinen ersten Vertrag anlegen." />
         )}
-        {contracts.map((c) => (
-          <GlassCard key={c.id} className="flex items-start gap-3 !p-4">
+        {contracts.map((c) => {
+          const deleting = isPending(`delete-${c.id}`);
+          return (
+          <GlassCard key={c.id} className={`flex items-start gap-3 !p-4 ${deleting ? "opacity-50" : ""}`}>
             <div className="min-w-0 flex-1">
               <p className="font-medium text-ivory">{c.title}</p>
               {c.provider && <p className="mt-0.5 text-sm text-ivory/55">{c.provider}</p>}
@@ -263,15 +255,21 @@ export function Vertraege() {
               </div>
             </div>
             <div className="flex shrink-0 gap-1">
-              <Button variant="ghost" className="!px-2 !py-1 text-xs" onClick={() => startEdit(c)}>
+              <Button variant="ghost" className="!px-2 !py-1 text-xs" onClick={() => startEdit(c)} disabled={deleting}>
                 Bearbeiten
               </Button>
-              <Button variant="danger" className="!px-2 !py-1 text-xs" onClick={() => deleteContract(c.id)}>
-                Löschen
+              <Button
+                variant="danger"
+                className="!px-2 !py-1 text-xs"
+                onClick={() => deleteContract(c.id)}
+                disabled={deleting}
+              >
+                {deleting ? "Löscht…" : "Löschen"}
               </Button>
             </div>
           </GlassCard>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

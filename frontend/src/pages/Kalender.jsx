@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { apiFetch } from "../api/client";
+import { localIsoDate } from "../utils/date";
 import { GlassCard } from "../components/ui/GlassCard";
 import { PageHeader } from "../components/ui/PageHeader";
 import { FilterChips } from "../components/ui/FilterChips";
@@ -39,7 +40,7 @@ function addMonths(date, n) {
 }
 
 function isoDate(date) {
-  return date.toISOString().slice(0, 10);
+  return localIsoDate(date);
 }
 
 function rangeFor(view, refDate) {
@@ -173,7 +174,7 @@ function TimeGrid({ days, eventsByDay, byId, view }) {
   );
 }
 
-function MonthGrid({ refDate, eventsByDay, byId }) {
+function MonthGrid({ refDate, eventsByDay, allDayByDay, byId }) {
   const { from, to } = rangeFor("monat", refDate);
   const days = [];
   for (let d = new Date(from); d < to; d = addDays(d, 1)) days.push(new Date(d));
@@ -195,7 +196,8 @@ function MonthGrid({ refDate, eventsByDay, byId }) {
         <div key={wi} className="grid grid-cols-7 border-b border-white/5 last:border-b-0">
           {week.map((day) => {
             const dayKey = isoDate(day);
-            const dayEvents = (eventsByDay[dayKey] || []).sort((a, b) => a.startMin - b.startMin);
+            const dayTimed = (eventsByDay[dayKey] || []).sort((a, b) => a.startMin - b.startMin);
+            const dayEvents = [...(allDayByDay[dayKey] || []), ...dayTimed];
             const isOtherMonth = day.getMonth() !== currentMonth;
             const isToday = dayKey === todayIso;
             return (
@@ -263,11 +265,24 @@ export function Kalender() {
   // Termine werden pro Tag auf den jeweiligen Tagesausschnitt begrenzt.
   const eventsByDay = {};
   const allDayEvents = [];
+  // Separat von eventsByDay: dort werden Minuten seit Mitternacht für das
+  // Stunden-Raster (Tag/Woche) berechnet, was für ganztägige Termine ohne
+  // Uhrzeit keinen Sinn ergibt. Für die Monatsansicht brauchen sie trotzdem
+  // einen Eintrag pro überspanntem Tag, sonst tauchen sie dort gar nicht auf.
+  const allDayByDay = {};
   for (const ev of filtered) {
     const start = new Date(ev.start);
     const end = new Date(ev.end);
     if (ev.allDay) {
       allDayEvents.push(ev);
+      // DTEND ist bei ganztägigen iCal-Terminen exklusiv (Ende = erster Tag
+      // NACH dem letzten Vorkommen), daher hier "<" statt "<=".
+      const spanStart = startOfDay(start);
+      let spanEnd = startOfDay(end);
+      if (spanEnd <= spanStart) spanEnd = addDays(spanStart, 1);
+      for (let cursor = spanStart; cursor < spanEnd; cursor = addDays(cursor, 1)) {
+        (allDayByDay[isoDate(cursor)] ||= []).push(ev);
+      }
       continue;
     }
     let cursor = startOfDay(start);
@@ -341,7 +356,7 @@ export function Kalender() {
       {error && <GlassCard className="text-sm text-status-hoch">{error}</GlassCard>}
       {loading && !error && <p className="text-sm text-ivory/40">Lade Termine…</p>}
 
-      {!loading && !error && allDayEvents.length > 0 && (
+      {!loading && !error && allDayEvents.length > 0 && (view === "tag" || view === "woche") && (
         <GlassCard className="!p-3">
           <p className="mb-1.5 text-xs text-ivory/45">Ganztägig</p>
           <div className="flex flex-wrap gap-1.5">
@@ -365,7 +380,9 @@ export function Kalender() {
       {!loading && !error && (view === "tag" || view === "woche") && (
         <TimeGrid days={days} eventsByDay={eventsByDay} byId={byId} view={view} />
       )}
-      {!loading && !error && view === "monat" && <MonthGrid refDate={refDate} eventsByDay={eventsByDay} byId={byId} />}
+      {!loading && !error && view === "monat" && (
+        <MonthGrid refDate={refDate} eventsByDay={eventsByDay} allDayByDay={allDayByDay} byId={byId} />
+      )}
     </div>
   );
 }

@@ -2,12 +2,13 @@ import { useEffect, useState, useCallback } from "react";
 import { apiFetch } from "../api/client";
 import { GlassCard } from "../components/ui/GlassCard";
 import { Button } from "../components/ui/Button";
-import { Input, Select, Label, Textarea } from "../components/ui/Field";
+import { Input, Select, Label, Textarea, FormField } from "../components/ui/Field";
 import { AreaBadge } from "../components/ui/AreaBadge";
 import { PageHeader } from "../components/ui/PageHeader";
 import { FilterChips } from "../components/ui/FilterChips";
 import { EmptyState } from "../components/ui/EmptyState";
 import { useAreas } from "../context/AreasContext";
+import { useAsyncAction } from "../hooks/useAsyncAction";
 
 const EMPTY_FORM = { title: "", description: "", area: "", target_date: "", status: "aktiv", progress: "0" };
 const STATUS_LABELS = { aktiv: "Aktiv", erreicht: "Erreicht", abgebrochen: "Abgebrochen" };
@@ -78,6 +79,7 @@ export function Ziele() {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState("");
+  const { run, isPending, error: actionError } = useAsyncAction();
 
   const load = useCallback(async () => {
     const params = new URLSearchParams({ area: areaFilter, status: statusFilter });
@@ -118,7 +120,7 @@ export function Ziele() {
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
-    try {
+    await run("submit", async () => {
       if (editingId) {
         await apiFetch(`/goals/${editingId}`, { method: "PATCH", body: JSON.stringify(form) });
       } else {
@@ -126,9 +128,7 @@ export function Ziele() {
       }
       resetForm();
       await load();
-    } catch (err) {
-      setError(err.message);
-    }
+    });
   }
 
   async function updateMilestones(goal, milestones) {
@@ -143,13 +143,10 @@ export function Ziele() {
   }
 
   async function deleteGoal(id) {
-    setError("");
-    try {
+    await run(`delete-${id}`, async () => {
       await apiFetch(`/goals/${id}`, { method: "DELETE" });
       await load();
-    } catch (err) {
-      setError(err.message);
-    }
+    });
   }
 
   return (
@@ -176,25 +173,21 @@ export function Ziele() {
         </div>
       </div>
 
-      {error && <p className="text-sm text-status-hoch">{error}</p>}
+      {(error || actionError) && <p className="text-sm text-status-hoch">{error || actionError}</p>}
 
       {showForm && (
         <GlassCard>
           <form onSubmit={handleSubmit} className="grid gap-3 sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <Label>Titel</Label>
+            <FormField label="Titel" className="sm:col-span-2">
               <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
-            </div>
-            <div className="sm:col-span-2">
-              <Label>Beschreibung</Label>
+            </FormField>
+            <FormField label="Beschreibung" className="sm:col-span-2">
               <Textarea rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-            </div>
-            <div>
-              <Label>Zieldatum</Label>
+            </FormField>
+            <FormField label="Zieldatum">
               <Input type="date" value={form.target_date} onChange={(e) => setForm({ ...form, target_date: e.target.value })} />
-            </div>
-            <div>
-              <Label>Bereich</Label>
+            </FormField>
+            <FormField label="Bereich">
               <Select value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })}>
                 {activeAreas.map((a) => (
                   <option key={a.id} value={a.id}>
@@ -202,9 +195,8 @@ export function Ziele() {
                   </option>
                 ))}
               </Select>
-            </div>
-            <div>
-              <Label>Status</Label>
+            </FormField>
+            <FormField label="Status">
               <Select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
                 {Object.entries(STATUS_LABELS).map(([k, l]) => (
                   <option key={k} value={k}>
@@ -212,7 +204,7 @@ export function Ziele() {
                   </option>
                 ))}
               </Select>
-            </div>
+            </FormField>
             <div className="sm:col-span-2">
               <Label>Fortschritt (%)</Label>
               <Input
@@ -230,7 +222,9 @@ export function Ziele() {
               </p>
             </div>
             <div className="sm:col-span-2">
-              <Button type="submit">{editingId ? "Speichern" : "Anlegen"}</Button>
+              <Button type="submit" disabled={isPending("submit")}>
+                {isPending("submit") ? "Speichert…" : editingId ? "Speichern" : "Anlegen"}
+              </Button>
             </div>
           </form>
         </GlassCard>
@@ -238,8 +232,10 @@ export function Ziele() {
 
       <div className="space-y-3">
         {goals.length === 0 && <EmptyState title="Keine Ziele in diesem Bereich" description="Über „+ Ziel“ dein erstes Ziel anlegen." />}
-        {goals.map((g) => (
-          <GlassCard key={g.id} className="!p-4">
+        {goals.map((g) => {
+          const deleting = isPending(`delete-${g.id}`);
+          return (
+          <GlassCard key={g.id} className={`!p-4 ${deleting ? "opacity-50" : ""}`}>
             <div className="flex items-start gap-3">
               <div className="min-w-0 flex-1">
                 <p className="font-medium text-ivory">{g.title}</p>
@@ -258,16 +254,22 @@ export function Ziele() {
                 <MilestoneChecklist goal={g} onChange={(milestones) => updateMilestones(g, milestones)} />
               </div>
               <div className="flex shrink-0 gap-1">
-                <Button variant="ghost" className="!px-2 !py-1 text-xs" onClick={() => startEdit(g)}>
+                <Button variant="ghost" className="!px-2 !py-1 text-xs" onClick={() => startEdit(g)} disabled={deleting}>
                   Bearbeiten
                 </Button>
-                <Button variant="danger" className="!px-2 !py-1 text-xs" onClick={() => deleteGoal(g.id)}>
-                  Löschen
+                <Button
+                  variant="danger"
+                  className="!px-2 !py-1 text-xs"
+                  onClick={() => deleteGoal(g.id)}
+                  disabled={deleting}
+                >
+                  {deleting ? "Löscht…" : "Löschen"}
                 </Button>
               </div>
             </div>
           </GlassCard>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import { apiFetch } from "../api/client";
 import { GlassCard } from "../components/ui/GlassCard";
 import { AreaBadge } from "../components/ui/AreaBadge";
 import { StatTile } from "../components/ui/StatTile";
+import { localIsoDate } from "../utils/date";
 
 const DEFAULT_WIDGET_ORDER = ["termine", "aufgaben", "rechnungen", "mails"];
 
@@ -128,7 +129,7 @@ export function Uebersicht() {
     await apiFetch("/settings/briefing.text", { method: "PUT", body: JSON.stringify({ value: briefingText.trim() }) });
   }
 
-  const todayIso = new Date().toISOString().slice(0, 10);
+  const todayIso = localIsoDate();
   const openTasks = tasks.filter((t) => t.status === "offen");
   const overdueTasks = openTasks.filter((t) => t.due_date && t.due_date < todayIso);
   const topTasks = openTasks.slice(0, 5);

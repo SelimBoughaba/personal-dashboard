@@ -3,10 +3,12 @@
 Dieser Bericht dokumentiert, was aus dem 94-Punkte-Verbesserungsprompt vom
 7. September 2026 tatsächlich umgesetzt, getestet und verifiziert wurde –
 und was bewusst zurückgestellt wurde. Ehrlich gesagt: **94 Punkte sind kein
-Ein-Sitzungs-Umfang.** Umgesetzt wurden bisher zwei Runden: eine
-vollständige, getestete Tranche aus Abschnitt 1 (Sicherheit/Restore) und
-danach der komplette Abschnitt 2 (Datenkonsistenz/Backend), jeweils mit
-automatisierten Tests. Alles andere steht unten explizit als offen.
+Ein-Sitzungs-Umfang.** Umgesetzt wurden bisher drei Runden: eine
+vollständige, getestete Tranche aus Abschnitt 1 (Sicherheit/Restore), danach
+der komplette Abschnitt 2 (Datenkonsistenz/Backend), und zuletzt der
+Kernbestand von Abschnitt 3 (Frontend-Ehrlichkeit: Zeitzone, Kalenderraster,
+Barrierefreiheit, Suchpalette, Formularverknüpfung, Schreibaktions-Status),
+jeweils mit automatisierten Tests. Alles andere steht unten explizit als offen.
 
 Hinweis zur Herkunft des Prompts: Er nennt als Zielprojekt einen lokalen
 Pfad (`/Users/selim/.codex/...`) sowie einen Prüfbericht, auf die von dieser
@@ -68,10 +70,80 @@ bereichsübergreifend, siehe README). Jeder Restore mit Gesundheitseinträgen
 wäre dadurch fälschlich abgelehnt worden. Ausschluss ergänzt, Regressionstest
 dafür hinzugefügt.
 
+## Abschnitt 3 – Frontend-Ehrlichkeit (Punkte 28, 29, 35, 37–39 umgesetzt)
+
+Rein frontendseitig, keine Backend-Änderung nötig. Getestet durch
+`frontend/test/date.test.js` (4 neue Tests für den Datums-Helfer,
+`cd frontend && npm test`) sowie einen Playwright-Lauf durch die echte
+gebaute UI (Login, Aufgaben-Formular, Kalender-Monatsansicht, Sidebar,
+Suchpalette) – Details unten je Punkt. Vor der Umsetzung wurde jeder Punkt
+gegen den echten Code geprüft statt die Prompt-Behauptung ungeprüft zu
+übernehmen; Ergebnis dieser Prüfung bei 30–36 unten.
+
+| # | Punkt | Was geändert wurde |
+|---|---|---|
+| 29+37 | Zeitzone (UTC- statt Lokalzeit-Bug) | `new Date().toISOString().slice(0, 10)` liefert **UTC**, nicht die Lokalzeit des Browsers. In Deutschland (UTC+1/+2) bedeutet das: kurz nach Mitternacht Lokalzeit (bis zu 2 Stunden, je nach Sommer-/Winterzeit) hält der Code noch den Vortag für „heute" – „heute fällig"/„überfällig" war in diesem Fenster falsch. Betroffen: `Kalender.jsx#isoDate` (Tagesgruppierung im Kalenderraster), `Uebersicht.jsx` (Kennzahlenzeile, „Heutige Termine"), `Rechnungen.jsx` (Überfällig-Berechnung), `Gesundheit.jsx` (Vorbelegung des Datumsfelds). Neue `frontend/src/utils/date.js#localIsoDate()` nutzt lokale Getter (`getFullYear`/`getMonth`/`getDate`) statt `toISOString()`, an allen vier Stellen eingesetzt. 4 automatisierte Tests, u. a. für die Jahresgrenze. |
+| 37 (Rest) | Ganztägige Termine im Monatsraster | Ganztägige Termine wurden komplett separat gesammelt und nur als flache „Ganztägig"-Leiste oberhalb des Rasters angezeigt – in der Monatsansicht tauchten sie **an keinem einzigen Tag** in der Zelle auf, obwohl Tages-/Zeitraster dafür vorgesehen sind. Jetzt: neue `allDayByDay`-Zuordnung (ein Eintrag pro überspanntem Kalendertag, DTEND als exklusiv behandelt wie im iCal-Standard) wird in `MonthGrid` zusätzlich zu den Zeit-Terminen der jeweiligen Zelle gerendert; die „Ganztägig"-Leiste bleibt auf Tag/Woche beschränkt (sonst doppelte Anzeige in der Monatsansicht). |
+| 28 | Tastatur-/Screenreader-Falle im eingeklappten „Mehr"-Menü | Die Unterpunkte unter „Mehr" waren per CSS (`grid-template-rows: 0fr`) nur optisch ausgeblendet, blieben aber per Tab erreichbar und für Screenreader sichtbar – ein Tastaturnutzer konnte in unsichtbare Links springen. `inert` (bedingt gespreadet, nicht `inert={false}`, da ältere React-Versionen das als String-Attribut `inert="false"` rendern würden, was der Browser trotzdem als „inert" liest) entfernt den Container jetzt gleichzeitig aus Tab-Reihenfolge und Accessibility-Baum, exakt synchron zum visuellen Zustand. Playwright-Check: `inert`-Attribut ist bei eingeklapptem Menü gesetzt, nach dem Öffnen entfernt. |
+| 35 | Suchpalette: veraltete Treffer überschreiben neue | Die Suche hatte ein 200ms-Debounce, aber keinen Schutz gegen eine bereits laufende, langsamere Anfrage einer älteren Eingabe – die konnte nach einer neueren, schnelleren Antwort zurückkommen und deren aktuellere Treffer überschreiben. Jetzt `AbortController`: eine neue Eingabe bricht die noch laufende alte Anfrage ab, bevor sie das Ergebnis überschreiben kann. |
+| 38 | Label/Feld nicht programmatisch verknüpft | `<Label>`-Text und `<Input>`/`<Select>`/`<Textarea>` standen bisher als reine Geschwister-Elemente nebeneinander, ohne `htmlFor`/`id`-Paar (nur 2 von 11 Seiten hatten das überhaupt, der Rest verließ sich auf optische Nähe) – ein Klick auf das Label-Wort fokussierte das Feld nicht, Screenreader lasen Label und Feld nicht zuverlässig zusammen. Neue `FormField`-Komponente (`components/ui/Field.jsx`) generiert über `useId()` automatisch ein stabiles `id`/`htmlFor`-Paar und übernimmt es per `cloneElement` auf das Kindelement – ohne dass jede Seite selbst eine `id` verwalten muss. 62 von 68 `<Label>`+Feld-Stellen über 10 Seiten umgestellt (Details unten). Playwright-Check: Klick auf „Titel"-Label im Aufgaben-Formular fokussiert nachweislich das verknüpfte Eingabefeld. |
+| 39 | Schreibaktionen ohne Rückmeldung/Doppelklick-Schutz | Aktionen wie „erledigt"/„bezahlt" umschalten oder Löschen liefen als „fire and forget": ein Fehlschlag (abgelaufene Session, Netzwerkfehler, Serverablehnung) verschwand als unbehandelte Promise-Ablehnung, ohne dass die Nutzerin etwas davon sah, und ein Doppelklick konnte dieselbe Aktion zweimal auslösen, bevor die erste Antwort da war. Neuer `useAsyncAction`-Hook (`hooks/useAsyncAction.js`) kapselt eine Aktion mit Pending-Status pro Datensatz und Fehleranzeige; angewendet auf Anlegen/Speichern-Formulare sowie Umschalten/Löschen/Bestätigen-Aktionen in Aufgaben, Rechnungen, Gesundheit, Notizen, Verträge, Ziele, LinkedIn, Dokumente, Prompt-Bibliothek. Buttons zeigen während der Anfrage „Speichert…"/„Löscht…" und sind deaktiviert; betroffene Zeilen werden abgeblendet. Playwright-Check: dreifacher schneller Klick auf „Anlegen" erzeugt nachweislich genau **einen** Datensatz, nicht drei. In `Ziele.jsx` bewusst **nicht** angefasst: `updateMilestones` hatte bereits ein eigenes, funktionierendes Optimistic-Update-mit-Rollback-Muster (lokaler State wird sofort aktualisiert, bei Fehler per `load()` zurückgesetzt) – das in den generischen Hook zu zwingen hätte das Verhalten bei mehreren schnell hintereinander angehakten Meilensteinen ohne klaren Vorteil verändert. |
+
+**Bereits vorher in Ordnung, bei der Prüfung bestätigt statt blind
+verändert:**
+- **30** (Zahlen "–" statt 0 bei Fehler): `Uebersicht.jsx`s „Ungelesene
+  Mails"-Kachel und `Mail.jsx` selbst zeigen bei Fehlern bereits korrekt
+  einen expliziten Fehlerzustand statt einer irreführenden „0" – aus der
+  vorherigen Design-Konsolidierung dieses Projekts, hier nur verifiziert.
+- **34** (kontextbezogene Aktionen, keine vorgetäuschten Möglichkeiten):
+  Der Kalender ist bereits explizit als „nur Ansicht, kein
+  Anlegen/Bearbeiten" beschriftet – keine irreführenden Buttons für
+  Aktionen, die nicht möglich sind.
+
+**Bei der Prüfung als nicht zutreffend bestätigt (nicht „übersehen",
+sondern geprüft und die Prompt-Prämisse trifft nicht zu):**
+- **31** (angeblich fabriziertes KI-Metadaten-„Briefing"): Das
+  „Tagesbriefing" auf der Übersicht ist ein einfaches, ehrliches
+  Freitextfeld, das die Nutzerin selbst befüllt („Noch kein Tagesbriefing
+  eingerichtet – klicke auf „Bearbeiten"") – keine vorgetäuschte KI-Analyse
+  zum Nachbessern gefunden.
+- **32** (Wetter-Widget): Es gibt in diesem Repository **kein**
+  Wetter-Widget – weder mit noch ohne Bug. Punkt ist gegenstandslos für
+  dieses Projekt.
+- **36** (einheitliche Toast-/Dialog-Schicht): Es existiert aktuell keine
+  gemeinsame Toast-/Dialog-Komponente im Projekt (grep über die gesamte
+  `components/`-Struktur bestätigt das) – vereinzelte `fixed inset-0
+  z-50`-Muster direkt in den Stellen, die sie brauchen (z. B.
+  `CommandPalette.jsx`). Eine komplette neue Overlay-Schicht einzuführen
+  wäre eine Architekturentscheidung ohne akuten Bug dahinter und wurde
+  daher zurückgestellt, nicht implementiert.
+
+**Bekannte Einschränkung dieser Runde:** Von den 68 `<Label>`+Feld-Stellen
+wurden 62 automatisch auf `FormField` umgestellt, 6 bewusst übersprungen,
+weil das Umwandeln unsicher gewesen wäre (u. a. `Login.jsx`s Passwortfelder
+hatten bereits eine korrekte manuelle `id`/`htmlFor`-Paarung und wurden
+nicht angetastet; `Einstellungen.jsx`s Farbschema-Auswahl und
+Kalendername-je-Bereich-Liste haben keinen einzelnen 1:1-Feld-Bezug;
+`Dokumente.jsx`s Datei-Upload nutzt ein natives `<input type="file">`
+statt der `Input`-Komponente). Diese Restfälle sind nicht barrierefrei
+schlechter als vorher (kein Regressions, nur keine Verbesserung an diesen
+konkreten Stellen).
+
+**Zu Punkt 39 selbst noch offen:** Die im Prompt genannten Unterpunkte
+„Optimistic-Rollback" (außer dem bereits vorhandenen Fall in `Ziele.jsx`)
+und „Warnung bei ungespeicherten Formularen beim Verlassen der Seite"
+wurden **nicht** umgesetzt – das wäre ein deutlich größerer Eingriff
+(Formular-Dirty-Tracking, `beforeunload`/Router-Blocker) ohne im Rahmen
+dieser Prüfung gefundenen konkreten Fehlerfall, der das akut nötig macht.
+Pending-Status, Fehleranzeige und Doppelklick-Schutz (der eigentliche Bug:
+stille Fehlschläge und doppelte Submits) sind umgesetzt und getestet.
+
 ## Bewusst nicht umgesetzt (mit Begründung)
 
-**Restliche Punkte aus Abschnitt 1–6 (10–12, 22 vollständig, 27, 28–52):**
-nicht angefasst. Auswahl der wichtigsten Lücken für eine Folgerunde:
+**Restliche Punkte aus Abschnitt 1–6 (10–12, 22 vollständig, 27, 33, 40–52):**
+nicht angefasst (30–32, 34, 36 wurden geprüft, siehe Abschnitt 3 oben – dort
+zählt „geprüft und bestätigt" nicht als „nicht angefasst", auch wenn kein
+Code geändert wurde). Auswahl der wichtigsten Lücken für eine Folgerunde:
 - **10 (Keychain), 11 (LAN-Freigabe-Härtung):** setzen Entscheidungen voraus
   (welcher Migrationspfad, welches Bedrohungsmodell für LAN-Zugriff), keine
   reinen Bugfixes.
@@ -94,14 +166,12 @@ nicht angefasst. Auswahl der wichtigsten Lücken für eine Folgerunde:
 - **27 (Pagination/Suche zu Datensätzen):** kein akuter Bug bei der
   aktuellen (persönlichen, nicht massenhaften) Datenmenge; der Prompt
   selbst verlangt „ohne nachgewiesenen Bedarf" nichts hinzuzufügen.
-- **28–39 (Frontend-Ehrlichkeit):** Ein Teil (Seiten-Header auf allen
-  Modulen, konsistente leere Zustände, Kennzahlenzeile auf der Übersicht)
-  wurde bereits in einer früheren Design-Konsolidierung dieses Projekts
-  umgesetzt (siehe Commit-Historie „Backend geprüft, Onboarding-Bug
-  behoben, Oberfläche konsolidiert"), aber **nicht** gegen die spezifischen
-  Behauptungen dieses Prompts (z. B. Zeitzone `Europe/Berlin`, Suche mit
-  Request-Generation gegen veraltete Antworten, Kalenderraster-Wochenkante)
-  einzeln nachgeprüft.
+- **28, 29, 35, 37, 38, 39 (Frontend-Ehrlichkeit):** inzwischen umgesetzt,
+  siehe eigener Abschnitt „Abschnitt 3" oben. **30, 34** bei der Prüfung als
+  bereits korrekt bestätigt. **31, 32, 36** bei der Prüfung als für dieses
+  Projekt nicht zutreffend bestätigt (siehe Begründung oben je Punkt) –
+  **33** (verbleibender Punkt aus Abschnitt 3/4, nicht einzeln geprüft)
+  bleibt offen.
 - **40–46 (visuell/Barrierefreiheit):** keine automatisierte
   Kontrastmessung, kein VoiceOver-Test durchgeführt (kein Mac in dieser
   Cloud-Umgebung verfügbar, siehe unten).
@@ -126,6 +196,13 @@ möglicherweise falschen Grundlage umzusetzen.
 
 ## Bekannte offene Punkte aus dieser Runde selbst
 
+- Beim Playwright-Testlauf für Abschnitt 3 traten wiederholt
+  `ERR_CONNECTION_RESET`/503-Fehler beim Laden von `fonts.googleapis.com`
+  auf (Manrope-Schriftart-Preconnect in `index.html`) – das liegt an der
+  Netzwerkrichtlinie dieser Cloud-Testumgebung (nicht alle externen Hosts
+  erreichbar), nicht an einer Code-Änderung dieser Runde. Auf einem echten
+  Mac mit normalem Internetzugang tritt das nicht auf; die App funktioniert
+  mit Font-Fallback auch ohne die Google-Font.
 - `npm audit` meldet für `backend/` weiterhin 5 moderate/hohe Findings
   (nicht durch diese Änderungen verursacht, vorbestehend) – nicht
   analysiert, welche davon tatsächlich erreichbare Laufzeitpfade betreffen
@@ -164,9 +241,9 @@ möglicherweise falschen Grundlage umzusetzen.
 
 1. `npm audit` beider `package-lock.json` einzeln durchgehen und
    dokumentieren, was erreichbar ist (Punkt 12).
-2. Abschnitt 3/4 (Frontend-Ehrlichkeit, Barrierefreiheit) gegen die
-   konkreten Behauptungen in diesem Prompt nachprüfen (z. B. Zeitzone
-   `Europe/Berlin`, Suche mit Request-Generation, Kalenderraster-Wochenkante).
+2. Abschnitt 4 (visuell/Kontrast/Bewegungsreduktion, Punkte 40–46) gegen
+   die konkreten Behauptungen in diesem Prompt nachprüfen – Abschnitt 3
+   (Frontend-Ehrlichkeit) ist jetzt erledigt.
 3. Falls später wirklich benötigt: volle Cent-Spalten-Migration für Geld
    (Punkt 23) und vollständig vereinheitlichte Zod-Validierung über alle
    Routen (Punkt 22) – beides mit eigenem, vom Nutzer bestätigtem Anlauf.

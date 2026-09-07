@@ -2,13 +2,15 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { apiFetch, getToken } from "../api/client";
 import { GlassCard } from "../components/ui/GlassCard";
 import { Button } from "../components/ui/Button";
-import { Input, Select, Label } from "../components/ui/Field";
+import { Input, Select, FormField } from "../components/ui/Field";
 import { AreaBadge } from "../components/ui/AreaBadge";
 import { PageHeader } from "../components/ui/PageHeader";
 import { FilterChips } from "../components/ui/FilterChips";
 import { StatTile } from "../components/ui/StatTile";
 import { EmptyState } from "../components/ui/EmptyState";
 import { useAreas } from "../context/AreasContext";
+import { localIsoDate } from "../utils/date";
+import { useAsyncAction } from "../hooks/useAsyncAction";
 
 const EMPTY_FORM = { sender_name: "", subject: "", amount: "", due_date: "", area: "", status: "offen" };
 
@@ -31,6 +33,7 @@ export function Rechnungen() {
   const [scanMessage, setScanMessage] = useState("");
   const [importMessage, setImportMessage] = useState("");
   const fileInputRef = useRef(null);
+  const { run, isPending, error: actionError } = useAsyncAction();
 
   const load = useCallback(async () => {
     const params = new URLSearchParams({ area: areaFilter, status: statusFilter });
@@ -46,7 +49,7 @@ export function Rechnungen() {
     load().catch((err) => setError(err.message));
   }, [load]);
 
-  const todayIso = new Date().toISOString().slice(0, 10);
+  const todayIso = localIsoDate();
   const openInvoices = allInvoices.filter((i) => i.status === "offen");
   const overdueInvoices = openInvoices.filter((i) => i.due_date && i.due_date < todayIso);
   const openSum = openInvoices.reduce((s, i) => s + (i.amount || 0), 0);
@@ -141,7 +144,7 @@ export function Rechnungen() {
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
-    try {
+    await run("submit", async () => {
       if (editingId) {
         // Manuelles Bearbeiten und Speichern zählt als Prüfung eines
         // Scan-Vorschlags - der "Vorschlag"-Badge verschwindet danach.
@@ -151,27 +154,31 @@ export function Rechnungen() {
       }
       resetForm();
       await load();
-    } catch (err) {
-      setError(err.message);
-    }
+    });
   }
 
   async function toggleStatus(inv) {
-    await apiFetch(`/invoices/${inv.id}`, {
-      method: "PATCH",
-      body: JSON.stringify({ status: inv.status === "offen" ? "bezahlt" : "offen" }),
+    await run(`toggle-${inv.id}`, async () => {
+      await apiFetch(`/invoices/${inv.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: inv.status === "offen" ? "bezahlt" : "offen" }),
+      });
+      await load();
     });
-    load();
   }
 
   async function deleteInvoice(id) {
-    await apiFetch(`/invoices/${id}`, { method: "DELETE" });
-    load();
+    await run(`delete-${id}`, async () => {
+      await apiFetch(`/invoices/${id}`, { method: "DELETE" });
+      await load();
+    });
   }
 
   async function confirmInvoice(inv) {
-    await apiFetch(`/invoices/${inv.id}`, { method: "PATCH", body: JSON.stringify({ confirmed: true }) });
-    load();
+    await run(`confirm-${inv.id}`, async () => {
+      await apiFetch(`/invoices/${inv.id}`, { method: "PATCH", body: JSON.stringify({ confirmed: true }) });
+      await load();
+    });
   }
 
   return (
@@ -214,41 +221,36 @@ export function Rechnungen() {
 
       {scanMessage && <p className="text-sm text-ivory/80">{scanMessage}</p>}
       {importMessage && <p className="text-sm text-ivory/80">{importMessage}</p>}
-      {error && <p className="text-sm text-status-hoch">{error}</p>}
+      {(error || actionError) && <p className="text-sm text-status-hoch">{error || actionError}</p>}
 
       {showForm && (
         <GlassCard>
           <form onSubmit={handleSubmit} className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <Label>Absender</Label>
+            <FormField label="Absender">
               <Input
                 value={form.sender_name}
                 onChange={(e) => setForm({ ...form, sender_name: e.target.value })}
               />
-            </div>
-            <div>
-              <Label>Betreff / Bezeichnung</Label>
+            </FormField>
+            <FormField label="Betreff / Bezeichnung">
               <Input value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} />
-            </div>
-            <div>
-              <Label>Betrag (EUR)</Label>
+            </FormField>
+            <FormField label="Betrag (EUR)">
               <Input
                 type="number"
                 step="0.01"
                 value={form.amount}
                 onChange={(e) => setForm({ ...form, amount: e.target.value })}
               />
-            </div>
-            <div>
-              <Label>Fälligkeitsdatum</Label>
+            </FormField>
+            <FormField label="Fälligkeitsdatum">
               <Input
                 type="date"
                 value={form.due_date}
                 onChange={(e) => setForm({ ...form, due_date: e.target.value })}
               />
-            </div>
-            <div>
-              <Label>Bereich</Label>
+            </FormField>
+            <FormField label="Bereich">
               <Select value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })}>
                 {activeAreas.map((a) => (
                   <option key={a.id} value={a.id}>
@@ -256,16 +258,17 @@ export function Rechnungen() {
                   </option>
                 ))}
               </Select>
-            </div>
-            <div>
-              <Label>Status</Label>
+            </FormField>
+            <FormField label="Status">
               <Select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
                 <option value="offen">Offen</option>
                 <option value="bezahlt">Bezahlt</option>
               </Select>
-            </div>
+            </FormField>
             <div className="sm:col-span-2">
-              <Button type="submit">{editingId ? "Speichern" : "Anlegen"}</Button>
+              <Button type="submit" disabled={isPending("submit")}>
+                {isPending("submit") ? "Speichert…" : editingId ? "Speichern" : "Anlegen"}
+              </Button>
             </div>
           </form>
         </GlassCard>
@@ -275,13 +278,18 @@ export function Rechnungen() {
         {invoices.length === 0 && (
           <EmptyState title="Keine Rechnungen in diesem Bereich" description="Über „+ Rechnung“ manuell anlegen oder Postfächer durchsuchen." />
         )}
-        {invoices.map((inv) => (
-          <GlassCard key={inv.id} className="flex items-start gap-3 !p-4">
+        {invoices.map((inv) => {
+          const toggling = isPending(`toggle-${inv.id}`);
+          const deleting = isPending(`delete-${inv.id}`);
+          const confirming = isPending(`confirm-${inv.id}`);
+          return (
+          <GlassCard key={inv.id} className={`flex items-start gap-3 !p-4 ${deleting ? "opacity-50" : ""}`}>
             <input
               type="checkbox"
               checked={inv.status === "bezahlt"}
               onChange={() => toggleStatus(inv)}
-              className="mt-1 h-4 w-4 rounded border-white/20 bg-white/5 accent-lime"
+              disabled={toggling || deleting}
+              className="mt-1 h-4 w-4 rounded border-white/20 bg-white/5 accent-lime disabled:cursor-not-allowed disabled:opacity-50"
               title="Als bezahlt markieren"
             />
             <div className="min-w-0 flex-1">
@@ -310,19 +318,35 @@ export function Rechnungen() {
             </div>
             <div className="flex shrink-0 gap-1">
               {!inv.confirmed && (
-                <Button variant="ghost" className="!px-2 !py-1 text-xs" onClick={() => confirmInvoice(inv)}>
-                  Bestätigen
+                <Button
+                  variant="ghost"
+                  className="!px-2 !py-1 text-xs"
+                  onClick={() => confirmInvoice(inv)}
+                  disabled={confirming || deleting}
+                >
+                  {confirming ? "Bestätigt…" : "Bestätigen"}
                 </Button>
               )}
-              <Button variant="ghost" className="!px-2 !py-1 text-xs" onClick={() => startEdit(inv)}>
+              <Button
+                variant="ghost"
+                className="!px-2 !py-1 text-xs"
+                onClick={() => startEdit(inv)}
+                disabled={deleting}
+              >
                 Bearbeiten
               </Button>
-              <Button variant="danger" className="!px-2 !py-1 text-xs" onClick={() => deleteInvoice(inv.id)}>
-                Löschen
+              <Button
+                variant="danger"
+                className="!px-2 !py-1 text-xs"
+                onClick={() => deleteInvoice(inv.id)}
+                disabled={deleting}
+              >
+                {deleting ? "Löscht…" : "Löschen"}
               </Button>
             </div>
           </GlassCard>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
