@@ -55,7 +55,7 @@ export function ProfilSection() {
     setTimeout(() => setSaved(false), 2000);
   }
 
-  if (loading) return <p className="text-sm text-ivory/40">Lädt…</p>;
+  if (loading) return <p className="text-sm text-ivory/65">Lädt…</p>;
 
   return (
     <GlassCard>
@@ -119,7 +119,7 @@ function DarstellungSection() {
     document.documentElement.dataset.theme = value;
   }
 
-  if (loading) return <p className="text-sm text-ivory/40">Lädt…</p>;
+  if (loading) return <p className="text-sm text-ivory/65">Lädt…</p>;
 
   return (
     <GlassCard>
@@ -422,7 +422,7 @@ function DashboardSection() {
     persist(next, hidden);
   }
 
-  if (loading) return <p className="text-sm text-ivory/40">Lädt…</p>;
+  if (loading) return <p className="text-sm text-ivory/65">Lädt…</p>;
 
   return (
     <GlassCard>
@@ -535,7 +535,7 @@ export function KalenderSection() {
     setAreaMap({});
   }
 
-  if (loading) return <p className="text-sm text-ivory/40">Lädt…</p>;
+  if (loading) return <p className="text-sm text-ivory/65">Lädt…</p>;
 
   return (
     <GlassCard>
@@ -634,8 +634,8 @@ function MailAccountRow({ account, onChange, onRemove }) {
     <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-medium text-ivory">{account.label}</span>
-        <span className="text-xs text-ivory/40">{account.user} · {account.host}</span>
-        {account.paused && <span className="rounded-full bg-white/5 px-2 py-0.5 text-[10px] text-ivory/40">pausiert</span>}
+        <span className="text-xs text-ivory/65">{account.user} · {account.host}</span>
+        {account.paused && <span className="rounded-full bg-white/5 px-2 py-0.5 text-[10px] text-ivory/65">pausiert</span>}
         <div className="ml-auto flex gap-2">
           <button
             onClick={() => onChange({ paused: !account.paused })}
@@ -733,7 +733,7 @@ export function EmailSection() {
     saveRules(next);
   }
 
-  if (loading) return <p className="text-sm text-ivory/40">Lädt…</p>;
+  if (loading) return <p className="text-sm text-ivory/65">Lädt…</p>;
 
   return (
     <div className="space-y-4">
@@ -745,7 +745,7 @@ export function EmailSection() {
           bereits, indem hier einfach kein Konto hinzugefügt wird.
         </p>
         <div className="space-y-2">
-          {accounts.length === 0 && <p className="text-sm text-ivory/40">Noch kein Postfach verbunden.</p>}
+          {accounts.length === 0 && <p className="text-sm text-ivory/65">Noch kein Postfach verbunden.</p>}
           {accounts.map((a) => (
             <MailAccountRow
               key={a.id}
@@ -792,11 +792,11 @@ export function EmailSection() {
           {Object.entries(rules).map(([match, area]) => (
             <div key={match} className="flex items-center gap-2 text-sm">
               <span className="flex-1 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-ivory/80">{match}</span>
-              <span className="text-ivory/40">→</span>
+              <span className="text-ivory/65">→</span>
               <span className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-ivory/80">
                 {activeAreas.find((a) => a.id === area)?.label || area}
               </span>
-              <button onClick={() => removeRule(match)} className="text-ivory/40 hover:text-status-hoch">
+              <button onClick={() => removeRule(match)} className="text-ivory/65 hover:text-status-hoch">
                 ✕
               </button>
             </div>
@@ -861,7 +861,7 @@ export function DokumenteSection() {
     }
   }
 
-  if (loading) return <p className="text-sm text-ivory/40">Lädt…</p>;
+  if (loading) return <p className="text-sm text-ivory/65">Lädt…</p>;
 
   return (
     <GlassCard>
@@ -909,7 +909,7 @@ export function BenachrichtigungenSection() {
     setPermission(result);
   }
 
-  if (loading) return <p className="text-sm text-ivory/40">Lädt…</p>;
+  if (loading) return <p className="text-sm text-ivory/65">Lädt…</p>;
 
   return (
     <GlassCard>

@@ -49,7 +49,7 @@ function MilestoneChecklist({ goal, onChange }) {
             className="h-4 w-4 rounded border-white/20 bg-white/5 accent-lime"
           />
           <span className={`flex-1 ${m.done ? "text-ivory/40 line-through" : "text-ivory/80"}`}>{m.text}</span>
-          <button onClick={() => remove(m.id)} className="text-ivory/30 hover:text-status-hoch">
+          <button onClick={() => remove(m.id)} className="text-ivory/55 hover:text-status-hoch">
             ✕
           </button>
         </div>
@@ -215,7 +215,7 @@ export function Ziele() {
                 disabled={!!form._hasMilestones}
                 onChange={(e) => setForm({ ...form, progress: e.target.value })}
               />
-              <p className="mt-1 text-xs text-ivory/40">
+              <p className="mt-1 text-xs text-ivory/65">
                 {form._hasMilestones
                   ? "Dieses Ziel hat bereits Meilensteine – der Fortschritt richtet sich danach und lässt sich hier nicht manuell überschreiben. Meilensteine unten auf der Zielkarte entfernen, um wieder manuell zu steuern."
                   : "Nur wirksam, solange dieses Ziel keine Meilensteine hat. Sobald welche hinzugefügt werden, übernehmen die den Fortschritt automatisch."}

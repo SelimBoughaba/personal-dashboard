@@ -21,12 +21,21 @@ export function CommandPalette({ open, onClose }) {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const inputRef = useRef(null);
+  const dialogRef = useRef(null);
+  // Merkt sich, welches Element vor dem Öffnen fokussiert war (z. B. der
+  // "Suche öffnen"-Button), damit der Fokus beim Schließen dorthin
+  // zurückkehrt statt einfach zu verschwinden bzw. auf <body> zu landen.
+  const triggerRef = useRef(null);
 
   useEffect(() => {
     if (open) {
+      triggerRef.current = document.activeElement;
       setQuery("");
       setResults([]);
       setTimeout(() => inputRef.current?.focus(), 0);
+    } else if (triggerRef.current) {
+      triggerRef.current.focus?.();
+      triggerRef.current = null;
     }
   }, [open]);
 
@@ -99,7 +108,7 @@ export function CommandPalette({ open, onClose }) {
         <div className="max-h-96 overflow-y-auto p-2">
           {!query.trim() && (
             <div>
-              <p className="px-2 pb-1 pt-1 text-[10px] uppercase tracking-wide text-ivory/35">Seiten</p>
+              <p className="px-2 pb-1 pt-1 text-[10px] uppercase tracking-wide text-ivory/65">Seiten</p>
               {QUICK_LINKS.map((l) => (
                 <button
                   key={l.path}
@@ -114,7 +123,7 @@ export function CommandPalette({ open, onClose }) {
 
           {query.trim() && filteredQuickLinks.length > 0 && (
             <div>
-              <p className="px-2 pb-1 pt-1 text-[10px] uppercase tracking-wide text-ivory/35">Seiten</p>
+              <p className="px-2 pb-1 pt-1 text-[10px] uppercase tracking-wide text-ivory/65">Seiten</p>
               {filteredQuickLinks.map((l) => (
                 <button
                   key={l.path}
@@ -127,11 +136,11 @@ export function CommandPalette({ open, onClose }) {
             </div>
           )}
 
-          {query.trim() && loading && <p className="px-3 py-2 text-sm text-ivory/40">Suche…</p>}
+          {query.trim() && loading && <p className="px-3 py-2 text-sm text-ivory/65">Suche…</p>}
 
           {query.trim() && !loading && Object.entries(grouped).map(([label, items]) => (
             <div key={label}>
-              <p className="px-2 pb-1 pt-2 text-[10px] uppercase tracking-wide text-ivory/35">{label}</p>
+              <p className="px-2 pb-1 pt-2 text-[10px] uppercase tracking-wide text-ivory/65">{label}</p>
               {items.map((r) => (
                 <button
                   key={`${r.type}-${r.id}`}
@@ -139,14 +148,14 @@ export function CommandPalette({ open, onClose }) {
                   className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-white/[0.06]"
                 >
                   <span className="text-ivory/85">{r.title}</span>
-                  {r.subtitle && <span className="ml-2 text-xs text-ivory/40">{r.subtitle}</span>}
+                  {r.subtitle && <span className="ml-2 text-xs text-ivory/65">{r.subtitle}</span>}
                 </button>
               ))}
             </div>
           ))}
 
           {query.trim() && !loading && results.length === 0 && filteredQuickLinks.length === 0 && (
-            <p className="px-3 py-4 text-center text-sm text-ivory/40">Keine Treffer.</p>
+            <p className="px-3 py-4 text-center text-sm text-ivory/65">Keine Treffer.</p>
           )}
         </div>
       </div>

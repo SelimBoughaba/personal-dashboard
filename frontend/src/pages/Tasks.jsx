@@ -207,10 +207,10 @@ export function Tasks() {
               <div key={col.id}>
                 <h2 className="mb-2 flex items-center gap-2 text-sm font-medium text-ivory/70">
                   {col.label}
-                  <span className="rounded-full bg-white/5 px-2 py-0.5 text-[10px] text-ivory/45">{colTasks.length}</span>
+                  <span className="rounded-full bg-white/5 px-2 py-0.5 text-[10px] text-ivory/65">{colTasks.length}</span>
                 </h2>
                 <div className="space-y-2">
-                  {colTasks.length === 0 && <p className="text-xs text-ivory/30">Keine offenen Aufgaben.</p>}
+                  {colTasks.length === 0 && <p className="text-xs text-ivory/65">Keine offenen Aufgaben.</p>}
                   {colTasks.map((task) => (
                     <TaskCard
                       key={task.id}
@@ -227,7 +227,7 @@ export function Tasks() {
               </div>
             );
           })}
-          <p className="col-span-full text-xs text-ivory/35">
+          <p className="col-span-full text-xs text-ivory/65">
             Erledigte Aufgaben werden im Kanban ausgeblendet – vollständige Liste inkl. erledigter Aufgaben in der
             Listenansicht.
           </p>

@@ -26,8 +26,9 @@ Seite wie aus einem Guss statt wie viele Einzelteile.
 
 **Sicherheits-/Zuverlässigkeitshärtung (Paket A):** Auf Basis eines
 Prüfberichts wurden Sicherheit/Restore (Abschnitt 1), Datenkonsistenz/
-Backend (Abschnitt 2) und der Kernbestand von Frontend-Ehrlichkeit
-(Abschnitt 3) vollständig, getestet umgesetzt – Details, Testabdeckung und
+Backend (Abschnitt 2), der Kernbestand von Frontend-Ehrlichkeit (Abschnitt 3)
+und der messbare Kernbestand von Optik/Barrierefreiheit/Motion (Abschnitt 4)
+vollständig, getestet umgesetzt – Details, Testabdeckung und
 bewusst zurückgestellte Punkte stehen in
 [`SECURITY_HARDENING.md`](./SECURITY_HARDENING.md). Kurzfassung Abschnitt
 1+2: zwei bestätigte konkrete Bugs (ein Routing-Fehler, durch den „Kalender
@@ -48,9 +49,17 @@ aber unsichtbares eingeklapptes Menü; eine Suchpalette, bei der eine
 veraltete Antwort eine neuere überschreiben konnte; fehlende
 Label/Feld-Verknüpfung auf den meisten Formularseiten; und
 Schreibaktionen (Umschalten/Löschen/Anlegen), die Fehler stillschweigend
-verschluckten und per Doppelklick doppelt auslösbar waren. `cd backend &&
+verschluckten und per Doppelklick doppelt auslösbar waren. Kurzfassung
+Abschnitt 4: gemessene (nicht geschätzte) WCAG-2.2-Kontrastwerte deckten
+auf, dass der Tastatur-Fokusring im hellen Farbschema praktisch unsichtbar
+war (1,1:1 statt der geforderten 3:1) und Formular-Beschriftungen im
+dunklen Standard-Farbschema unter dem Mindestkontrast lagen (3,3:1 statt
+4,5:1) – beide sowie zu schwacher sekundärer Text an 56 Stellen auf
+messbar ausreichenden Kontrast angehoben, ohne die Waldgrün-Identität zu
+verändern; dazu ein fehlender Skip-Link und eine Suchpalette ohne echten
+Fokus-Trap bzw. ohne Fokus-Rückgabe beim Schließen. `cd backend &&
 npm test` führt die inzwischen 29 automatisierten Backend-Tests aus, `cd
-frontend && npm test` 4 weitere für die neue Zeitzonen-Korrektur.
+frontend && npm test` 4 weitere für die Zeitzonen-Korrektur.
 
 ## Projektstruktur
 

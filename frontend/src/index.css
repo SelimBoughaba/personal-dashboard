@@ -12,8 +12,22 @@
   --color-forest-700: 31 82 69;
   --color-ivory: 243 241 233;
   --color-paper: 233 231 223;
-  --color-muted: 96 112 104;
+  /* Gegenüber dem Ausgangswert (96 112 104, ~3.3:1 auf dunklem Grund)
+     aufgehellt: Formular-Labels (text-muted) erreichen erst ab ~4.5:1
+     zuverlässig WCAG-2.2-AA für normalen Text - gemessen gegen die
+     tatsächliche zusammengesetzte Kartenfarbe, nicht nur den Roh-Hexwert. */
+  --color-muted: 123 142 132;
   --color-white: 255 255 255;
+  /* Fokusring: in Dunkel identisch zu lime (hoher Kontrast, 14.7:1).
+     Eigene Variable statt direkt "lime", weil lime im Hellmodus (siehe
+     unten) durch eine dunklere Variante ersetzt werden muss. */
+  --color-focus: 200 255 82;
+  /* Status-/Fehlertextfarben. In Dunkel identisch zu den bisherigen
+     Werten (bereits ausreichend Kontrast), im Hellmodus eigene, dunklere
+     Varianten (siehe [data-theme="light"] unten). */
+  --color-status-hoch: 226 114 91;
+  --color-status-mittel: 217 164 65;
+  --color-status-niedrig: 139 168 136;
 }
 
 /* Helles Theme: dieselben Namen, umgekehrte Rollen (z. B. wird die
@@ -30,6 +44,18 @@
   --color-paper: 214 219 210;
   --color-muted: 74 88 80;
   --color-white: 16 34 28;
+  /* lime (200 255 82) hat auf dem hellen Hintergrund nur ~1.1:1 Kontrast -
+     ein per Tastatur navigierender Mensch würde den Fokusring im
+     Hellmodus praktisch nicht sehen. Ersatzwert: der dunkle,
+     markenkonsistente forest-800-Ton (Waldgrün), gemessen ~9.9:1. */
+  --color-focus: 23 68 56;
+  /* Dieselben Statusfarben wie im Dunkelmodus liegen auf hellem Grund nur
+     bei 2.0-2.8:1 (z. B. Fehlermeldungen kaum lesbar). Dunklere Varianten
+     derselben Farbfamilie, gemessen auf ~4.5:1+ gegen den tatsächlichen
+     hellen Seitenhintergrund. */
+  --color-status-hoch: 200 63 35;
+  --color-status-mittel: 142 102 28;
+  --color-status-niedrig: 88 117 85;
 }
 
 @layer base {
@@ -45,7 +71,7 @@
     background: rgba(200, 255, 82, 0.28);
   }
   :focus-visible {
-    outline: 2px solid theme("colors.lime");
+    outline: 2px solid theme("colors.focus");
     outline-offset: 2px;
   }
 

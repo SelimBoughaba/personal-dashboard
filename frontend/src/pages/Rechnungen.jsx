@@ -313,7 +313,7 @@ export function Rechnungen() {
                     fällig {new Date(inv.due_date).toLocaleDateString("de-DE")}
                   </span>
                 )}
-                {inv.file_name && <span className="text-xs text-ivory/40">{inv.file_name}</span>}
+                {inv.file_name && <span className="text-xs text-ivory/65">{inv.file_name}</span>}
               </div>
             </div>
             <div className="flex shrink-0 gap-1">

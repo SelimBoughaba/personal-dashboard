@@ -236,8 +236,8 @@ export function Dokumente() {
                   <p className="mt-0.5 truncate text-sm text-ivory/55">{doc.file_name}</p>
                   <div className="mt-2 flex flex-wrap items-center gap-2">
                     <AreaBadge area={doc.area} />
-                    <span className="text-xs text-ivory/45">{formatSize(doc.size)}</span>
-                    <span className="text-xs text-ivory/45">
+                    <span className="text-xs text-ivory/65">{formatSize(doc.size)}</span>
+                    <span className="text-xs text-ivory/65">
                       {new Date(doc.created_at).toLocaleDateString("de-DE")}
                     </span>
                     {doc.tags.map((tag) => (

@@ -153,7 +153,7 @@ function SidebarContent({ onNavigate, onOpenSearch }) {
         >
           <Icon name="suche" />
           <span className="flex-1 text-left">Suchen…</span>
-          <span className="rounded-md border border-white/10 px-1.5 py-0.5 text-[10px] text-ivory/35">⌘K</span>
+          <span className="rounded-md border border-white/10 px-1.5 py-0.5 text-[10px] text-ivory/65">⌘K</span>
         </button>
       )}
 

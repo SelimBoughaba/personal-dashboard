@@ -106,7 +106,7 @@ export function Onboarding() {
         </div>
 
         <div className="mb-6">
-          <div className="mb-2 flex items-center justify-between text-xs text-ivory/40">
+          <div className="mb-2 flex items-center justify-between text-xs text-ivory/65">
             <span>
               Schritt {stepIndex + 1} von {STEPS.length}
             </span>

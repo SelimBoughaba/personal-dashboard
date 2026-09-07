@@ -56,7 +56,7 @@ export function Mail() {
       </div>
 
       {error && <GlassCard className="text-sm text-status-hoch">{error}</GlassCard>}
-      {loading && !error && <p className="text-sm text-ivory/40">Lade Mails…</p>}
+      {loading && !error && <p className="text-sm text-ivory/65">Lade Mails…</p>}
       {!loading && !error && filtered.length === 0 && (
         <EmptyState title="Keine ungelesenen oder markierten Mails" description="In diesem Bereich gibt es aktuell nichts Neues." />
       )}
@@ -72,7 +72,7 @@ export function Mail() {
               <p className={`truncate text-sm ${m.unread ? "font-semibold text-ivory" : "text-ivory/75"}`}>
                 {m.fromName}
               </p>
-              <p className={`truncate text-sm ${m.unread ? "text-ivory/75" : "text-ivory/40"}`}>{m.subject}</p>
+              <p className={`truncate text-sm ${m.unread ? "text-ivory/75" : "text-ivory/65"}`}>{m.subject}</p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
               {m.flagged && (
@@ -80,7 +80,7 @@ export function Mail() {
                   ★
                 </span>
               )}
-              <span className="text-xs text-ivory/40">{formatDate(m.date)}</span>
+              <span className="text-xs text-ivory/65">{formatDate(m.date)}</span>
               <AreaBadge area={m.area} />
             </div>
           </GlassCard>

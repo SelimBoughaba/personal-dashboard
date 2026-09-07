@@ -3,12 +3,15 @@
 Dieser Bericht dokumentiert, was aus dem 94-Punkte-Verbesserungsprompt vom
 7. September 2026 tatsächlich umgesetzt, getestet und verifiziert wurde –
 und was bewusst zurückgestellt wurde. Ehrlich gesagt: **94 Punkte sind kein
-Ein-Sitzungs-Umfang.** Umgesetzt wurden bisher drei Runden: eine
+Ein-Sitzungs-Umfang.** Umgesetzt wurden bisher vier Runden: eine
 vollständige, getestete Tranche aus Abschnitt 1 (Sicherheit/Restore), danach
-der komplette Abschnitt 2 (Datenkonsistenz/Backend), und zuletzt der
-Kernbestand von Abschnitt 3 (Frontend-Ehrlichkeit: Zeitzone, Kalenderraster,
-Barrierefreiheit, Suchpalette, Formularverknüpfung, Schreibaktions-Status),
-jeweils mit automatisierten Tests. Alles andere steht unten explizit als offen.
+der komplette Abschnitt 2 (Datenkonsistenz/Backend), der Kernbestand von
+Abschnitt 3 (Frontend-Ehrlichkeit: Zeitzone, Kalenderraster,
+Barrierefreiheit, Suchpalette, Formularverknüpfung, Schreibaktions-Status)
+und zuletzt der messbare Kernbestand von Abschnitt 4 (Optik/Barrierefreiheit/
+Motion: Kontrastmessung und -korrektur, Skip-Link, Fokus-Trap in der
+Suchpalette, Zoom-/Mobil-Verifikation), jeweils mit automatisierten Tests.
+Alles andere steht unten explizit als offen.
 
 Hinweis zur Herkunft des Prompts: Er nennt als Zielprojekt einen lokalen
 Pfad (`/Users/selim/.codex/...`) sowie einen Prüfbericht, auf die von dieser
@@ -138,9 +141,67 @@ dieser Prüfung gefundenen konkreten Fehlerfall, der das akut nötig macht.
 Pending-Status, Fehleranzeige und Doppelklick-Schutz (der eigentliche Bug:
 stille Fehlschläge und doppelte Submits) sind umgesetzt und getestet.
 
+## Abschnitt 4 – Optik, Layout, Barrierefreiheit und Motion (Punkte 43, 45 teilweise umgesetzt)
+
+Vor der Umsetzung wurden die tatsächlichen, zusammengesetzten Farben
+gemessen (WCAG-2.2-Kontrastformel gegen die echten Hintergrundfarben aus
+`index.css`, nicht nur die rohen Token-Hexwerte) statt geschätzt – exakt
+das, was Punkt 43 verlangt. Details der Messmethode: relative Luminanz
+nach WCAG-Formel, Hintergrund als tatsächlich zusammengesetzte Farbe (z. B.
+`bg-forest-900/70` über dem Seitenhintergrund gerechnet), getrennt für
+Dunkel- und Hellmodus.
+
+| # | Punkt | Was gemessen und geändert wurde |
+|---|---|---|
+| 43 | Fokusring im Hellmodus praktisch unsichtbar | **Bestätigter, konkreter Bug:** Der Fokusring (`:focus-visible`) nutzte immer `lime` (#c8ff52) – im Dunkelmodus 14.7:1 Kontrast (sehr gut), im Hellmodus gegen den hellen Seitenhintergrund aber nur **1.07:1** (WCAG-Minimum für Nicht-Text-Elemente wie Fokusringe: 3:1). Per Tastatur navigierende Personen hätten im Hellmodus praktisch keinen sichtbaren Fokusindikator gehabt – widerspricht Punkt 43 („Fokus darf nicht verdeckt sein") und Punkt 45 („sichtbarer Fokus") direkt. Neue themenabhängige CSS-Variable `--color-focus`: im Dunkelmodus unverändert `lime`, im Hellmodus der dunkle, markenkonsistente `forest-800`-Ton (Waldgrün) mit gemessenen 9.9:1. Playwright-Check: berechneter `outline-color` im Hellmodus ist exakt `rgb(23, 68, 56)`. |
+| 43 | Formular-Labels im Dunkelmodus (Standardmodus!) unter AA | `text-muted` (Farbe der `<Label>`-Komponente, nach Abschnitt 3 jetzt an noch mehr Stellen im Einsatz) hatte im Dunkelmodus nur **3.29:1** Kontrast gegen den Kartenhintergrund – WCAG-2.2-AA verlangt 4.5:1 für normalen Text. Aufgehellter Wert (123 142 132 statt 96 112 104), gemessen 4.5–5:1 gegen Karten- und Seitenhintergrund. Playwright-Check: berechnete Label-Farbe entspricht exakt dem neuen Wert. |
+| 43 | Status-/Fehlertext im Hellmodus kaum lesbar | Die Status-/Fehlerfarben (`status-hoch`/`mittel`/`niedrig`, u. a. für alle Formular-Fehlermeldungen `text-status-hoch` app-weit) waren themenunabhängig fest codiert – im Dunkelmodus 5.6–7.7:1 (gut), im Hellmodus gegen den hellen Hintergrund aber nur **2.0–2.8:1** (deutlich unter selbst dem 3:1-Minimum für UI-Komponenten, weit unter 4.5:1 für Text). Eine Fehlermeldung wie „Passwort falsch" wäre im Hellmodus kaum lesbar gewesen. Gleiche Farbfamilie, aber abgedunkelte, im Hellmodus gemessene Varianten (≥4.5:1) über dieselbe CSS-Variablen-Technik wie bei forest/ivory. |
+| 43 | Durchgängig zu schwacher sekundärer Text | `text-ivory/NN`-Opazitätsstufen unter 50 % fielen in vielen Fällen unter AA – besonders im Hellmodus (z. B. `/45` nur 2.8:1, `/30` nur 1.9:1). Betraf u. a. Kennzahlen-Beschriftungen, Leerzustands-Texte, Suchpalette-Meldungen, Kalender-Wochentagsköpfe, Datei-Metadaten. 56 Stellen über 16 Dateien auf `/65` (misst 5–7:1 in beiden Themes) angehoben; bewusst **nicht** angefasst: abgeschaltete/„bald"-Menüpunkte und mit Durchstreichung bereits erledigte Aufgaben/bezahlte Rechnungen/abgehakte Meilensteine (etablierte, WCAG-konform ausgenommene De-Emphasis für inaktive bzw. erledigte Elemente). |
+| 43 | Status nie ausschließlich über Farbe | Geprüft und bereits korrekt: Prioritäts-/Status-Badges tragen immer zusätzlich Text („Hoch"/„Bezahlt"/…), keine reine Farbcodierung gefunden. |
+| 45 | Kein Skip-Link | Punkt 45 verlangt explizit einen Skip-Link – es gab keinen; Tastaturnutzer mussten durch die komplette Sidebar-Navigation tabben, bevor sie den eigentlichen Seiteninhalt erreichten. Neuer, nur bei Tastaturfokus sichtbarer „Zum Hauptinhalt springen"-Link vor der Sidebar; `<main id="main-content" tabIndex={-1}>` nimmt den Fokus auf. Playwright-Check: erster Tab-Druck zeigt den Link, Aktivierung verschiebt den Fokus nachweislich auf `#main-content`. |
+| 45 | Suchpalette ohne echten Fokus-Trap, kein Fokus-Rückgabe | Die Suchpalette hat `role="dialog" aria-modal="true"`, aber Tab konnte trotzdem in die dahinterliegende Sidebar/Seite wandern (kein echter Trap trotz „aria-modal"), und beim Schließen ging der Fokus einfach verloren, statt zum auslösenden Button zurückzukehren. Sidebar und Hauptinhalt bekommen jetzt `inert`, solange die Palette offen ist (gleiches Muster wie das eingeklappte „Mehr"-Menü aus Abschnitt 3); `CommandPalette.jsx` merkt sich das vor dem Öffnen fokussierte Element und gibt den Fokus beim Schließen (Escape, Auswahl, Klick daneben) explizit zurück. Playwright-Check: Fokus vor Öffnen und nach Escape-Schließen ist nachweislich dasselbe Element. |
+| 44 | Zoom/Responsivität stichprobenartig geprüft | Bereits korrekt, keine Änderung nötig: 200 %-Text-Zoom auf Desktop-Breite und ein 375px-Mobil-Viewport (inkl. mobiles Menü, Kalender-Monatsraster) erzeugen kein ungewolltes horizontales Scrollen; Playwright-Screenshots zeigen lesbares, nicht überlappendes Layout in beiden Fällen. |
+| 46 | Bewegung/Motion geprüft | Bereits korrekt, keine Änderung nötig: `prefers-reduced-motion: reduce` UND ein manueller „Bewegung reduzieren"-Schalter (Einstellungen → Darstellung) reduzieren alle Animations-/Übergangsdauern auf ~0 – doppelt abgesichert. Alle gefundenen Übergänge liegen bei 200 ms (innerhalb der in Punkt 46 vorgeschlagenen Bandbreite 120–240 ms). Keine Dauerschleifen-Animationen (kein `animate-spin`/`animate-pulse` o. ä.) gefunden – Ladezustände sind Text („Lädt…"), keine Spinner. |
+
+**Bewusst nicht umgesetzt (mit Begründung):**
+- **40 (Nachtblau-Identität erhalten) und 41 (Editorial Serif für
+  Überschriften):** Dieselbe, bereits in Abschnitt 7–11 dokumentierte
+  Diskrepanz gilt hier direkt: Punkt 40 verlangt wörtlich „Ruhiges
+  Nachtblau" – das tatsächliche `index.css` dieses Repos ist Waldgrün/Lime
+  (Evermont-Identität), keine einzige Nachtblau-Farbe existiert im Code.
+  Eine neue Serif-Schriftart für Überschriften einzuführen (Punkt 41) wäre
+  eine echte Design-Entscheidung, die die bestehende, bewusst einheitliche
+  Ein-Schriftart-Identität (nur Manrope, siehe `Einstellungen.jsx`: „Schriftart
+  und Grundlayout sind bewusst einheitlich vorgegeben") verändern würde –
+  genau die Art Entscheidung, vor der ohne Rücksprache zurückgehalten wird
+  (gleiche Regel wie bei den Nachtblau-Farben). Was NICHT von dieser
+  Diskrepanz abhängt (Kontrast, Fokus, Skip-Link, Zoom, Motion), wurde ganz
+  normal umgesetzt/geprüft – siehe Tabelle oben.
+- **42 (Abstände systematisieren):** Leichte Prüfung der zentralen
+  gemeinsamen Komponenten (`GlassCard`, `SegmentedControl`, `FilterChips`)
+  zeigt bereits konsistente Abstands-/Rundungs-/Größenwerte (Ergebnis der
+  Design-Konsolidierung aus einer früheren Runde dieses Projekts). Keine
+  konkrete, im Rahmen dieser Prüfung gefundene Inkonsistenz, die einen
+  gezielten Fix rechtfertigen würde – eine vollständige Abstands-Audit
+  aller ~20 Seiten wäre eine große, subjektive Design-Review-Aufgabe ohne
+  nachgewiesenen Bug dahinter und wird zurückgestellt.
+- **43, verbleibende Lücke (nutzerdefinierte Bereichsfarben):** Die Farbe je
+  Lebensbereich (`AreaBadge`-Punkt, Kalender-Linksrand, Hintergrundtönung)
+  ist über `Einstellungen.jsx` frei durch die Nutzerin wählbar
+  (Farbwähler) – für nutzerdefinierte Farben lässt sich kein fester
+  Kontrast-Fix im Code verankern, ohne eine Laufzeit-Kontrastprüfung samt
+  automatischer Farbkorrektur einzuführen (eine eigenständige, größere
+  Funktion). Nicht umgesetzt; als bekannte Grenze dokumentiert.
+- **45 (vollständige native VoiceOver-Abnahme):** Nur der browserbasierte
+  Teil (Skip-Link, Fokus-Trap, sichtbarer Fokus, programmatische
+  Tab-Reihenfolge) wurde geprüft und gefixt. **Echte VoiceOver-Tests auf
+  einem Mac sind aus dieser Cloud-Linux-Umgebung heraus nicht möglich**
+  (kein Zugriff auf macOS/VoiceOver) – dieselbe, bereits in Abschnitt 1–2
+  dokumentierte Einschränkung.
+
 ## Bewusst nicht umgesetzt (mit Begründung)
 
-**Restliche Punkte aus Abschnitt 1–6 (10–12, 22 vollständig, 27, 33, 40–52):**
+**Restliche Punkte aus Abschnitt 1–6 (10–12, 22 vollständig, 27, 33, 47–52):**
 nicht angefasst (30–32, 34, 36 wurden geprüft, siehe Abschnitt 3 oben – dort
 zählt „geprüft und bestätigt" nicht als „nicht angefasst", auch wenn kein
 Code geändert wurde). Auswahl der wichtigsten Lücken für eine Folgerunde:
@@ -172,9 +233,14 @@ Code geändert wurde). Auswahl der wichtigsten Lücken für eine Folgerunde:
   Projekt nicht zutreffend bestätigt (siehe Begründung oben je Punkt) –
   **33** (verbleibender Punkt aus Abschnitt 3/4, nicht einzeln geprüft)
   bleibt offen.
-- **40–46 (visuell/Barrierefreiheit):** keine automatisierte
-  Kontrastmessung, kein VoiceOver-Test durchgeführt (kein Mac in dieser
-  Cloud-Umgebung verfügbar, siehe unten).
+- **43, 45 (Kontrast, Skip-Link, Fokus-Trap), 44, 46 (Zoom, Motion):**
+  inzwischen umgesetzt bzw. geprüft, siehe eigener Abschnitt „Abschnitt 4"
+  oben. **40, 41** (Nachtblau-Identität, Editorial-Serif-Typografie)
+  bewusst zurückgestellt (Diskrepanz zur echten Waldgrün/Manrope-Identität
+  dieses Repos, siehe Begründung oben). **42** (Abstände) nur leicht
+  geprüft, keine konkrete Inkonsistenz gefunden. **43** (nutzerdefinierte
+  Bereichsfarben) und die native VoiceOver-Abnahme (Teil von 45) bleiben
+  aus den oben genannten Gründen offen.
 - **47–52 (native macOS-Hülle):** `macos/Sources/PersonalDashboardApp.swift`
   wurde gelesen, aber nicht verändert. **In dieser Cloud-Linux-Umgebung
   existiert kein Xcode/macOS-Toolchain** – die Swift-App kann hier weder
@@ -241,15 +307,14 @@ möglicherweise falschen Grundlage umzusetzen.
 
 1. `npm audit` beider `package-lock.json` einzeln durchgehen und
    dokumentieren, was erreichbar ist (Punkt 12).
-2. Abschnitt 4 (visuell/Kontrast/Bewegungsreduktion, Punkte 40–46) gegen
-   die konkreten Behauptungen in diesem Prompt nachprüfen – Abschnitt 3
-   (Frontend-Ehrlichkeit) ist jetzt erledigt.
-3. Falls später wirklich benötigt: volle Cent-Spalten-Migration für Geld
+2. Falls später wirklich benötigt: volle Cent-Spalten-Migration für Geld
    (Punkt 23) und vollständig vereinheitlichte Zod-Validierung über alle
    Routen (Punkt 22) – beides mit eigenem, vom Nutzer bestätigtem Anlauf.
-4. Abschnitte 5 und 47–52 (native Hülle) nur auf einem echten Mac mit
+3. Abschnitte 5 und 47–52 (native Hülle) nur auf einem echten Mac mit
    Xcode möglich – dort auch die in Abschnitt 6 geforderten nativen
-   Smoke-Tests (VoiceOver, Sleep/Wake, Portkollision) durchführen.
-5. Abschnitte 7–11 erst nach Klärung, ob die Nachtblau-Neuausrichtung
+   Smoke-Tests (VoiceOver, Sleep/Wake, Portkollision) durchführen; das ist
+   auch der einzige Weg zur vollständigen Abnahme von Punkt 45
+   (VoiceOver) aus Abschnitt 4.
+4. Abschnitte 7–11 erst nach Klärung, ob die Nachtblau-Neuausrichtung
    tatsächlich gewollt ist (siehe Diskrepanz oben), und dann in den in §10
    vorgeschlagenen Paketen B–F, nicht als Ganzes.

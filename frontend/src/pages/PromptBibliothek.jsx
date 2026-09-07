@@ -142,7 +142,7 @@ export function PromptBibliothek() {
                 onClick={() => togglePin(p)}
                 disabled={pinning || deleting}
                 title={p.pinned ? "Nicht mehr anpinnen" : "Anpinnen"}
-                className={`shrink-0 text-lg disabled:opacity-40 ${p.pinned ? "text-lime" : "text-ivory/25 hover:text-ivory/60"}`}
+                className={`shrink-0 text-lg disabled:opacity-40 ${p.pinned ? "text-lime" : "text-ivory/55 hover:text-ivory/70"}`}
               >
                 {p.pinned ? "★" : "☆"}
               </button>

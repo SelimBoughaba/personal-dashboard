@@ -142,7 +142,7 @@ function TimeGrid({ days, eventsByDay, byId, view }) {
         <div className="w-14 shrink-0" />
         {days.map((day) => (
           <div key={isoDate(day)} className="flex-1 border-l border-white/10 px-2 py-2 text-center">
-            <p className="text-xs text-ivory/45">{day.toLocaleDateString("de-DE", { weekday: "short" })}</p>
+            <p className="text-xs text-ivory/65">{day.toLocaleDateString("de-DE", { weekday: "short" })}</p>
             <p className="text-sm font-medium text-ivory">{day.getDate()}</p>
           </div>
         ))}
@@ -150,7 +150,7 @@ function TimeGrid({ days, eventsByDay, byId, view }) {
       <div ref={scrollRef} className="flex max-h-[65vh] overflow-y-auto">
         <div className="w-14 shrink-0">
           {hours.map((h) => (
-            <div key={h} style={{ height: HOUR_HEIGHT }} className="border-b border-white/5 pr-2 text-right text-[11px] text-ivory/35">
+            <div key={h} style={{ height: HOUR_HEIGHT }} className="border-b border-white/5 pr-2 text-right text-[11px] text-ivory/65">
               {String(h).padStart(2, "0")}:00
             </div>
           ))}
@@ -187,7 +187,7 @@ function MonthGrid({ refDate, eventsByDay, allDayByDay, byId }) {
     <GlassCard className="!p-0 overflow-hidden">
       <div className="grid grid-cols-7 border-b border-white/10">
         {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((d) => (
-          <div key={d} className="border-l border-white/10 px-2 py-2 text-center text-xs text-ivory/45 first:border-l-0">
+          <div key={d} className="border-l border-white/10 px-2 py-2 text-center text-xs text-ivory/65 first:border-l-0">
             {d}
           </div>
         ))}
@@ -219,7 +219,7 @@ function MonthGrid({ refDate, eventsByDay, allDayByDay, byId }) {
                       {ev.title}
                     </div>
                   ))}
-                  {dayEvents.length > 3 && <p className="text-[10px] text-ivory/40">+{dayEvents.length - 3} mehr</p>}
+                  {dayEvents.length > 3 && <p className="text-[10px] text-ivory/65">+{dayEvents.length - 3} mehr</p>}
                 </div>
               </div>
             );
@@ -354,11 +354,11 @@ export function Kalender() {
       </div>
 
       {error && <GlassCard className="text-sm text-status-hoch">{error}</GlassCard>}
-      {loading && !error && <p className="text-sm text-ivory/40">Lade Termine…</p>}
+      {loading && !error && <p className="text-sm text-ivory/65">Lade Termine…</p>}
 
       {!loading && !error && allDayEvents.length > 0 && (view === "tag" || view === "woche") && (
         <GlassCard className="!p-3">
-          <p className="mb-1.5 text-xs text-ivory/45">Ganztägig</p>
+          <p className="mb-1.5 text-xs text-ivory/65">Ganztägig</p>
           <div className="flex flex-wrap gap-1.5">
             {allDayEvents.map((ev) => (
               <span

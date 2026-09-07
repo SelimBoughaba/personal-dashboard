@@ -28,7 +28,7 @@ function WidgetShell({ id, title, hidden, onHide, children }) {
         <h2 className="text-sm font-semibold text-ivory">{title}</h2>
         <button
           onClick={() => onHide(id)}
-          className="text-ivory/30 hover:text-ivory/70"
+          className="text-ivory/55 hover:text-ivory/70"
           title="Modul ausblenden"
           aria-label={`${title} ausblenden`}
         >
@@ -144,11 +144,11 @@ export function Uebersicht() {
     termine: (
       <WidgetShell key="termine" id="termine" title="Heutige Termine" hidden={hidden} onHide={hideWidget}>
         {errors.events && <p className="text-sm text-status-hoch">{errors.events}</p>}
-        {!errors.events && events.length === 0 && <p className="text-sm text-ivory/40">Keine Termine heute.</p>}
+        {!errors.events && events.length === 0 && <p className="text-sm text-ivory/65">Keine Termine heute.</p>}
         <div className="space-y-2.5">
           {events.slice(0, 5).map((ev) => (
             <div key={ev.id} className="flex items-center gap-2.5 text-sm">
-              <span className="w-11 shrink-0 text-xs text-ivory/45">
+              <span className="w-11 shrink-0 text-xs text-ivory/65">
                 {ev.allDay
                   ? "ganztägig"
                   : new Date(ev.start).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}
@@ -158,7 +158,7 @@ export function Uebersicht() {
           ))}
         </div>
         {events.length > 0 && (
-          <Link to="/kalender" className="mt-3 inline-block text-xs text-ivory/45 hover:text-ivory">
+          <Link to="/kalender" className="mt-3 inline-block text-xs text-ivory/65 hover:text-ivory">
             Alle Termine ansehen →
           </Link>
         )}
@@ -168,7 +168,7 @@ export function Uebersicht() {
       <WidgetShell key="aufgaben" id="aufgaben" title="Wichtigste Aufgaben" hidden={hidden} onHide={hideWidget}>
         {errors.tasks && <p className="text-sm text-status-hoch">{errors.tasks}</p>}
         {overdueTasks.length > 0 && <p className="mb-2 text-xs text-status-hoch">{overdueTasks.length} überfällig</p>}
-        {!errors.tasks && topTasks.length === 0 && <p className="text-sm text-ivory/40">Keine offenen Aufgaben.</p>}
+        {!errors.tasks && topTasks.length === 0 && <p className="text-sm text-ivory/65">Keine offenen Aufgaben.</p>}
         <div className="space-y-2.5">
           {topTasks.map((t) => (
             <div key={t.id} className="flex items-center gap-2.5 text-sm">
@@ -181,7 +181,7 @@ export function Uebersicht() {
             </div>
           ))}
         </div>
-        <Link to="/aufgaben" className="mt-3 inline-block text-xs text-ivory/45 hover:text-ivory">
+        <Link to="/aufgaben" className="mt-3 inline-block text-xs text-ivory/65 hover:text-ivory">
           Alle Aufgaben ansehen →
         </Link>
       </WidgetShell>
@@ -201,15 +201,15 @@ export function Uebersicht() {
             </div>
           ))}
         </div>
-        <Link to="/finanzen" className="mt-3 inline-block text-xs text-ivory/45 hover:text-ivory">
+        <Link to="/finanzen" className="mt-3 inline-block text-xs text-ivory/65 hover:text-ivory">
           Alle Rechnungen ansehen →
         </Link>
       </WidgetShell>
     ),
     mails: (
       <WidgetShell key="mails" id="mails" title="Wichtige E-Mails" hidden={hidden} onHide={hideWidget}>
-        {errors.mails && <p className="text-sm text-ivory/40">{errors.mails}</p>}
-        {!errors.mails && importantMails.length === 0 && <p className="text-sm text-ivory/40">Nichts Ungelesenes.</p>}
+        {errors.mails && <p className="text-sm text-ivory/65">{errors.mails}</p>}
+        {!errors.mails && importantMails.length === 0 && <p className="text-sm text-ivory/65">Nichts Ungelesenes.</p>}
         <div className="space-y-2.5">
           {importantMails.map((m) => (
             <div key={m.id} className="flex items-center gap-2.5 text-sm">
@@ -292,7 +292,7 @@ export function Uebersicht() {
             {!editingBriefing && (
               <button
                 onClick={() => setEditingBriefing(true)}
-                className="text-xs text-ivory/40 hover:text-ivory/80"
+                className="text-xs text-ivory/65 hover:text-ivory/80"
               >
                 Bearbeiten
               </button>
@@ -313,7 +313,7 @@ export function Uebersicht() {
           ) : (
             <p
               onClick={() => setEditingBriefing(true)}
-              className="cursor-pointer text-sm text-ivory/40 hover:text-ivory/60"
+              className="cursor-pointer text-sm text-ivory/65 hover:text-ivory/80"
             >
               Noch kein Tagesbriefing eingerichtet. Klicke auf „Bearbeiten“, um deinen eigenen Text für heute
               einzutragen – dieser Bereich bleibt immer oben sichtbar.
@@ -326,14 +326,14 @@ export function Uebersicht() {
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{order.map((id) => WIDGETS[id]).filter(Boolean)}</div>
       )}
 
-      <p className="text-xs text-ivory/30">
+      <p className="text-xs text-ivory/65">
         Weitere Übersichts-Module (Ziele, Dokumente, Verträge &amp; Abos, Gesundheit) erscheinen hier, sobald die
         jeweiligen Bereiche umgesetzt sind. Reihenfolge und Sichtbarkeit lassen sich unter „Einstellungen →
         Dashboard“ anpassen.
         {hidden.length > 0 && (
           <>
             {" · "}
-            <button onClick={showAllWidgets} className="text-ivory/45 underline hover:text-ivory">
+            <button onClick={showAllWidgets} className="text-ivory/65 underline hover:text-ivory">
               {hidden.length} ausgeblendete{hidden.length === 1 ? "s Modul" : " Module"} wieder einblenden
             </button>
           </>

@@ -30,13 +30,33 @@ export function Layout({ children }) {
 
   return (
     <div className="mx-auto flex min-h-screen max-w-7xl gap-4 px-4 pb-10 pt-4 sm:px-6 lg:gap-6">
-      <Sidebar
-        mobileOpen={mobileOpen}
-        onCloseMobile={() => setMobileOpen(false)}
-        onOpenSearch={() => setSearchOpen(true)}
-      />
+      {/* Nur per Tastatur sichtbar (sr-only bis :focus) - erlaubt es,
+          Sidebar-Navigation und mobilen Header beim Tab-Durchlauf zu
+          überspringen und direkt zum Seiteninhalt zu springen. */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-brand focus:bg-ivory focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-ink"
+        {...(searchOpen ? { inert: "" } : {})}
+      >
+        Zum Hauptinhalt springen
+      </a>
 
-      <div className="min-w-0 flex-1">
+      {/* Solange die Suchpalette (role="dialog" aria-modal="true") offen ist,
+          gehört der Rest der Seite nicht zur aktuellen Interaktion - ohne
+          inert bleiben Sidebar-Links und Seiteninhalt trotzdem per Tab
+          erreichbar, obwohl sie visuell hinter dem Overlay liegen
+          (kein echter Fokus-Trap trotz "aria-modal"). Sidebar ist eine
+          eigene Komponente ohne Prop-Durchreichung an ihr Wurzelelement,
+          daher ein umschließendes div statt eines Props auf <Sidebar>. */}
+      <div {...(searchOpen ? { inert: "" } : {})} className="contents">
+        <Sidebar
+          mobileOpen={mobileOpen}
+          onCloseMobile={() => setMobileOpen(false)}
+          onOpenSearch={() => setSearchOpen(true)}
+        />
+      </div>
+
+      <div className="min-w-0 flex-1" {...(searchOpen ? { inert: "" } : {})}>
         <header className="glass-panel mb-4 flex items-center gap-3 px-4 py-3 lg:hidden">
           <button
             type="button"
@@ -62,7 +82,9 @@ export function Layout({ children }) {
           </button>
         </header>
 
-        <main>{children}</main>
+        <main id="main-content" tabIndex={-1}>
+          {children}
+        </main>
       </div>
 
       <CommandPalette open={searchOpen} onClose={() => setSearchOpen(false)} />

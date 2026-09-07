@@ -27,6 +27,12 @@ export default {
         ink: "#10221c",
         muted: "rgb(var(--color-muted) / <alpha-value>)",
         lime: "#c8ff52",
+        // Fokusring und Status-/Fehlertextfarben MÜSSEN themenabhängig sein
+        // (siehe index.css): lime und die ursprünglichen Statusfarben haben
+        // im Hellmodus gemessen nur 1.1-2.8:1 Kontrast gegen den hellen
+        // Hintergrund - im Dunkelmodus bleiben beide unverändert (dieselben
+        // RGB-Werte wie vorher als Variable hinterlegt).
+        focus: "rgb(var(--color-focus) / <alpha-value>)",
         area: {
           corelegal: "#e8b866",
           evermont: "#c8ff52",
@@ -34,9 +40,9 @@ export default {
           allgemein: "#94a08f",
         },
         status: {
-          hoch: "#e2725b",
-          mittel: "#d9a441",
-          niedrig: "#8ba888",
+          hoch: "rgb(var(--color-status-hoch) / <alpha-value>)",
+          mittel: "rgb(var(--color-status-mittel) / <alpha-value>)",
+          niedrig: "rgb(var(--color-status-niedrig) / <alpha-value>)",
         },
       },
       backdropBlur: {
