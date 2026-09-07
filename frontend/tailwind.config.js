@@ -4,12 +4,10 @@ export default {
   theme: {
     extend: {
       fontFamily: {
+        // Ausschließlich Manrope im ganzen Dashboard (Nutzerwunsch) - Light
+        // als Grundgewicht (siehe index.css body), Bold wo Betonung nötig
+        // ist. Kein zweites Schriftfamilie mehr.
         sans: ["Manrope", "ui-sans-serif", "system-ui", "sans-serif"],
-        // Nur für wenige prägende Überschriften/Briefingtexte (Punkt 55),
-        // nicht für Bedienung/Daten. Ersetzt "Wittgenstein" aus dem Prompt
-        // (keine frei verfügbare Schrift) durch eine kostenlose,
-        // charakterlich passende Editorial-Serife - siehe index.html.
-        heading: ["Fraunces", "Georgia", "serif"],
       },
       colors: {
         // Nachtblau-Palette (Design-Erweiterung vom 7.9.2026, Punkt 54).

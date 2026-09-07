@@ -120,7 +120,7 @@ function EventBlock({ ev, areaColor, compact }) {
       }}
       title={ev.title}
     >
-      {!compact && <span className="font-medium">{ev.startLabel}</span>} {ev.title}
+      {!compact && <span className="font-bold">{ev.startLabel}</span>} {ev.title}
     </div>
   );
 }
@@ -143,7 +143,7 @@ function TimeGrid({ days, eventsByDay, byId, view }) {
         {days.map((day) => (
           <div key={isoDate(day)} className="flex-1 border-l border-white/10 px-2 py-2 text-center">
             <p className="text-xs text-ivory/65">{day.toLocaleDateString("de-DE", { weekday: "short" })}</p>
-            <p className="text-sm font-medium text-ivory">{day.getDate()}</p>
+            <p className="text-sm font-bold text-ivory">{day.getDate()}</p>
           </div>
         ))}
       </div>
@@ -350,7 +350,7 @@ export function Kalender() {
             ›
           </button>
         </div>
-        <p className="text-sm font-medium capitalize text-ivory/80">{rangeLabel(view, refDate)}</p>
+        <p className="text-sm font-bold capitalize text-ivory/80">{rangeLabel(view, refDate)}</p>
       </div>
 
       {error && <GlassCard className="text-sm text-status-hoch">{error}</GlassCard>}

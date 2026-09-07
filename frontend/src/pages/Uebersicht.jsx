@@ -25,7 +25,7 @@ function WidgetShell({ id, title, hidden, onHide, children }) {
   return (
     <GlassCard className="flex flex-col">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-ivory">{title}</h2>
+        <h2 className="text-sm font-bold text-ivory">{title}</h2>
         <button
           onClick={() => onHide(id)}
           className="text-ivory/55 hover:text-ivory/70"
@@ -189,7 +189,7 @@ export function Uebersicht() {
     rechnungen: (
       <WidgetShell key="rechnungen" id="rechnungen" title="Offene Rechnungen" hidden={hidden} onHide={hideWidget}>
         {errors.invoices && <p className="text-sm text-status-hoch">{errors.invoices}</p>}
-        {!errors.invoices && <p className="mb-2 text-2xl font-semibold text-ivory">{fmtEuro(openSum)}</p>}
+        {!errors.invoices && <p className="mb-2 text-2xl font-bold text-ivory">{fmtEuro(openSum)}</p>}
         {overdueInvoices.length > 0 && (
           <p className="mb-2 text-xs text-status-hoch">{overdueInvoices.length} überfällig</p>
         )}
@@ -235,13 +235,13 @@ export function Uebersicht() {
                 onChange={(e) => setName(e.target.value)}
                 onBlur={saveName}
                 placeholder="Dein Name"
-                className="rounded-control border border-white/10 bg-white/[0.04] px-2 py-1 text-2xl font-semibold text-ivory outline-none focus:border-accent/40"
+                className="rounded-control border border-white/10 bg-white/[0.04] px-2 py-1 text-2xl font-bold text-ivory outline-none focus:border-accent/40"
               />
             </form>
           ) : (
             <h1
               onClick={() => setEditingName(true)}
-              className="cursor-pointer font-heading text-[28px] font-semibold tracking-tight text-ivory sm:text-[34px]"
+              className="cursor-pointer text-[28px] font-bold tracking-tight text-ivory sm:text-[34px]"
               title="Namen bearbeiten"
             >
               {greeting()}
@@ -288,7 +288,7 @@ export function Uebersicht() {
       {settingsLoaded && (
         <GlassCard>
           <div className="mb-2 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-ivory">Tagesbriefing</h2>
+            <h2 className="text-sm font-bold text-ivory">Tagesbriefing</h2>
             {!editingBriefing && (
               <button
                 onClick={() => setEditingBriefing(true)}
@@ -309,7 +309,7 @@ export function Uebersicht() {
               className="w-full resize-y rounded-control border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-ivory placeholder:text-ivory/35 outline-none focus:border-accent/40"
             />
           ) : briefingText ? (
-            <p className="whitespace-pre-wrap font-heading text-base text-ivory/85">{briefingText}</p>
+            <p className="whitespace-pre-wrap text-base text-ivory/85">{briefingText}</p>
           ) : (
             <p
               onClick={() => setEditingBriefing(true)}

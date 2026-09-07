@@ -35,7 +35,7 @@ export function Layout({ children }) {
           überspringen und direkt zum Seiteninhalt zu springen. */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-control focus:bg-ivory focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-ink"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-control focus:bg-ivory focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-ink"
         {...(searchOpen ? { inert: "" } : {})}
       >
         Zum Hauptinhalt springen
@@ -68,7 +68,7 @@ export function Layout({ children }) {
               <path d="M4 7h16M4 12h16M4 17h16" />
             </svg>
           </button>
-          <span className="flex-1 font-semibold text-ivory">Dashboard</span>
+          <span className="flex-1 font-bold text-ivory">Dashboard</span>
           <button
             type="button"
             onClick={() => setSearchOpen(true)}

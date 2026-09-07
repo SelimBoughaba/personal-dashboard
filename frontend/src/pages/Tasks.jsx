@@ -206,7 +206,7 @@ export function Tasks() {
             const colTasks = tasks.filter((t) => t.priority === col.id && t.status === "offen");
             return (
               <div key={col.id}>
-                <h2 className="mb-2 flex items-center gap-2 text-sm font-medium text-ivory/70">
+                <h2 className="mb-2 flex items-center gap-2 text-sm font-bold text-ivory/70">
                   {col.label}
                   <span className="rounded-full bg-white/5 px-2 py-0.5 text-xs text-ivory/65">{colTasks.length}</span>
                 </h2>
@@ -249,7 +249,7 @@ function TaskCard({ task, onToggle, onEdit, onDelete, toggling = false, deleting
         className="mt-1 h-4 w-4 rounded border-white/20 bg-white/5 accent-accent disabled:cursor-not-allowed disabled:opacity-50"
       />
       <div className="flex-1 min-w-0">
-        <p className={`font-medium ${task.status === "erledigt" ? "text-ivory/40 line-through" : "text-ivory"}`}>
+        <p className={`font-bold ${task.status === "erledigt" ? "text-ivory/40 line-through" : "text-ivory"}`}>
           {task.title}
         </p>
         {task.notes && !compact && <p className="mt-0.5 text-sm text-ivory/55">{task.notes}</p>}

@@ -68,17 +68,17 @@ export function Login() {
           <svg viewBox="0 0 24 24" width="24" height="24" fill="none" className="text-ivory">
             <path d="M3 17 L9 6 L12.5 12 L15.5 5 L21 17 Z" fill="currentColor" />
           </svg>
-          <span className="font-semibold tracking-tight text-ivory">Dashboard</span>
+          <span className="font-bold tracking-tight text-ivory">Dashboard</span>
         </div>
         <GlassCard>
           {configured ? (
             <>
-              <h1 className="mb-1 font-heading text-xl font-semibold text-ivory">Willkommen zurück</h1>
+              <h1 className="mb-1 text-xl font-bold text-ivory">Willkommen zurück</h1>
               <p className="mb-6 text-sm text-ivory/55">Bitte anmelden, um fortzufahren.</p>
             </>
           ) : (
             <>
-              <h1 className="mb-1 font-heading text-xl font-semibold text-ivory">Erste Einrichtung</h1>
+              <h1 className="mb-1 text-xl font-bold text-ivory">Erste Einrichtung</h1>
               <p className="mb-6 text-sm text-ivory/55">
                 Lege ein Passwort für dieses Dashboard fest. Es schützt den Zugriff im Heimnetz.
               </p>

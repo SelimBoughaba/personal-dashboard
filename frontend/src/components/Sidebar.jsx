@@ -139,7 +139,7 @@ function SidebarContent({ onNavigate, onOpenSearch }) {
         <svg viewBox="0 0 24 24" width="22" height="22" fill="none" className="text-ivory">
           <path d="M3 17 L9 6 L12.5 12 L15.5 5 L21 17 Z" fill="currentColor" />
         </svg>
-        <span className="font-semibold tracking-tight text-ivory">Dashboard</span>
+        <span className="font-bold tracking-tight text-ivory">Dashboard</span>
       </div>
 
       {onOpenSearch && (

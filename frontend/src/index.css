@@ -65,7 +65,9 @@
 
 @layer base {
   body {
-    @apply min-h-screen text-ivory antialiased font-sans;
+    /* Manrope Light (300) als Grundgewicht im ganzen Dashboard, Bold (700)
+       gezielt für Betonung (Nutzerwunsch) - kein zweites Schriftfamilie. */
+    @apply min-h-screen text-ivory antialiased font-sans font-light;
     background:
       radial-gradient(ellipse 70% 55% at 15% -10%, rgb(var(--color-forest-800) / 0.55), transparent 60%),
       radial-gradient(ellipse 60% 50% at 100% 0%, rgb(var(--color-forest-800) / 0.35), transparent 60%),

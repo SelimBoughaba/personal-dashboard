@@ -69,7 +69,7 @@ export function Mail() {
               title={m.unread ? "Ungelesen" : "Gelesen"}
             />
             <div className="min-w-0 flex-1">
-              <p className={`truncate text-sm ${m.unread ? "font-semibold text-ivory" : "text-ivory/75"}`}>
+              <p className={`truncate text-sm ${m.unread ? "font-bold text-ivory" : "text-ivory/75"}`}>
                 {m.fromName}
               </p>
               <p className={`truncate text-sm ${m.unread ? "text-ivory/75" : "text-ivory/65"}`}>{m.subject}</p>

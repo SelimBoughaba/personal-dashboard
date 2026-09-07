@@ -144,7 +144,7 @@ export function Notizen() {
           return (
           <GlassCard key={n.id} className={`flex flex-col !p-4 ${deleting ? "opacity-50" : ""}`}>
             <div className="flex items-start justify-between gap-2">
-              <p className="font-medium text-ivory">{n.title || "(ohne Titel)"}</p>
+              <p className="font-bold text-ivory">{n.title || "(ohne Titel)"}</p>
               <button
                 onClick={() => togglePin(n)}
                 disabled={pinning || deleting}

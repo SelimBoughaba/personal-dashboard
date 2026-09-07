@@ -59,7 +59,7 @@ export function ProfilSection() {
 
   return (
     <GlassCard>
-      <h2 className="mb-4 text-xl font-semibold text-ivory">Profil</h2>
+      <h2 className="mb-4 text-xl font-bold text-ivory">Profil</h2>
       <form onSubmit={save} className="max-w-sm space-y-4">
         <FormField label="Name">
           {/* onBlur speichert automatisch, damit im Einrichtungsassistenten
@@ -123,9 +123,9 @@ function DarstellungSection() {
 
   return (
     <GlassCard>
-      <h2 className="mb-1 text-xl font-semibold text-ivory">Darstellung</h2>
+      <h2 className="mb-1 text-xl font-bold text-ivory">Darstellung</h2>
       <p className="mb-4 text-sm text-ivory/65">
-        Schriftart und Grundlayout (Manrope/Fraunces, flache Flächen statt Glaseffekte) sind bewusst einheitlich
+        Schriftart und Grundlayout (Manrope, flache Flächen statt Glaseffekte) sind bewusst einheitlich
         vorgegeben. Farbschema und Bewegung lassen sich hier anpassen.
       </p>
       <div className="mb-5">
@@ -254,7 +254,7 @@ export function BereicheSection() {
   return (
     <div className="space-y-4">
       <GlassCard>
-        <h2 className="mb-4 text-xl font-semibold text-ivory">Lebensbereiche</h2>
+        <h2 className="mb-4 text-xl font-bold text-ivory">Lebensbereiche</h2>
         <div className="space-y-2">
           {areas.map((area, idx) => (
             <div key={area.id} className="flex flex-wrap items-center gap-3 rounded-surface border border-white/5 bg-white/[0.02] p-3">
@@ -334,7 +334,7 @@ export function BereicheSection() {
       {reassignFor && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="overlay-panel w-full max-w-sm p-5">
-            <h3 className="mb-2 text-xl font-semibold text-ivory">„{reassignFor.label}“ löschen</h3>
+            <h3 className="mb-2 text-xl font-bold text-ivory">„{reassignFor.label}“ löschen</h3>
             <p className="mb-4 text-sm text-ivory/60">
               Diesem Bereich sind noch{" "}
               {Object.entries({
@@ -426,7 +426,7 @@ function DashboardSection() {
 
   return (
     <GlassCard>
-      <h2 className="mb-1 text-xl font-semibold text-ivory">Dashboard-Module</h2>
+      <h2 className="mb-1 text-xl font-bold text-ivory">Dashboard-Module</h2>
       <p className="mb-4 text-sm text-ivory/50">
         Reihenfolge und Sichtbarkeit der Übersicht-Module. Änderungen wirken sofort auf der Übersicht.
       </p>
@@ -539,7 +539,7 @@ export function KalenderSection() {
 
   return (
     <GlassCard>
-      <h2 className="mb-1 text-xl font-semibold text-ivory">Kalender (iCloud)</h2>
+      <h2 className="mb-1 text-xl font-bold text-ivory">Kalender (iCloud)</h2>
       <p className="mb-4 text-sm text-ivory/50">
         Verbindet dein Apple-Kalender-Konto per CalDAV. Ein App-spezifisches Passwort erzeugst du unter{" "}
         <span className="text-ivory/70">appleid.apple.com → Anmelden &amp; Sicherheit</span> – nicht dein normales
@@ -633,7 +633,7 @@ function MailAccountRow({ account, onChange, onRemove }) {
   return (
     <div className="rounded-surface border border-white/5 bg-white/[0.02] p-3">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="font-medium text-ivory">{account.label}</span>
+        <span className="font-bold text-ivory">{account.label}</span>
         <span className="text-xs text-ivory/65">{account.user} · {account.host}</span>
         {account.paused && <span className="rounded-full bg-white/5 px-2 py-0.5 text-xs text-ivory/65">pausiert</span>}
         <div className="ml-auto flex gap-2">
@@ -738,7 +738,7 @@ export function EmailSection() {
   return (
     <div className="space-y-4">
       <GlassCard>
-        <h2 className="mb-1 text-xl font-semibold text-ivory">E-Mail-Konten</h2>
+        <h2 className="mb-1 text-xl font-bold text-ivory">E-Mail-Konten</h2>
         <p className="mb-4 text-sm text-ivory/50">
           Allgemeine IMAP-Konten (z. B. IONOS). Gmail über OAuth und ein rein lokaler Modus ohne Postfach sind
           ebenfalls möglich – Gmail-OAuth ist noch nicht angebunden (eigene Etappe), lokal ohne E-Mail funktioniert
@@ -784,7 +784,7 @@ export function EmailSection() {
       </GlassCard>
 
       <GlassCard>
-        <h2 className="mb-1 text-xl font-semibold text-ivory">Bereichs-Zuordnung</h2>
+        <h2 className="mb-1 text-xl font-bold text-ivory">Bereichs-Zuordnung</h2>
         <p className="mb-4 text-sm text-ivory/50">
           Mails, deren Absenderadresse den Text enthält, werden automatisch dem gewählten Bereich zugeordnet.
         </p>
@@ -865,7 +865,7 @@ export function DokumenteSection() {
 
   return (
     <GlassCard>
-      <h2 className="mb-1 text-xl font-semibold text-ivory">Dokumente &amp; Speicherort</h2>
+      <h2 className="mb-1 text-xl font-bold text-ivory">Dokumente &amp; Speicherort</h2>
       <p className="mb-4 text-sm text-ivory/50">
         Ordner auf dem Mac (relativ zum Backend), in dem hochgeladene Dokumente abgelegt werden. Beim Ändern werden
         vorhandene Dateien automatisch in den neuen Ordner verschoben.
@@ -913,7 +913,7 @@ export function BenachrichtigungenSection() {
 
   return (
     <GlassCard>
-      <h2 className="mb-1 text-xl font-semibold text-ivory">Benachrichtigungen</h2>
+      <h2 className="mb-1 text-xl font-bold text-ivory">Benachrichtigungen</h2>
       <p className="mb-4 text-sm text-ivory/50">
         Erinnerungen erscheinen aktuell innerhalb der App (z. B. überfällige Aufgaben auf der Übersicht) – noch keine
         Push-Benachrichtigungen bei geschlossener App.
@@ -981,7 +981,7 @@ function DatenschutzSection() {
   return (
     <div className="space-y-4">
       <GlassCard>
-        <h2 className="mb-1 text-xl font-semibold text-ivory">Datenschutz</h2>
+        <h2 className="mb-1 text-xl font-bold text-ivory">Datenschutz</h2>
         <p className="text-sm text-ivory/60 leading-relaxed">
           Alle Daten (Aufgaben, Termine, Mails-Metadaten, Rechnungen, Zugangsdaten für Kalender/E-Mail) liegen
           ausschließlich lokal in einer SQLite-Datenbank auf diesem Mac – nichts wird an einen Cloud-Dienst
@@ -991,7 +991,7 @@ function DatenschutzSection() {
         </p>
       </GlassCard>
       <GlassCard>
-        <h2 className="mb-4 text-xl font-semibold text-ivory">Passwort ändern</h2>
+        <h2 className="mb-4 text-xl font-bold text-ivory">Passwort ändern</h2>
         <form onSubmit={changePassword} className="max-w-sm space-y-4">
           <FormField label="Aktuelles Passwort">
             <Input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
@@ -1047,7 +1047,7 @@ function ImportExportSection() {
 
   return (
     <GlassCard>
-      <h2 className="mb-1 text-xl font-semibold text-ivory">Import &amp; Export</h2>
+      <h2 className="mb-1 text-xl font-bold text-ivory">Import &amp; Export</h2>
       <p className="mb-4 text-sm text-ivory/50">
         Finanzdaten als CSV importieren/exportieren (auch direkt im Bereich „Finanzen" verfügbar), oder alle Daten
         als JSON exportieren.
@@ -1126,7 +1126,7 @@ function SicherungSection() {
   return (
     <div className="space-y-4">
       <GlassCard>
-        <h2 className="mb-1 text-xl font-semibold text-ivory">Sicherung erstellen</h2>
+        <h2 className="mb-1 text-xl font-bold text-ivory">Sicherung erstellen</h2>
         <p className="mb-4 text-sm text-ivory/50">
           Lädt eine vollständige Kopie aller lokalen Daten als Datei herunter – inklusive gespeicherter
           Kalender-/E-Mail-Zugangsdaten im Klartext. Bitte sicher aufbewahren.
@@ -1137,7 +1137,7 @@ function SicherungSection() {
       </GlassCard>
 
       <GlassCard>
-        <h2 className="mb-1 text-xl font-semibold text-ivory">Wiederherstellen</h2>
+        <h2 className="mb-1 text-xl font-bold text-ivory">Wiederherstellen</h2>
         <p className="mb-4 text-sm text-ivory/50">
           <strong className="text-status-hoch">Achtung:</strong> Das Wiederherstellen ersetzt alle aktuellen lokalen
           Daten vollständig durch den Inhalt der Backup-Datei.

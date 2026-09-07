@@ -144,7 +144,7 @@ export function Dokumente() {
       />
 
       <GlassCard>
-        <h2 className="mb-3 text-xl font-semibold text-ivory">Dokument hochladen</h2>
+        <h2 className="mb-3 text-xl font-bold text-ivory">Dokument hochladen</h2>
         <form onSubmit={handleUpload} className="grid gap-3 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <Label>Datei</Label>
@@ -233,7 +233,7 @@ export function Dokumente() {
               return (
               <GlassCard key={doc.id} className={`flex items-start gap-3 !p-4 ${deleting ? "opacity-50" : ""}`}>
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium text-ivory">{doc.title}</p>
+                  <p className="font-bold text-ivory">{doc.title}</p>
                   <p className="mt-0.5 truncate text-sm text-ivory/55">{doc.file_name}</p>
                   <div className="mt-2 flex flex-wrap items-center gap-2">
                     <AreaBadge area={doc.area} />

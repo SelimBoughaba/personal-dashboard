@@ -102,7 +102,7 @@ export function Onboarding() {
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" className="text-ivory">
             <path d="M3 17 L9 6 L12.5 12 L15.5 5 L21 17 Z" fill="currentColor" />
           </svg>
-          <span className="text-sm font-semibold tracking-tight text-ivory">Dashboard</span>
+          <span className="text-sm font-bold tracking-tight text-ivory">Dashboard</span>
         </div>
 
         <div className="mb-6">
@@ -123,7 +123,7 @@ export function Onboarding() {
         <GlassCard className="min-h-[280px]">
           {step === "welcome" && (
             <div>
-              <h1 className="mb-3 font-heading text-[30px] font-semibold text-ivory">Willkommen bei deinem Dashboard</h1>
+              <h1 className="mb-3 text-[30px] font-bold text-ivory">Willkommen bei deinem Dashboard</h1>
               <p className="text-sm leading-relaxed text-ivory/60">
                 In wenigen Schritten richten wir gemeinsam dein persönliches Dashboard ein: Name, Lebensbereiche,
                 optional Kalender und E-Mail, ein Dokumentenordner und Benachrichtigungen. Jeder Schritt außer
@@ -136,7 +136,7 @@ export function Onboarding() {
           {step === "bereiche" && <BereicheSection />}
           {step === "datenstandort" && (
             <div>
-              <h2 className="mb-3 text-xl font-semibold text-ivory">Wo deine Daten liegen</h2>
+              <h2 className="mb-3 text-xl font-bold text-ivory">Wo deine Daten liegen</h2>
               <p className="text-sm leading-relaxed text-ivory/60">
                 Alle Inhalte – Aufgaben, Termine, Rechnungen, Einstellungen – werden in einer lokalen Datenbank
                 direkt auf diesem Mac gespeichert, nicht in der Cloud. Es gibt keine Registrierung und keine Pflicht
@@ -150,7 +150,7 @@ export function Onboarding() {
           {step === "dokumente" && <DokumenteSection />}
           {step === "finanzen" && (
             <div>
-              <h2 className="mb-3 text-xl font-semibold text-ivory">Finanzen</h2>
+              <h2 className="mb-3 text-xl font-bold text-ivory">Finanzen</h2>
               <p className="mb-4 text-sm leading-relaxed text-ivory/60">
                 Rechnungen lassen sich jederzeit manuell anlegen oder automatisch aus E-Mail-Anhängen erkennen.
                 Falls du bereits eine Liste hast, kannst du jetzt eine CSV-Datei importieren (Spalten: Absender,
@@ -168,7 +168,7 @@ export function Onboarding() {
           {step === "benachrichtigungen" && <BenachrichtigungenSection />}
           {step === "abschluss" && (
             <div>
-              <h2 className="mb-3 text-xl font-semibold text-ivory">Datenschutz-Übersicht &amp; Abschluss</h2>
+              <h2 className="mb-3 text-xl font-bold text-ivory">Datenschutz-Übersicht &amp; Abschluss</h2>
               <ul className="mb-4 space-y-2 text-sm text-ivory/60">
                 <li>• Alle Daten liegen lokal in einer SQLite-Datenbank auf diesem Mac.</li>
                 <li>

@@ -1,7 +1,7 @@
 // "Türkis markiert Auswahl und primäre Aktion" (Punkt 54) - primäre
 // Buttons nutzen deshalb den Akzent statt der reinen Haupttextfarbe.
 const VARIANTS = {
-  primary: "bg-accent text-ink font-semibold hover:brightness-95",
+  primary: "bg-accent text-ink font-bold hover:brightness-95",
   ghost: "bg-white/[0.03] hover:bg-white/[0.07] text-ivory border border-white/10",
   danger: "bg-status-hoch/10 hover:bg-status-hoch/20 text-status-hoch border border-status-hoch/25",
 };

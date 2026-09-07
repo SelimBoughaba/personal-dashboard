@@ -294,7 +294,7 @@ export function Rechnungen() {
               title="Als bezahlt markieren"
             />
             <div className="min-w-0 flex-1">
-              <p className={`font-medium ${inv.status === "bezahlt" ? "text-ivory/40 line-through" : "text-ivory"}`}>
+              <p className={`font-bold ${inv.status === "bezahlt" ? "text-ivory/40 line-through" : "text-ivory"}`}>
                 {inv.sender_name || inv.sender || "Unbekannter Absender"}
               </p>
               {inv.subject && <p className="mt-0.5 truncate text-sm text-ivory/55">{inv.subject}</p>}
@@ -308,7 +308,7 @@ export function Rechnungen() {
                     Vorschlag
                   </span>
                 )}
-                <span className="text-xs font-medium text-ivory/90">{formatAmount(inv.amount)}</span>
+                <span className="text-xs font-bold text-ivory/90">{formatAmount(inv.amount)}</span>
                 {inv.due_date && (
                   <span className="text-xs text-ivory/55">
                     fällig {new Date(inv.due_date).toLocaleDateString("de-DE")}

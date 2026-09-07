@@ -138,7 +138,7 @@ export function PromptBibliothek() {
           return (
           <GlassCard key={p.id} className={`flex flex-col !p-4 ${deleting ? "opacity-50" : ""}`}>
             <div className="flex items-start justify-between gap-2">
-              <p className="font-medium text-ivory">{p.title}</p>
+              <p className="font-bold text-ivory">{p.title}</p>
               <button
                 onClick={() => togglePin(p)}
                 disabled={pinning || deleting}

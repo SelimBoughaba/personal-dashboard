@@ -129,7 +129,7 @@ export function Vertraege() {
 
       {soonToCancel.length > 0 && (
         <GlassCard className="border border-status-hoch/30 bg-status-hoch/5">
-          <p className="text-sm font-medium text-status-hoch">
+          <p className="text-sm font-bold text-status-hoch">
             {soonToCancel.length} Vertrag/Verträge mit bald ablaufender Kündigungsfrist:
           </p>
           <ul className="mt-2 space-y-1 text-sm text-ivory/80">
@@ -240,12 +240,12 @@ export function Vertraege() {
           return (
           <GlassCard key={c.id} className={`flex items-start gap-3 !p-4 ${deleting ? "opacity-50" : ""}`}>
             <div className="min-w-0 flex-1">
-              <p className="font-medium text-ivory">{c.title}</p>
+              <p className="font-bold text-ivory">{c.title}</p>
               {c.provider && <p className="mt-0.5 text-sm text-ivory/55">{c.provider}</p>}
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <AreaBadge area={c.area} />
                 <span className="rounded-full bg-white/5 px-2 py-0.5 text-xs text-ivory/55">{STATUS_LABELS[c.status]}</span>
-                <span className="text-xs font-medium text-ivory/90">
+                <span className="text-xs font-bold text-ivory/90">
                   {formatAmount(c.cost)} / {CYCLE_LABELS[c.billing_cycle]}
                 </span>
                 {c.next_renewal_date && (

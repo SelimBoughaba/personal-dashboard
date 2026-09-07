@@ -239,7 +239,7 @@ export function Ziele() {
           <GlassCard key={g.id} className={`!p-4 ${deleting ? "opacity-50" : ""}`}>
             <div className="flex items-start gap-3">
               <div className="min-w-0 flex-1">
-                <p className="font-medium text-ivory">{g.title}</p>
+                <p className="font-bold text-ivory">{g.title}</p>
                 {g.description && <p className="mt-0.5 text-sm text-ivory/55">{g.description}</p>}
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   <AreaBadge area={g.area} />
@@ -247,7 +247,7 @@ export function Ziele() {
                   {g.target_date && (
                     <span className="text-xs text-ivory/55">Ziel: {new Date(g.target_date).toLocaleDateString("de-DE")}</span>
                   )}
-                  <span className="text-xs font-medium text-ivory/90">{g.progress}%</span>
+                  <span className="text-xs font-bold text-ivory/90">{g.progress}%</span>
                 </div>
                 <div className="mt-2">
                   <ProgressBar value={g.progress} />
