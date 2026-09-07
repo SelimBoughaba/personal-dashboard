@@ -3,6 +3,9 @@ import { withTimeout, parseAreaRules, areaForAddress, configuredMailAccounts } f
 
 const MAX_MESSAGES_PER_ACCOUNT = 50;
 const CONNECTION_TIMEOUT_MS = 15000;
+// Ohne Timeout kann eine gesperrte Mailbox (z. B. durch einen hängenden
+// Scan-Vorgang auf demselben Konto) den Request unbegrenzt blockieren.
+const LOCK_TIMEOUT_MS = 15000;
 
 async function fetchAccountMessages(account, rules) {
   const client = new ImapFlow({
@@ -26,13 +29,21 @@ async function fetchAccountMessages(account, rules) {
   }
 
   try {
-    const lock = await client.getMailboxLock("INBOX");
+    const lock = await client.getMailboxLock("INBOX", { acquireTimeout: LOCK_TIMEOUT_MS });
     try {
-      const uids = await client.search({ or: [{ seen: false }, { flagged: true }] });
+      // { uid: true } als drittes Argument ist entscheidend: ohne diese
+      // Option interpretiert imapflow zurückgegebene/übergebene Nummern als
+      // Sequenznummern statt als stabile UIDs (search() und fetch() haben
+      // je eigene uid-Optionen, siehe imap-flow.d.ts). Sequenznummern
+      // verschieben sich, sobald neue Mail eintrifft – hier zwar nur
+      // innerhalb einer einzelnen Anfrage genutzt (nicht persistiert), aber
+      // explizit UID-Modus zu verwenden ist trotzdem die korrekte, robuste
+      // Wahl statt sich auf zufällig konsistentes Verhalten zu verlassen.
+      const uids = await client.search({ or: [{ seen: false }, { flagged: true }] }, { uid: true });
       const recentUids = uids.sort((a, b) => b - a).slice(0, MAX_MESSAGES_PER_ACCOUNT);
 
       if (recentUids.length > 0) {
-        for await (const msg of client.fetch(recentUids, { envelope: true, flags: true, uid: true })) {
+        for await (const msg of client.fetch(recentUids, { envelope: true, flags: true, uid: true }, { uid: true })) {
           const from = msg.envelope.from?.[0];
           const address = from?.address || "";
           messages.push({

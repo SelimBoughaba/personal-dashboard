@@ -73,8 +73,18 @@ export function isValidArea(id) {
   return !!db.prepare("SELECT id FROM areas WHERE id = ?").get(id);
 }
 
+// Bevorzugt einen AKTIVEN Default-Bereich – ein archivierter Bereich soll
+// nie stillschweigend zum Ziel neuer Aufgaben/Rechnungen/... werden, nur
+// weil sein is_default-Flag zufällig noch gesetzt ist (z. B. weil er
+// archiviert wurde, ohne dass der Default explizit verschoben wurde; siehe
+// routes/areas.js#PATCH, das das inzwischen aktiv verhindert). Erst wenn
+// wirklich kein aktiver Bereich existiert, wird auf irgendeinen (auch
+// archivierten) zurückgefallen, damit diese Funktion nie ohne Not "allgemein"
+// zurückgibt, obwohl andere Bereiche existieren.
 export function getDefaultAreaId() {
   const row =
+    db.prepare("SELECT id FROM areas WHERE is_default = 1 AND archived = 0 LIMIT 1").get() ||
+    db.prepare("SELECT id FROM areas WHERE archived = 0 ORDER BY sort_order ASC LIMIT 1").get() ||
     db.prepare("SELECT id FROM areas WHERE is_default = 1 LIMIT 1").get() ||
     db.prepare("SELECT id FROM areas ORDER BY sort_order ASC LIMIT 1").get();
   return row ? row.id : "allgemein";

@@ -1,12 +1,12 @@
 # Sicherheits- und Zuverlässigkeitshärtung – Statusbericht
 
 Dieser Bericht dokumentiert, was aus dem 94-Punkte-Verbesserungsprompt vom
-7. September 2026 in dieser Runde tatsächlich umgesetzt, getestet und
-verifiziert wurde – und was bewusst zurückgestellt wurde. Ehrlich gesagt:
-**94 Punkte sind kein Ein-Sitzungs-Umfang.** Umgesetzt wurde eine
-vollständige, getestete erste Tranche aus Abschnitt 1 (Sicherheit/Restore)
-plus der eine konkrete, bestätigte Bug aus Abschnitt 2 (Kalendertrennung).
-Alles andere steht unten explizit als offen.
+7. September 2026 tatsächlich umgesetzt, getestet und verifiziert wurde –
+und was bewusst zurückgestellt wurde. Ehrlich gesagt: **94 Punkte sind kein
+Ein-Sitzungs-Umfang.** Umgesetzt wurden bisher zwei Runden: eine
+vollständige, getestete Tranche aus Abschnitt 1 (Sicherheit/Restore) und
+danach der komplette Abschnitt 2 (Datenkonsistenz/Backend), jeweils mit
+automatisierten Tests. Alles andere steht unten explizit als offen.
 
 Hinweis zur Herkunft des Prompts: Er nennt als Zielprojekt einen lokalen
 Pfad (`/Users/selim/.codex/...`) sowie einen Prüfbericht, auf die von dieser
@@ -37,22 +37,63 @@ lauscht nur noch, wenn die Datei direkt gestartet wird – notwendig, damit
 Tests gegen eine echte, aber isolierte Server-Instanz laufen können, ohne
 den Produktivport zu belegen.
 
+## Abschnitt 2 – Datenkonsistenz und Backend (vollständig umgesetzt)
+
+Getestet durch `backend/test/data-integrity.test.js` (17 zusätzliche Tests,
+zusammen mit Runde 1 jetzt **29 Tests, alle grün**, `cd backend && npm
+test`) sowie einen Playwright-Lauf durch die echte UI (Speicherort ändern,
+Rechnung anlegen, Lebensbereiche verwalten).
+
+| # | Punkt | Was geändert wurde |
+|---|---|---|
+| 14 | Bereichsreferenzen vollständig migrieren | Löschen/Reassignment lief bisher nur über `tasks`/`invoices` – Dokumente, Verträge, Ziele, Notizen, Prompts, LinkedIn-Beiträge wurden beim Löschen eines Bereichs still verwaist. Jetzt zentrale `AREA_OWNED_TABLES`-Liste (`constants.js`), von Löschen/Reassign, Backup-Validierung und einer neuen Reparatur-Migration (`0013_repair_orphaned_area_refs`) gemeinsam genutzt. `getDefaultAreaId()` bevorzugt jetzt einen **aktiven** Default; Archivieren des aktuellen Default-Bereichs verschiebt den Default automatisch und ist blockiert, falls es der letzte aktive Bereich wäre (bisher gar nicht geprüft). `POST /areas/reorder` nummeriert jetzt auch nicht in der Liste enthaltene Bereiche lückenlos durch. |
+| 15 | Datei-/DB-Operationen ausfallsicher | Dokument-Upload: DB-Insert steckt jetzt in try/catch, ein Fehlschlag löscht die bereits von multer geschriebene Datei wieder (vorher: verwaiste Datei ohne DB-Eintrag). Speicherordner-Wechsel ist jetzt eine echte, überprüfte Migration (`POST /settings/documents-folder`): vorhandene Dateien werden verschoben, bei Fehlern mitten im Verschieben wird zurückgerollt und die Einstellung bleibt unverändert, statt Dateien zwischen altem und neuem Ordner aufgeteilt liegen zu lassen. |
+| 16 | IMAP-Identitäten stabilisieren | `invoiceScanner.js` rief `search`/`fetchOne`/`download` ohne `{uid:true}` auf – imapflow interpretierte die Werte dadurch als Sequenznummern, die aber als `mail_ref` in der DB **persistiert** wurden (Sequenznummern sind nur innerhalb einer Verbindung stabil, nicht über mehrere Scans hinweg). Jetzt explizit UID-Modus überall, plus Mailbox-UIDVALIDITY als Teil von `mail_ref`. `imap.js` (Live-Mailansicht) ebenso korrigiert, dort ohne Live-Bug, aber für Robustheit. |
+| 17 | Scanner begrenzen | `client.download()` hatte kein Byte-Limit – ein beliebig großer "PDF"-Anhang wäre komplett in den Hauptprozess gepuffert worden. Jetzt `maxBytes` **und** ein Vorab-Check von `meta.expectedSize`, bevor der Stream überhaupt konsumiert wird. |
+| 18 | Scans idempotent | SELECT-dann-INSERT war eine TOCTOU-Race; ein zweiter, sich überschneidender Scan hätte bei einer UNIQUE-Verletzung eine ungefangene Exception geworfen und **alle** restlichen Nachrichten dieses Kontos übersprungen. Jetzt `INSERT OR IGNORE`, `info.changes` entscheidet, ob wirklich neu. |
+| 19 | Timeouts wirklich beenden | Der eigentliche Kalender-Tab (`caldav.js#getEvents`, nicht nur der „Verbindung testen"-Button) hatte **gar kein** Zeitbudget für Verbindungsaufbau, Kalenderliste oder Terminabruf. Jetzt überall `withTimeout`. `getMailboxLock` in `imap.js`/`invoiceScanner.js` bekommt `acquireTimeout`, vorher unbegrenzt. |
+| 20 | Integrationszustände / Teilfehler | **Bestätigter, konkreter Bug:** `caldav.js#getEvents` nutzte `Promise.all` über alle Kalender – ein einzelner defekter/langsamer Kalender ließ die Termine **aller** anderen, erfolgreich geladenen Kalender mit verschwinden. Jetzt `Promise.allSettled` wie bereits beim Mehrkonten-Mailabruf. Teilfehler werden serverseitig geloggt; ein für den Client sichtbarer Teilfehler-Hinweis wäre eine Erweiterung des Response-Formats und ist bewusst nicht Teil dieser Runde (siehe unten). |
+| 21 | Kalendersemantik | RRULE/EXDATE/RECURRENCE-ID/Ganztag waren bereits solide implementiert – eine echte Lücke gefunden und geschlossen: keine Obergrenze für Vorkommen pro Serie (`MAX_OCCURRENCES_PER_EVENT`, jetzt 500), ein pathologisches RRULE (z. B. sekündlich über Jahre) konnte sonst Zeit/Speicher unbegrenzt beanspruchen. Zusätzlich validiert `routes/calendar.js` jetzt Zeitraum-Plausibilität (gültige Daten, „Bis" nach „Von", max. 400 Tage) an der Routen-Grenze. |
+| 22 | Validierung vereinheitlichen | **Nicht** flächendeckend umgesetzt (siehe unten) – die bestehenden handgeschriebenen Validatoren pro Route sind korrekt, nur nicht DRY. Was in dieser Runde vereinheitlicht wurde: die neuen Backup-Zod-Schemas dienen jetzt auch als Referenz für Enums (`constants.js`). |
+| 23 | Geld präzise | `!Number.isNaN(Number(x))` ließ `"Infinity"`/`"-Infinity"` durch (kein NaN, aber kein sinnvoller Betrag) – in `invoices.js` (amount) und `contracts.js` (cost, cancellation_period_days) auf `Number.isFinite` bzw. `Number.isInteger` + Vorzeichenprüfung umgestellt. Volle Cent-Spalten-Migration bewusst zurückgestellt (siehe unten). |
+| 24 | Rechnungserkennung als Vorschlag | Neue Spalten `source`/`confirmed` (Migration `0014`). Scanner-erzeugte Rechnungen starten unbestätigt, manuell angelegte/importierte gelten als bestätigt. Frontend zeigt einen „Vorschlag"-Badge und einen „Bestätigen"-Button; Bearbeiten+Speichern eines Vorschlags bestätigt ihn ebenfalls (eine Korrektur ist eine Form von Prüfung). Bereits vorhandene Scan-Rechnungen (erkennbar an `mail_ref`) wurden rückwirkend als unbestätigt markiert. |
+| 25 | CSV robust/sicher | `parseCsv` wirft jetzt einen Fehler bei einem nicht geschlossenen Anführungszeichen, statt den kompletten Rest der Datei stillschweigend in ein Feld zu schlucken. `csvEscape` neutralisiert Werte, die mit `=`/`+`/`-`/`@` beginnen (klassische Formel-Injection in Excel/Sheets) – relevant, weil Rechnungsdaten aus Scan-Ergebnissen (E-Mail-Betreff/PDF-Text, nicht vertrauenswürdig) in die exportierte CSV wandern können. |
+| 26 | Betrieb stabilisieren | `index.js` hatte **keinerlei** Shutdown-Behandlung. Jetzt schließen SIGTERM/SIGINT-Handler zuerst neue Verbindungen (`server.close`), dann die SQLite-Verbindung sauber (`db.close`), mit 5s-Notausstieg falls eine hängende Anfrage das blockiert. |
+
+**Nebenbei gefunden und mitkorrigiert:** Beim Schreiben der Tests für Punkt
+21 fiel auf, dass die in Runde 1 gebaute Bereichsreferenz-Prüfung beim
+Restore (`findDanglingAreaRef`) auch über `health_entries` gelaufen wäre –
+diese Tabelle hat aber bewusst **kein** `area`-Feld (Gesundheitsdaten sind
+bereichsübergreifend, siehe README). Jeder Restore mit Gesundheitseinträgen
+wäre dadurch fälschlich abgelehnt worden. Ausschluss ergänzt, Regressionstest
+dafür hinzugefügt.
+
 ## Bewusst nicht umgesetzt (mit Begründung)
 
-**Restliche Punkte aus Abschnitt 1–6 (10–12, 14–52):** nicht angefasst.
-Auswahl der wichtigsten Lücken für eine Folgerunde:
+**Restliche Punkte aus Abschnitt 1–6 (10–12, 22 vollständig, 27, 28–52):**
+nicht angefasst. Auswahl der wichtigsten Lücken für eine Folgerunde:
 - **10 (Keychain), 11 (LAN-Freigabe-Härtung):** setzen Entscheidungen voraus
   (welcher Migrationspfad, welches Bedrohungsmodell für LAN-Zugriff), keine
   reinen Bugfixes.
-- **12 (Dependency-Audit):** `npm audit` zeigt aktuell 5 moderate/hohe
-  Findings in beiden `package-lock.json` – nicht einzeln analysiert/gefixt,
-  siehe „Bekannte offene Punkte" unten.
-- **14–27 (Bereichsreferenzen-Migration, Datei-/DB-Fehlerkompensation,
-  IMAP-UID-Stabilität, Scanner-Limits/Idempotenz, Timeouts, Kalender-RRULE/
-  DST/Ganztag, einheitliche Validierung, Geld als Cent-Modell, CSV-Grammatik,
-  Pagination):** inhaltlich groß, brauchen eigene Test-Fixtures (echte
-  IMAP-/CalDAV-Antworten, DST-Übergänge, große Datenmengen) – nicht in
-  dieser Runde.
+- **12 (Dependency-Audit):** `npm audit` zeigt aktuell Findings in beiden
+  `package-lock.json` – nicht einzeln analysiert/gefixt, siehe „Bekannte
+  offene Punkte" unten.
+- **22 (vollständig einheitliche Validierung):** nur teilweise – eine
+  komplette Umstellung aller ~13 Routen-Dateien auf gemeinsame Zod-Schemas
+  wäre mechanisch möglich, aber ein großer, risikoarmer aber
+  aufwändiger Umbau ohne akuten Bug dahinter; zurückgestellt zugunsten der
+  Punkte mit tatsächlich gefundenen Fehlern.
+- **23 (volle Cent-Spalten-Migration):** bewusst NICHT umgesetzt. Eine
+  Umstellung von `amount REAL`/`cost REAL` auf Integer-Cent-Spalten ist ein
+  Schema-Wechsel an echten Finanzdaten – genau die Art von „destruktiver
+  Migration ohne vorher überprüfbare Sicherung" Migration, vor der die
+  Arbeitsregeln dieses Prompts selbst warnen. Die risikoarme Teilkorrektur
+  (Infinity/NaN ablehnen) wurde umgesetzt, die strukturelle Migration
+  braucht einen eigenen, vom Nutzer bestätigten Anlauf mit Backup/Rollback-
+  Plan.
+- **27 (Pagination/Suche zu Datensätzen):** kein akuter Bug bei der
+  aktuellen (persönlichen, nicht massenhaften) Datenmenge; der Prompt
+  selbst verlangt „ohne nachgewiesenen Bedarf" nichts hinzuzufügen.
 - **28–39 (Frontend-Ehrlichkeit):** Ein Teil (Seiten-Header auf allen
   Modulen, konsistente leere Zustände, Kennzahlenzeile auf der Übersicht)
   wurde bereits in einer früheren Design-Konsolidierung dieses Projekts
@@ -98,16 +139,37 @@ möglicherweise falschen Grundlage umzusetzen.
   dem Update ungültig (kein `v`-Claim ≠ aktuelle Version) – einmaliges
   erneutes Anmelden auf allen Geräten ist nach diesem Update zu erwarten,
   das ist beabsichtigt und sicherheitsrelevant korrekt, aber erwähnenswert.
+- Vor dieser Runde gescannte Rechnungen wurden anhand von `mail_ref IS NOT
+  NULL` rückwirkend als `mail_scan`/unbestätigt markiert (Migration 0014) -
+  korrekt für Herkunft, aber ob sie der Nutzer damals schon geprüft hat,
+  ist nicht mehr rekonstruierbar. Wer viele alte Scan-Rechnungen hat, sieht
+  nach dem Update entsprechend viele „Vorschlag"-Badges auf einmal.
+- Der neue `mail_ref`-Aufbau (mit UIDVALIDITY) ist inkompatibel mit dem
+  alten Format – bereits importierte Rechnungen bleiben unverändert
+  erhalten, aber ein erneuter Scan derselben Postfach-Nachrichten könnte
+  sie (mit dem neuen, korrekteren Schlüssel) ein zweites Mal anlegen. Das
+  ist der bewusst in Kauf genommene Kompromiss aus Punkt 16 („bestehende
+  mail_ref-Werte mit kompatiblem Übergang behandeln") - eine rückwirkende
+  Umschlüsselung der alten Einträge ist ohne die ursprüngliche
+  IMAP-Verbindung nicht mehr möglich.
+- `npm audit` meldet für `backend/` weiterhin Findings (nicht durch diese
+  Änderungen verursacht, vorbestehend) – nicht analysiert, welche davon
+  tatsächlich erreichbare Laufzeitpfade betreffen (Punkt 12 im Prompt).
+- `backend/src/scripts/hashPassword.js` (Kommandozeilen-Hilfsskript für den
+  `.env`-Fallback) hat noch nicht dieselbe 72-Byte-Prüfung wie die
+  HTTP-Routen – niedrige Priorität, da nur ein optionaler Alt-Installations-
+  Pfad, aber der Vollständigkeit halber hier vermerkt.
 
 ## Nächste sinnvolle Schritte (Vorschlag, keine Festlegung)
 
-1. Abschnitt 2 zu Ende bringen (14–27), beginnend mit Bereichsreferenzen-
-   Migration und Geld-als-Cent-Modell – beides mit klarem Testpfad ohne
-   externe Fixtures.
-2. `npm audit` beider `package-lock.json` einzeln durchgehen und
-   dokumentieren, was erreichbar ist.
-3. Erst danach Abschnitt 3/4 (Frontend-Ehrlichkeit, Barrierefreiheit) gegen
-   die konkreten Behauptungen in diesem Prompt nachprüfen.
+1. `npm audit` beider `package-lock.json` einzeln durchgehen und
+   dokumentieren, was erreichbar ist (Punkt 12).
+2. Abschnitt 3/4 (Frontend-Ehrlichkeit, Barrierefreiheit) gegen die
+   konkreten Behauptungen in diesem Prompt nachprüfen (z. B. Zeitzone
+   `Europe/Berlin`, Suche mit Request-Generation, Kalenderraster-Wochenkante).
+3. Falls später wirklich benötigt: volle Cent-Spalten-Migration für Geld
+   (Punkt 23) und vollständig vereinheitlichte Zod-Validierung über alle
+   Routen (Punkt 22) – beides mit eigenem, vom Nutzer bestätigtem Anlauf.
 4. Abschnitte 5 und 47–52 (native Hülle) nur auf einem echten Mac mit
    Xcode möglich – dort auch die in Abschnitt 6 geforderten nativen
    Smoke-Tests (VoiceOver, Sleep/Wake, Portkollision) durchführen.

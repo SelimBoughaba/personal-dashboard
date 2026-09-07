@@ -9,19 +9,24 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // auch der Standardwert der Einstellung "backend/data/documents" verankert ist.
 const projectRoot = path.join(__dirname, "..", "..");
 
-export function getDocumentsDir() {
-  const configured = getSetting("documents.folder");
+// Reine Pfadauflösung ohne Seiteneffekt (kein Anlegen des Ordners, keine
+// Einstellung wird gelesen/verändert) - wird sowohl von getDocumentsDir()
+// als auch von der Ordnerwechsel-Migration in routes/settings.js genutzt,
+// um VOR einer Änderung zu wissen, wo der neue Ordner läge.
+export function resolveDocumentsDirFor(configured) {
   // Ein App-Bundle ist schreibgeschützt und wird bei Updates ersetzt. Ohne
   // explizite Nutzereinstellung speichern wir Dokumente deshalb neben der
   // App-Datenbank. Der bisherige relative Pfad gilt weiter für den
   // klassischen Serverbetrieb.
   if (!configured && process.env.DASHBOARD_DATA_DIR) {
-    const appDocumentsDir = path.join(path.resolve(process.env.DASHBOARD_DATA_DIR), "documents");
-    fs.mkdirSync(appDocumentsDir, { recursive: true });
-    return appDocumentsDir;
+    return path.join(path.resolve(process.env.DASHBOARD_DATA_DIR), "documents");
   }
   const storagePath = configured || "backend/data/documents";
-  const resolved = path.isAbsolute(storagePath) ? storagePath : path.join(projectRoot, storagePath);
+  return path.isAbsolute(storagePath) ? storagePath : path.join(projectRoot, storagePath);
+}
+
+export function getDocumentsDir() {
+  const resolved = resolveDocumentsDirFor(getSetting("documents.folder"));
   fs.mkdirSync(resolved, { recursive: true });
   return resolved;
 }

@@ -110,7 +110,11 @@ function validateBackup(data) {
     return { ok: false, error: "areas: doppelte Bereichs-ID im Backup." };
   }
   for (const table of tablesToValidate) {
-    if (table === "areas") continue;
+    // health_entries hat bewusst keine Bereichs-Zuordnung (siehe README:
+    // Gesundheitsdaten sind bereichsübergreifend) - ohne diesen Ausschluss
+    // würde jede Zeile fälschlich als "Bereich undefined nicht definiert"
+    // abgelehnt, weil healthEntrySchema kein area-Feld hat.
+    if (table === "areas" || table === "health_entries") continue;
     const dangling = findDanglingAreaRef(table, clean[table], areaIds);
     if (dangling) return { ok: false, error: dangling };
   }
@@ -209,8 +213,8 @@ backupRouter.post("/restore", backupJsonParser, (req, res) => {
     for (const task of data.tasks) insertTask.run(task);
 
     const insertInvoice = db.prepare(
-      `INSERT INTO invoices (id, mail_ref, sender, sender_name, subject, file_name, amount, due_date, area, status, received_at, created_at, updated_at)
-       VALUES (@id, @mail_ref, @sender, @sender_name, @subject, @file_name, @amount, @due_date, @area, @status, @received_at, @created_at, @updated_at)`,
+      `INSERT INTO invoices (id, mail_ref, sender, sender_name, subject, file_name, amount, due_date, area, status, received_at, created_at, updated_at, source, confirmed)
+       VALUES (@id, @mail_ref, @sender, @sender_name, @subject, @file_name, @amount, @due_date, @area, @status, @received_at, @created_at, @updated_at, @source, @confirmed)`,
     );
     for (const invoice of data.invoices) insertInvoice.run(invoice);
 

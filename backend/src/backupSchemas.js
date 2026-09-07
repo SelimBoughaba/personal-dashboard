@@ -132,6 +132,10 @@ export const invoiceSchema = z.object({
   received_at: nullableTimestamp,
   created_at: timestamp,
   updated_at: timestamp,
+  // Ältere Backups (Version < 9) kennen diese Felder noch nicht - defaults
+  // entsprechen denen der Migration 0014 (manuell angelegt/schon bestätigt).
+  source: shortText(50).default("manuell"),
+  confirmed: boolInt.default(1),
 });
 
 export const documentSchema = z.object({

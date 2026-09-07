@@ -143,7 +143,9 @@ export function Rechnungen() {
     setError("");
     try {
       if (editingId) {
-        await apiFetch(`/invoices/${editingId}`, { method: "PATCH", body: JSON.stringify(form) });
+        // Manuelles Bearbeiten und Speichern zählt als Prüfung eines
+        // Scan-Vorschlags - der "Vorschlag"-Badge verschwindet danach.
+        await apiFetch(`/invoices/${editingId}`, { method: "PATCH", body: JSON.stringify({ ...form, confirmed: true }) });
       } else {
         await apiFetch("/invoices", { method: "POST", body: JSON.stringify(form) });
       }
@@ -164,6 +166,11 @@ export function Rechnungen() {
 
   async function deleteInvoice(id) {
     await apiFetch(`/invoices/${id}`, { method: "DELETE" });
+    load();
+  }
+
+  async function confirmInvoice(inv) {
+    await apiFetch(`/invoices/${inv.id}`, { method: "PATCH", body: JSON.stringify({ confirmed: true }) });
     load();
   }
 
@@ -284,6 +291,14 @@ export function Rechnungen() {
               {inv.subject && <p className="mt-0.5 truncate text-sm text-ivory/55">{inv.subject}</p>}
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <AreaBadge area={inv.area} />
+                {!inv.confirmed && (
+                  <span
+                    className="rounded-full border border-status-mittel/30 bg-status-mittel/10 px-2 py-0.5 text-[10px] text-status-mittel"
+                    title="Automatisch aus einem E-Mail-Anhang erkannt (Betrag/Fälligkeitsdatum eine Heuristik) - noch nicht geprüft."
+                  >
+                    Vorschlag
+                  </span>
+                )}
                 <span className="text-xs font-medium text-ivory/90">{formatAmount(inv.amount)}</span>
                 {inv.due_date && (
                   <span className="text-xs text-ivory/55">
@@ -294,6 +309,11 @@ export function Rechnungen() {
               </div>
             </div>
             <div className="flex shrink-0 gap-1">
+              {!inv.confirmed && (
+                <Button variant="ghost" className="!px-2 !py-1 text-xs" onClick={() => confirmInvoice(inv)}>
+                  Bestätigen
+                </Button>
+              )}
               <Button variant="ghost" className="!px-2 !py-1 text-xs" onClick={() => startEdit(inv)}>
                 Bearbeiten
               </Button>

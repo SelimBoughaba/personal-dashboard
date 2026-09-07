@@ -76,15 +76,28 @@ documentsRouter.post("/", upload.single("file"), (req, res) => {
     INSERT INTO documents (title, file_name, stored_name, mime_type, size, area, tags)
     VALUES (@title, @file_name, @stored_name, @mime_type, @size, @area, @tags)
   `);
-  const info = stmt.run({
-    title: (req.body.title || req.file.originalname || "Dokument").trim(),
-    file_name: req.file.originalname,
-    stored_name: req.file.filename,
-    mime_type: req.file.mimetype || "",
-    size: req.file.size,
-    area,
-    tags: JSON.stringify(tags.filter((t) => typeof t === "string" && t.trim()).map((t) => t.trim())),
-  });
+
+  let info;
+  try {
+    info = stmt.run({
+      title: (req.body.title || req.file.originalname || "Dokument").trim(),
+      file_name: req.file.originalname,
+      stored_name: req.file.filename,
+      mime_type: req.file.mimetype || "",
+      size: req.file.size,
+      area,
+      tags: JSON.stringify(tags.filter((t) => typeof t === "string" && t.trim()).map((t) => t.trim())),
+    });
+  } catch (err) {
+    // multer hat die Datei bereits auf die Platte geschrieben, bevor dieser
+    // Handler lief. Schlägt der DB-Insert fehl (z. B. eine künftige
+    // Constraint-Verletzung), bliebe ohne diesen Block eine Datei ohne
+    // jeden Datenbankeintrag auf der Platte liegen - nie auffindbar, nie
+    // löschbar über die App.
+    fs.unlink(req.file.path, () => {});
+    console.error("Dokument-Upload: DB-Insert fehlgeschlagen, hochgeladene Datei entfernt:", err);
+    return res.status(500).json({ error: "Dokument konnte nicht gespeichert werden." });
+  }
 
   res.status(201).json(serialize(db.prepare("SELECT * FROM documents WHERE id = ?").get(info.lastInsertRowid)));
 });

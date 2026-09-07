@@ -4,6 +4,8 @@
 // nie verändert – so bleibt der Verlauf für jede Installation nachvollziehbar
 // und bestehende Daten (Aufgaben, Rechnungen, ...) gehen nie verloren.
 
+import { AREA_OWNED_TABLES } from "./constants.js";
+
 const DEFAULT_AREA_COLORS = {
   corelegal: "#e8b866",
   evermont: "#c8ff52",
@@ -250,6 +252,60 @@ const MIGRATIONS = [
         );
         CREATE INDEX IF NOT EXISTS idx_linkedin_posts_status ON linkedin_posts(status);
       `);
+    },
+  },
+  {
+    // Repariert Bereichsreferenzen, die vor dieser Änderung entstanden sein
+    // könnten (z. B. durch die zuvor unvollständige Bereichslöschung in
+    // routes/areas.js, die nur tasks/invoices reassignt hat). Läuft einmalig
+    // über alle Tabellen aus AREA_OWNED_TABLES; jede Zeile, deren area-Wert
+    // in keiner aktuell existierenden areas.id-Zeile vorkommt, wird auf den
+    // aktiven Default-Bereich umgehängt statt auf einen "toten" Bereich
+    // zeigen zu lassen.
+    id: "0013_repair_orphaned_area_refs",
+    up(db) {
+      const areaIds = new Set(db.prepare("SELECT id FROM areas").all().map((r) => r.id));
+      const fallback =
+        db.prepare("SELECT id FROM areas WHERE is_default = 1 AND archived = 0 LIMIT 1").get()?.id ||
+        db.prepare("SELECT id FROM areas WHERE archived = 0 ORDER BY sort_order ASC LIMIT 1").get()?.id ||
+        db.prepare("SELECT id FROM areas ORDER BY sort_order ASC LIMIT 1").get()?.id;
+      if (!fallback) return; // keine Bereiche vorhanden - kann bei einer Neuinstallation nach 0001 nicht vorkommen
+
+      for (const table of AREA_OWNED_TABLES) {
+        const badAreas = db
+          .prepare(`SELECT DISTINCT area FROM ${table}`)
+          .all()
+          .map((r) => r.area)
+          .filter((a) => a !== null && !areaIds.has(a));
+        for (const badArea of badAreas) {
+          const info = db.prepare(`UPDATE ${table} SET area = ? WHERE area = ?`).run(fallback, badArea);
+          if (info.changes > 0) {
+            console.log(
+              `Migration 0013: ${info.changes} verwaiste ${table}-Zeile(n) mit Bereich "${badArea}" auf "${fallback}" umgezogen.`,
+            );
+          }
+        }
+      }
+    },
+  },
+  {
+    // Rechnungserkennung aus PDF-Anhängen ist eine Heuristik (siehe
+    // invoiceScanner.js) - Betrag/Fälligkeitsdatum können falsch erkannt
+    // sein. source/confirmed machen sichtbar, ob eine Rechnung manuell
+    // angelegt bzw. bereits geprüft wurde, oder noch ein ungeprüfter
+    // Scan-Vorschlag ist.
+    id: "0014_invoice_suggestion_fields",
+    up(db) {
+      db.exec(`
+        ALTER TABLE invoices ADD COLUMN source TEXT NOT NULL DEFAULT 'manuell';
+        ALTER TABLE invoices ADD COLUMN confirmed INTEGER NOT NULL DEFAULT 1;
+      `);
+      // Bereits vorhandene, aus einem Mail-Scan stammende Rechnungen
+      // (erkennbar an gesetztem mail_ref) rückwirkend als solche markieren.
+      // Ob sie der Nutzer schon geprüft hat, ist nicht mehr rekonstruierbar
+      // - bewusst als unbestätigt einstufen statt optimistisch als geprüft,
+      // damit nichts Ungeprüftes fälschlich als bestätigt gilt.
+      db.exec(`UPDATE invoices SET source = 'mail_scan', confirmed = 0 WHERE mail_ref IS NOT NULL;`);
     },
   },
 ];

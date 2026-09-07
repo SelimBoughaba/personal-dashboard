@@ -12,3 +12,20 @@ export const GOAL_STATUSES = ["aktiv", "erreicht", "abgebrochen"];
 export const HEALTH_ENTRY_TYPES = ["gewicht", "schlaf", "sport", "sonstiges"];
 export const HEALTH_ENTRY_DEFAULT_UNITS = { gewicht: "kg", schlaf: "h", sport: "min", sonstiges: "" };
 export const LINKEDIN_POST_STATUSES = ["entwurf", "geplant", "veroeffentlicht"];
+
+// Alle Tabellen, die eine "area"-Spalte mit einer Fremdschlüssel-artigen
+// Beziehung zu areas.id besitzen (kein echter FK-Constraint, da Bereiche
+// nutzerdefinierbar sind – siehe migrations.js #0001). Zentral gepflegt,
+// damit Bereichslöschung/-archivierung (routes/areas.js) und die
+// Waisen-Reparatur-Migration (migrations.js #0013) garantiert dieselbe
+// Liste verwenden, statt an zwei Stellen unabhängig gepflegt zu werden.
+export const AREA_OWNED_TABLES = [
+  "tasks",
+  "invoices",
+  "documents",
+  "contracts",
+  "goals",
+  "notes",
+  "prompts",
+  "linkedin_posts",
+];

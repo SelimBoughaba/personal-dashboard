@@ -24,6 +24,7 @@ import { searchRouter } from "./routes/search.js";
 import { promptsRouter } from "./routes/prompts.js";
 import { linkedinPostsRouter } from "./routes/linkedinPosts.js";
 import { requireAuth } from "./middleware/auth.js";
+import { db } from "./db.js";
 
 logStartupStatus();
 
@@ -122,7 +123,34 @@ export { app };
 if (import.meta.url === `file://${process.argv[1]}`) {
   const port = process.env.PORT || 4000;
   const host = process.env.HOST || "0.0.0.0";
-  app.listen(port, host, () => {
+  const server = app.listen(port, host, () => {
     console.log(`Dashboard-Server läuft auf http://${host}:${port}`);
   });
+
+  // Ohne das hier wird SQLite (WAL-Modus) beim Beenden nie sauber
+  // geschlossen: der letzte Checkpoint bleibt aus, und -wal/-shm-Dateien
+  // können bei einem harten Kill wachsen, statt in die Hauptdatei
+  // zusammengeführt zu werden. Neue Verbindungen zuerst stoppen (server
+  // .close), erst danach die Datenbank schließen, damit keine Anfrage
+  // mitten in einer offenen Transaktion abgeschnitten wird.
+  let shuttingDown = false;
+  function shutdown(signal) {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    console.log(`${signal} empfangen, fahre herunter…`);
+    server.close(() => {
+      try {
+        db.close();
+      } catch (err) {
+        console.error("Fehler beim Schließen der Datenbank:", err);
+      }
+      process.exit(0);
+    });
+    // Falls eine hängende Verbindung server.close() blockiert (z. B. ein
+    // langsamer IMAP-/CalDAV-Request), nach kurzer Frist trotzdem beenden,
+    // statt beim nativen macOS-Neustart/-Update unbegrenzt zu warten.
+    setTimeout(() => process.exit(1), 5000).unref();
+  }
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+  process.on("SIGINT", () => shutdown("SIGINT"));
 }

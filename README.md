@@ -24,16 +24,22 @@ Seiten-Header, leere Listen, Kennzahlen-Kacheln) sind jetzt gemeinsame
 Komponenten statt pro Seite einzeln nachgebauter Buttons, dadurch wirkt jede
 Seite wie aus einem Guss statt wie viele Einzelteile.
 
-**Sicherheits-/Zuverlässigkeitshärtung (Paket A, Teil 1):** Auf Basis eines
-Prüfberichts wurde ein erster, vollständig getesteter Satz an Korrekturen
-umgesetzt – Details, Testabdeckung und bewusst zurückgestellte Punkte stehen
-in [`SECURITY_HARDENING.md`](./SECURITY_HARDENING.md). Kurzfassung: ein
-Routing-Bug, durch den „Kalender trennen" die iCloud-Zugangsdaten gar nicht
-löschte, ein Race Condition in der Ersteinrichtung, striktere (typisierte)
-Backup-Validierung inkl. Pfadsicherheit, Ausschluss von Passwort-Hash/
-JWT-Schlüssel aus Backups, sofortiger Sitzungs-Widerruf bei Passwortwechsel
-und ein enger gefasster Offline-Cache. `cd backend && npm test` führt die
-zugehörige automatisierte Testsuite aus.
+**Sicherheits-/Zuverlässigkeitshärtung (Paket A):** Auf Basis eines
+Prüfberichts wurden Sicherheit/Restore (Abschnitt 1) und Datenkonsistenz/
+Backend (Abschnitt 2) vollständig, getestet umgesetzt – Details,
+Testabdeckung und bewusst zurückgestellte Punkte stehen in
+[`SECURITY_HARDENING.md`](./SECURITY_HARDENING.md). Kurzfassung: zwei
+bestätigte konkrete Bugs (ein Routing-Fehler, durch den „Kalender trennen"
+die iCloud-Zugangsdaten nie wirklich löschte; ein `Promise.all`, durch das
+ein einzelner defekter Kalender die Termine aller anderen mit verschwinden
+ließ), ein Race Condition in der Ersteinrichtung, striktere (typisierte)
+Backup-Validierung inkl. Pfadsicherheit, vollständige Bereichsreferenz-
+Integrität über alle Module, eine echte Speicherordner-Migration statt
+bloßem Zeigerwechsel, stabile IMAP-UIDs für die Rechnungserkennung,
+Scan-Vorschläge als solche gekennzeichnet, CSV-Robustheit (inkl.
+Formel-Injection-Schutz) und sofortiger Sitzungs-Widerruf bei
+Passwortwechsel. `cd backend && npm test` führt die inzwischen 29
+automatisierten Tests aus.
 
 ## Projektstruktur
 

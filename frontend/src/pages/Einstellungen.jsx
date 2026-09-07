@@ -231,7 +231,7 @@ export function BereicheSection() {
       await reload();
     } catch (err) {
       if (err.needsReassignment) {
-        setReassignFor({ ...area, taskCount: err.taskCount, invoiceCount: err.invoiceCount });
+        setReassignFor({ ...area, counts: err.counts || { tasks: err.taskCount, invoices: err.invoiceCount } });
         setReassignTarget(areas.find((a) => a.id !== area.id)?.id || "");
       } else {
         setError(err.message);
@@ -339,7 +339,20 @@ export function BereicheSection() {
           <GlassCard className="w-full max-w-sm">
             <h3 className="mb-2 text-base font-semibold text-ivory">„{reassignFor.label}“ löschen</h3>
             <p className="mb-4 text-sm text-ivory/60">
-              Diesem Bereich sind noch {reassignFor.taskCount} Aufgabe(n) und {reassignFor.invoiceCount} Rechnung(en)
+              Diesem Bereich sind noch{" "}
+              {Object.entries({
+                Aufgabe: reassignFor.counts.tasks,
+                Rechnung: reassignFor.counts.invoices,
+                Dokument: reassignFor.counts.documents,
+                Vertrag: reassignFor.counts.contracts,
+                Ziel: reassignFor.counts.goals,
+                Notiz: reassignFor.counts.notes,
+                Prompt: reassignFor.counts.prompts,
+                ["LinkedIn-Beitrag"]: reassignFor.counts.linkedin_posts,
+              })
+                .filter(([, count]) => count > 0)
+                .map(([label, count]) => `${count} ${label}(en)`)
+                .join(", ")}{" "}
               zugeordnet. Wohin sollen sie verschoben werden?
             </p>
             <Select value={reassignTarget} onChange={(e) => setReassignTarget(e.target.value)} className="mb-4">
@@ -829,7 +842,9 @@ export function EmailSection() {
 export function DokumenteSection() {
   const [folder, setFolder] = useState("");
   const [loading, setLoading] = useState(true);
-  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     apiFetch("/settings").then((s) => {
@@ -838,15 +853,23 @@ export function DokumenteSection() {
     });
   }, []);
 
-  async function persist(value) {
-    await apiFetch("/settings/documents.folder", { method: "PUT", body: JSON.stringify({ value: value ?? folder }) });
-  }
-
+  // Bewusst nur per explizitem "Speichern" ausgelöst (kein onBlur-Autosave
+  // mehr): anders als vorher verschiebt das jetzt tatsächlich vorhandene
+  // Dateien (siehe routes/settings.js#POST /documents-folder) - das soll
+  // nie versehentlich bei einem Zwischenstand während des Tippens passieren.
   async function save(e) {
     e.preventDefault();
-    await persist();
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    setError("");
+    setResult(null);
+    setSaving(true);
+    try {
+      const res = await apiFetch("/settings/documents-folder", { method: "POST", body: JSON.stringify({ folder }) });
+      setResult(res.moved > 0 ? `Gespeichert. ${res.moved} Datei(en) in den neuen Ordner verschoben.` : "Gespeichert.");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
   }
 
   if (loading) return <p className="text-sm text-ivory/40">Lädt…</p>;
@@ -855,18 +878,20 @@ export function DokumenteSection() {
     <GlassCard>
       <h2 className="mb-1 text-base font-semibold text-ivory">Dokumente &amp; Speicherort</h2>
       <p className="mb-4 text-sm text-ivory/50">
-        Ordner auf dem Mac (relativ zum Backend), in dem hochgeladene Dokumente abgelegt werden. Die eigentliche
-        Dokumentenverwaltung (Ordner, Tags, Vorschau) ist als nächster Ausbauschritt geplant – dieser Speicherort ist
-        bereits die Grundlage dafür.
+        Ordner auf dem Mac (relativ zum Backend), in dem hochgeladene Dokumente abgelegt werden. Beim Ändern werden
+        vorhandene Dateien automatisch in den neuen Ordner verschoben.
       </p>
       <form onSubmit={save} className="flex max-w-md items-end gap-2">
         <div className="flex-1">
           <Label>Speicherordner</Label>
-          <Input value={folder} onChange={(e) => setFolder(e.target.value)} onBlur={(e) => persist(e.target.value)} />
+          <Input value={folder} onChange={(e) => setFolder(e.target.value)} />
         </div>
-        <Button type="submit">Speichern</Button>
+        <Button type="submit" disabled={saving}>
+          {saving ? "Verschiebe…" : "Speichern"}
+        </Button>
       </form>
-      <SavedHint show={saved} />
+      {error && <p className="mt-3 text-sm text-status-hoch">{error}</p>}
+      {result && <p className="mt-3 text-sm text-ivory/70">{result}</p>}
     </GlassCard>
   );
 }

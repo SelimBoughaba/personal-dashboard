@@ -47,10 +47,20 @@ function validateInvoiceInput(body) {
   const errors = [];
   if (body.area !== undefined && !isValidArea(body.area)) errors.push("Ungültiger Bereich.");
   if (body.status !== undefined && !STATUSES.includes(body.status)) errors.push("Ungültiger Status.");
-  if (body.amount !== undefined && body.amount !== null && Number.isNaN(Number(body.amount))) {
+  if (body.amount !== undefined && body.amount !== null && body.amount !== "" && !Number.isFinite(Number(body.amount))) {
+    // Number.isNaN(Number("Infinity")) ist false - !isNaN allein würde
+    // "Infinity"/"-Infinity" durchlassen und als Betrag in einer REAL-
+    // Spalte landen lassen. isFinite() lehnt beides zusätzlich ab.
     errors.push("Ungültiger Betrag.");
   }
   return errors;
+}
+
+// source wird nie aus dem Request übernommen (nur intern beim Scan
+// gesetzt, siehe invoiceScanner.js) - eine Rechnung kann aber jederzeit
+// als geprüft markiert werden, unabhängig davon, woher sie stammt.
+function confirmedValue(body, fallback) {
+  return body.confirmed !== undefined ? !!body.confirmed : fallback;
 }
 
 invoicesRouter.post("/", (req, res) => {
@@ -59,8 +69,8 @@ invoicesRouter.post("/", (req, res) => {
   if (errors.length) return res.status(400).json({ error: errors.join(" ") });
 
   const stmt = db.prepare(`
-    INSERT INTO invoices (sender, sender_name, subject, amount, due_date, area, status)
-    VALUES (@sender, @sender_name, @subject, @amount, @due_date, @area, @status)
+    INSERT INTO invoices (sender, sender_name, subject, amount, due_date, area, status, source, confirmed)
+    VALUES (@sender, @sender_name, @subject, @amount, @due_date, @area, @status, 'manuell', @confirmed)
   `);
   const info = stmt.run({
     sender: body.sender || "",
@@ -70,6 +80,7 @@ invoicesRouter.post("/", (req, res) => {
     due_date: body.due_date || null,
     area: body.area || getDefaultAreaId(),
     status: body.status || "offen",
+    confirmed: confirmedValue(body, true) ? 1 : 0,
   });
 
   res.status(201).json(db.prepare("SELECT * FROM invoices WHERE id = ?").get(info.lastInsertRowid));
@@ -93,11 +104,13 @@ invoicesRouter.patch("/:id", (req, res) => {
     due_date: body.due_date === undefined ? existing.due_date : body.due_date || null,
     area: body.area ?? existing.area,
     status: body.status ?? existing.status,
+    confirmed: confirmedValue(body, !!existing.confirmed) ? 1 : 0,
   };
 
   db.prepare(`
     UPDATE invoices SET sender=@sender, sender_name=@sender_name, subject=@subject,
-      amount=@amount, due_date=@due_date, area=@area, status=@status, updated_at=datetime('now')
+      amount=@amount, due_date=@due_date, area=@area, status=@status, confirmed=@confirmed,
+      updated_at=datetime('now')
     WHERE id=@id
   `).run(merged);
 
@@ -136,7 +149,12 @@ invoicesRouter.post("/import", (req, res) => {
     return res.status(400).json({ error: "Kein CSV-Inhalt übermittelt." });
   }
 
-  const rows = parseCsv(csv.replace(/^﻿/, ""));
+  let rows;
+  try {
+    rows = parseCsv(csv.replace(/^﻿/, ""));
+  } catch (err) {
+    return res.status(400).json({ error: `CSV-Datei ist fehlerhaft: ${err.message}` });
+  }
   if (rows.length === 0) {
     return res.status(400).json({ error: "Datei ist leer." });
   }

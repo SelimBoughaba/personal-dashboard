@@ -32,13 +32,15 @@ function validateContractInput(body, { partial = false } = {}) {
   }
   if (body.cost !== undefined) {
     if (body.cost === "" || body.cost === null) data.cost = null;
-    else if (Number.isNaN(Number(body.cost))) errors.push("Ungültige Kosten.");
+    // isFinite statt !isNaN: Number("Infinity") ist kein NaN, aber auch
+    // kein sinnvoller Kostenwert.
+    else if (!Number.isFinite(Number(body.cost))) errors.push("Ungültige Kosten.");
     else data.cost = Number(body.cost);
   }
   if (body.cancellation_period_days !== undefined) {
     if (body.cancellation_period_days === "" || body.cancellation_period_days === null) {
       data.cancellation_period_days = null;
-    } else if (Number.isNaN(Number(body.cancellation_period_days))) {
+    } else if (!Number.isInteger(Number(body.cancellation_period_days)) || Number(body.cancellation_period_days) < 0) {
       errors.push("Ungültige Kündigungsfrist.");
     } else {
       data.cancellation_period_days = Number(body.cancellation_period_days);

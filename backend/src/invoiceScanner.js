@@ -6,6 +6,11 @@ import { withTimeout, parseAreaRules, areaForAddress, configuredMailAccounts } f
 const SCAN_WINDOW_DAYS = 90;
 const MAX_MESSAGES_PER_ACCOUNT = 150;
 const CONNECTION_TIMEOUT_MS = 20000;
+const LOCK_TIMEOUT_MS = 20000;
+// Nie einen beliebig großen Anhang unbegrenzt in den Hauptprozess laden –
+// eine 500-MB-"PDF"-Datei würde sonst den Speicher des gesamten Servers
+// belasten. 25 MB deckt reale Rechnungs-PDFs großzügig ab.
+const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;
 
 // Reihenfolge = Priorität: spezifischere Begriffe zuerst, damit z. B.
 // "Gesamtbetrag" vor "Nettobetrag" gewinnt (beide enthalten "betrag").
@@ -127,16 +132,44 @@ async function scanAccount(account, rules) {
     throw err;
   }
 
+  // INSERT OR IGNORE statt SELECT-dann-INSERT: bei zwei sich
+  // überschneidenden Scans (Doppelklick, zwei Browser-Tabs) verhindert die
+  // UNIQUE-Constraint auf mail_ref sonst zwar Duplikate, aber der zweite
+  // Scan-Lauf würde beim Insert-Versuch eine ungefangene Exception werfen
+  // und damit ALLE noch nicht verarbeiteten Nachrichten dieses Kontos
+  // überspringen (Abbruch der for-Schleife). OR IGNORE macht denselben
+  // Fall zu einem harmlosen No-op, info.changes verrät, ob wirklich neu
+  // eingefügt wurde.
+  const insertInvoice = db.prepare(`
+    INSERT OR IGNORE INTO invoices
+      (mail_ref, sender, sender_name, subject, file_name, amount, due_date, area, status, received_at, source, confirmed)
+    VALUES
+      (@mail_ref, @sender, @sender_name, @subject, @file_name, @amount, @due_date, @area, @status, @received_at, 'mail_scan', 0)
+  `);
+
   try {
-    const lock = await client.getMailboxLock("INBOX");
+    const lock = await client.getMailboxLock("INBOX", { acquireTimeout: LOCK_TIMEOUT_MS });
     try {
+      // UIDVALIDITY wird Teil von mail_ref (siehe unten): wird eine Mailbox
+      // serverseitig neu aufgebaut, ändert sich dieser Wert und dieselbe
+      // UID-Zahl kann danach eine völlig andere Nachricht meinen. Ohne
+      // UIDVALIDITY im Schlüssel könnte ein Scan nach so einem Wechsel eine
+      // neue Rechnung fälschlich als "schon bekannt" überspringen, oder
+      // umgekehrt eine alte, längst verarbeitete Nachricht erneut anlegen.
+      const uidValidity = client.mailbox?.uidValidity ?? "unknown";
+
       const since = new Date();
       since.setDate(since.getDate() - SCAN_WINDOW_DAYS);
-      const uids = await client.search({ since });
+      // { uid: true }: siehe ausführlicher Kommentar in imap.js – ohne
+      // diese Option liefert/erwartet imapflow Sequenznummern statt UIDs.
+      // Hier besonders wichtig, weil das Ergebnis unten in mail_ref
+      // persistiert wird (Sequenznummern sind nur innerhalb einer
+      // Verbindung gültig, keine stabile Kennung über mehrere Scans).
+      const uids = await client.search({ since }, { uid: true });
       const recentUids = uids.sort((a, b) => b - a).slice(0, MAX_MESSAGES_PER_ACCOUNT);
 
       for (const uid of recentUids) {
-        const msg = await client.fetchOne(uid, { envelope: true, bodyStructure: true });
+        const msg = await client.fetchOne(uid, { envelope: true, bodyStructure: true }, { uid: true });
         if (!msg) continue;
 
         const pdfParts = collectPdfParts(msg.bodyStructure);
@@ -146,14 +179,20 @@ async function scanAccount(account, rules) {
         const address = from?.address || "";
 
         for (const part of pdfParts) {
-          const mailRef = `${account.id}-${uid}-${part.part}`;
-          const exists = db.prepare("SELECT id FROM invoices WHERE mail_ref = ?").get(mailRef);
-          if (exists) continue;
+          const mailRef = `${account.id}-${uidValidity}-${uid}-${part.part}`;
 
           let buffer;
           try {
-            const { content } = await client.download(uid, part.part);
+            const { meta, content } = await client.download(uid, part.part, {
+              uid: true,
+              maxBytes: MAX_ATTACHMENT_BYTES,
+            });
+            if (meta.expectedSize && meta.expectedSize > MAX_ATTACHMENT_BYTES) {
+              content.destroy();
+              continue;
+            }
             buffer = await streamToBuffer(content);
+            if (buffer.length > MAX_ATTACHMENT_BYTES) continue;
           } catch {
             continue;
           }
@@ -179,14 +218,8 @@ async function scanAccount(account, rules) {
             received_at: msg.envelope.date ? new Date(msg.envelope.date).toISOString() : null,
           };
 
-          db.prepare(`
-            INSERT INTO invoices
-              (mail_ref, sender, sender_name, subject, file_name, amount, due_date, area, status, received_at)
-            VALUES
-              (@mail_ref, @sender, @sender_name, @subject, @file_name, @amount, @due_date, @area, @status, @received_at)
-          `).run(invoice);
-
-          created.push(invoice);
+          const info = insertInvoice.run(invoice);
+          if (info.changes > 0) created.push(invoice);
         }
       }
     } finally {

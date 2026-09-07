@@ -1,9 +1,12 @@
 import { Router } from "express";
+import fs from "node:fs";
+import path from "node:path";
 import { ImapFlow } from "imapflow";
 import { createDAVClient } from "tsdav";
 import { getSetting, setSetting, deleteSetting, getAllSettings } from "../configStore.js";
 import { resetCalendarCache } from "../caldav.js";
 import { withTimeout } from "../mailAccounts.js";
+import { getDocumentsDir, resolveDocumentsDirFor } from "../documentStorage.js";
 
 export const settingsRouter = Router();
 
@@ -11,6 +14,12 @@ export const settingsRouter = Router();
 // generischen Bulk-GET ausgeliefert – dafür gibt es die dedizierten,
 // passwort-redaktierenden Routen weiter unten.
 const SENSITIVE_KEYS = new Set(["auth.password_hash", "auth.jwt_secret", "calendar.icloud", "mail.accounts"]);
+
+// Kein Geheimnis, soll also weiter im Bulk-GET erscheinen - aber ein
+// simpler PUT würde nur den Zeiger ändern, ohne die vorhandenen Dateien
+// mitzunehmen (Punkt 15). Deshalb eigene Route weiter unten, die den
+// generischen PUT-Weg für genau diesen Schlüssel sperrt.
+const DEDICATED_ROUTE_KEYS = new Set(["documents.folder"]);
 
 settingsRouter.get("/", (req, res) => {
   const all = getAllSettings();
@@ -159,12 +168,81 @@ settingsRouter.put("/mail/area-rules", (req, res) => {
   res.json({ rules: getSetting("mail.area_rules", {}) });
 });
 
+// ---------- Dokumente-Speicherordner ----------
+
+// Ändert den Speicherordner NICHT als bloßen Zeigerwechsel, sondern
+// verschiebt vorhandene Dateien tatsächlich dorthin (Punkt 15) - sonst
+// wären alle bestehenden Dokumente ab dem nächsten Request "verschwunden"
+// (Datei am alten Ort, aber gesucht wird ab sofort am neuen).
+settingsRouter.post("/documents-folder", (req, res) => {
+  const { folder } = req.body || {};
+  if (typeof folder !== "string" || !folder.trim()) {
+    return res.status(400).json({ error: "Pfad ist erforderlich." });
+  }
+  const trimmed = folder.trim();
+
+  const oldDir = getDocumentsDir(); // legt den bisherigen Ordner bei Bedarf an, existiert danach sicher
+  const newDir = resolveDocumentsDirFor(trimmed);
+
+  if (path.resolve(oldDir) === path.resolve(newDir)) {
+    setSetting("documents.folder", trimmed);
+    return res.json({ ok: true, moved: 0 });
+  }
+
+  let entries;
+  try {
+    entries = fs.readdirSync(oldDir, { withFileTypes: true }).filter((e) => e.isFile());
+  } catch (err) {
+    return res.status(500).json({ error: `Alter Speicherordner konnte nicht gelesen werden: ${err.message}` });
+  }
+
+  try {
+    fs.mkdirSync(newDir, { recursive: true });
+  } catch (err) {
+    return res.status(400).json({ error: `Neuer Speicherordner konnte nicht angelegt werden: ${err.message}` });
+  }
+
+  const moved = [];
+  try {
+    for (const entry of entries) {
+      const from = path.join(oldDir, entry.name);
+      const to = path.join(newDir, entry.name);
+      if (fs.existsSync(to)) {
+        throw new Error(`Datei "${entry.name}" existiert bereits im Zielordner.`);
+      }
+      fs.renameSync(from, to);
+      moved.push(entry.name);
+    }
+  } catch (err) {
+    // Rollback: bereits verschobene Dateien zurücklegen, statt Dateien
+    // zwischen altem und neuem Ordner aufgeteilt und die Einstellung
+    // unverändert zurückzulassen (ein inkonsistenter Zwischenzustand wäre
+    // schlimmer als "Migration abgebrochen, alles wie vorher").
+    for (const name of moved) {
+      try {
+        fs.renameSync(path.join(newDir, name), path.join(oldDir, name));
+      } catch {
+        // Wenn selbst das fehlschlägt, bleibt die Datei im neuen Ordner -
+        // die Einstellung wird trotzdem NICHT umgestellt, siehe unten,
+        // daher würde sie dort bis zu einer manuellen Prüfung "verwaist"
+        // liegen. Seltener Fall (z. B. Berechtigungswechsel mitten im Lauf).
+      }
+    }
+    return res.status(500).json({
+      error: `Verschieben fehlgeschlagen (${err.message}). Speicherort wurde nicht geändert.`,
+    });
+  }
+
+  setSetting("documents.folder", trimmed);
+  res.json({ ok: true, moved: moved.length });
+});
+
 // ---------- Generische Einzelwerte (muss nach allen spezifischen Routen
 // oben stehen, siehe Kommentar an deren Anfang) ----------
 
 settingsRouter.put("/:key", (req, res) => {
   const { key } = req.params;
-  if (SENSITIVE_KEYS.has(key)) {
+  if (SENSITIVE_KEYS.has(key) || DEDICATED_ROUTE_KEYS.has(key)) {
     return res.status(400).json({ error: "Dieser Schlüssel wird über eine eigene Route verwaltet." });
   }
   setSetting(key, req.body?.value ?? null);
