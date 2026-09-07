@@ -1,7 +1,9 @@
 import { Router } from "express";
 import crypto from "node:crypto";
+import { z } from "zod";
 import { db, isValidArea, getDefaultAreaId } from "../db.js";
 import { GOAL_STATUSES as STATUSES } from "../constants.js";
+import { validateWithSchema, optionalNullableDateString, optionalTextDefaultEmpty } from "../validation.js";
 
 export const goalsRouter = Router();
 
@@ -42,35 +44,46 @@ function serialize(row) {
   return { ...row, milestones: parseMilestones(row.milestones) };
 }
 
-function validateGoalInput(body, { partial = false } = {}) {
-  const errors = [];
-  const data = {};
-
-  if (!partial || body.title !== undefined) {
-    if (!body.title || typeof body.title !== "string" || !body.title.trim()) {
-      errors.push("Titel ist erforderlich.");
-    } else {
-      data.title = body.title.trim();
+const milestonesField = z
+  .any()
+  .optional()
+  .transform((v, ctx) => {
+    // v===undefined muss unverändert durchgereicht werden: Zod ruft
+    // .transform() bei einem NICHT-partial geparsten Schema (POST) auch
+    // für ein komplett fehlendes Feld auf (siehe validation.js) - ohne
+    // diesen Fall würde ein einfach nicht mitgeschicktes milestones-Feld
+    // fälschlich als "ungültig" abgelehnt statt als "unverändert/leer".
+    if (v === undefined) return undefined;
+    const clean = sanitizeMilestones(v);
+    if (clean === null) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Ungültige Meilensteine." });
+      return z.NEVER;
     }
-  }
-  if (body.description !== undefined) data.description = body.description || "";
-  if (body.target_date !== undefined) data.target_date = body.target_date || null;
-  if (body.area !== undefined) {
-    if (!isValidArea(body.area)) errors.push("Ungültiger Bereich.");
-    else data.area = body.area;
-  }
-  if (body.status !== undefined) {
-    if (!STATUSES.includes(body.status)) errors.push("Ungültiger Status.");
-    else data.status = body.status;
-  }
-  if (body.milestones !== undefined) {
-    const clean = sanitizeMilestones(body.milestones);
-    if (clean === null) errors.push("Ungültige Meilensteine.");
-    else data.milestones = clean;
-  }
-  if (body.progress !== undefined) data.manualProgress = body.progress;
+    return clean;
+  });
 
-  return { data, errors };
+const goalSchema = z.object({
+  title: z
+    .string({ required_error: "Titel ist erforderlich.", invalid_type_error: "Titel ist erforderlich." })
+    .trim()
+    .min(1, "Titel ist erforderlich."),
+  description: optionalTextDefaultEmpty,
+  target_date: optionalNullableDateString,
+  area: z
+    .string()
+    .refine((v) => isValidArea(v), { message: "Ungültiger Bereich." })
+    .optional(),
+  status: z.enum(STATUSES, { errorMap: () => ({ message: "Ungültiger Status." }) }).optional(),
+  milestones: milestonesField,
+  // Wird nur akzeptiert, wenn keine Meilensteine vorhanden sind (siehe
+  // computeProgress oben) - daher hier bewusst ungeprüft durchgereicht,
+  // genau wie im ursprünglichen Code; computeProgress fängt einen
+  // nicht-numerischen Wert selbst über Number()/isNaN ab.
+  progress: z.any().optional(),
+});
+
+function validateGoalInput(body, options) {
+  return validateWithSchema(goalSchema, body, options);
 }
 
 goalsRouter.get("/", (req, res) => {
@@ -98,7 +111,7 @@ goalsRouter.post("/", (req, res) => {
   if (errors.length) return res.status(400).json({ error: errors.join(" ") });
 
   const milestones = data.milestones ?? [];
-  const progress = computeProgress(milestones, data.manualProgress ?? 0);
+  const progress = computeProgress(milestones, data.progress ?? 0);
 
   const stmt = db.prepare(`
     INSERT INTO goals (title, description, area, target_date, status, progress, milestones)
@@ -125,7 +138,7 @@ goalsRouter.patch("/:id", (req, res) => {
   if (errors.length) return res.status(400).json({ error: errors.join(" ") });
 
   const milestones = data.milestones ?? parseMilestones(existing.milestones);
-  const manualProgress = data.manualProgress ?? existing.progress;
+  const manualProgress = data.progress ?? existing.progress;
   const progress = computeProgress(milestones, manualProgress);
 
   const merged = {

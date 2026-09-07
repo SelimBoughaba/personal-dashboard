@@ -3,15 +3,17 @@
 Dieser Bericht dokumentiert, was aus dem 94-Punkte-Verbesserungsprompt vom
 7. September 2026 tatsächlich umgesetzt, getestet und verifiziert wurde –
 und was bewusst zurückgestellt wurde. Ehrlich gesagt: **94 Punkte sind kein
-Ein-Sitzungs-Umfang.** Umgesetzt wurden bisher fünf Runden: eine
+Ein-Sitzungs-Umfang.** Umgesetzt wurden bisher sechs Runden: eine
 vollständige, getestete Tranche aus Abschnitt 1 (Sicherheit/Restore), danach
 der komplette Abschnitt 2 (Datenkonsistenz/Backend), der Kernbestand von
 Abschnitt 3 (Frontend-Ehrlichkeit: Zeitzone, Kalenderraster,
 Barrierefreiheit, Suchpalette, Formularverknüpfung, Schreibaktions-Status),
 der messbare Kernbestand von Abschnitt 4 (Optik/Barrierefreiheit/Motion:
 Kontrastmessung und -korrektur, Skip-Link, Fokus-Trap in der Suchpalette,
-Zoom-/Mobil-Verifikation) und zuletzt Abschnitt 5 (native macOS-Hülle) –
-letzterer mit einer **wichtigen Einschränkung**, die sofort am Anfang
+Zoom-/Mobil-Verifikation), Abschnitt 5 (native macOS-Hülle) und zuletzt eine
+Folgerunde zu zwei zuvor zurückgestellten Punkten (12: Dependency-Audit,
+22: einheitliche Validierung). Abschnitt 5 mit einer **wichtigen
+Einschränkung**, die sofort am Anfang
 stehen sollte statt versteckt zu werden: diese Cloud-Sitzung hat **keinen
 Zugriff auf Xcode oder eine macOS-Toolchain**. Die Backend- und
 Frontend-Teile von Abschnitt 5 sind wie gewohnt automatisiert getestet; die
@@ -264,23 +266,76 @@ funktionierend gilt.
   harte Umgebungsgrenze – ohne Mac keine native App, kein WKWebView, kein
   VoiceOver.
 
+## Folgerunde – Punkt 12 (Dependency-Audit) und Punkt 22 (einheitliche Validierung)
+
+Auf Bitte, „alles noch Offene" zu bearbeiten: diese beiden Punkte standen
+oben explizit als zurückgestellt. Beide jetzt bearbeitet, alles automatisiert
+getestet (`cd backend && npm test`, jetzt **46 Tests**, alle grün).
+
+**Punkt 12 – nach tatsächlicher Erreichbarkeit analysiert, nicht blind
+`--force` gefahren:**
+
+| Fund | Erreichbarkeit in dieser App | Entscheidung |
+|---|---|---|
+| `qs` (moderate, über `body-parser`/`express`): Array-Limit-Umgehung, DoS über `isBuffer` | **Erreichbar** über `req.query` (Express' Standard-„extended"-Parser). `express.urlencoded()` wird nirgends verwendet (zweiter qs-Pfad daher tot). Ein Fix ist nur über Express 5 (Major-Update) verfügbar. | **Behoben, ohne Express zu aktualisieren:** `app.set("query parser", "simple")` – diese App nutzt an keiner Stelle qs' erweiterte Klammer-/Array-Syntax, „simple" (Node's `querystring`) ist von den Advisories gar nicht betroffen. Getestet: Parser-Einstellung geprüft, ein klammerartiger Query-String bringt den Server nicht zum Absturz. |
+| `uuid` (moderate, über `node-ical`): fehlende Bounds-Prüfung bei mitgegebenem Buffer | Nur über eine tiefe, interne `node-ical`-Codepfad erreichbar, die diese App nie auslöst (nur `ical.parseICS()` wird aufgerufen). Der Fix (`node-ical@0.27.1`) ist ein Major-Update, das die **komplette RRULE-Engine** von `rrule` auf `rrule-temporal` (Temporal-API-basiert, andere Objekt-API) umstellt. | **Bewusst nicht geforct.** `caldav.js#expandEvent()` ruft `event.rrule.between(...)` auf – eine `rrule`-spezifische Methode, die die neue Engine mit hoher Wahrscheinlichkeit nicht identisch bereitstellt. Ein blinder Force-Update hätte die in Abschnitt 2 sorgfältig verifizierte Kalender-Wiederholungslogik ohne Testmöglichkeit (kein echtes iCloud-Kalenderkonto in dieser Umgebung) riskiert – ein deutlich größerer, unverifizierbarer Schaden gegenüber einer kaum erreichbaren, moderaten Lücke. |
+| `esbuild`/`vite` (moderate, Frontend): Dev-Server kann von einer bösartigen Website angesprochen werden | Betrifft **ausschließlich** `vite dev` (lokaler Entwicklungsserver) – die ausgelieferte App (natives Bundle bzw. `node src/index.js` mit gebautem `frontend/dist`) nutzt den Vite-Dev-Server nie. Fix wäre Vite 5→8 (Major), mit ungeklärter `vite-plugin-pwa`-Kompatibilität. | **Bewusst nicht geforct** – reine Entwicklungszeit-Angriffsfläche, kein Risiko im ausgelieferten Produkt; Update-Aufwand/Risiko für die PWA-Pipeline steht in keinem Verhältnis zum Nutzen. |
+| `react-router-dom` (**high**): Open Redirect via Backslash; beliebige Konstruktor-Injection über `deserializeErrors()` bei SSR-Hydration | Per `grep` verifiziert: **diese App nutzt nirgends SSR** (kein `renderToString`/`hydrateRoot`/`deserializeErrors` im gesamten Frontend) – die SSR-CVE ist damit nicht erreichbar. Alle `<Link to=…>`/`navigate(…)`-Ziele sind hart codierte, interne Pfade (`"/kalender"` usw.) oder vom eigenen, authentifizierten Backend gelieferte interne Routen – nie von außen beeinflussbar; die Open-Redirect-CVE benötigt genau das. Fix wäre React Router 6→7 (Major), betrifft die komplette Navigationsschicht der App. | **Bewusst nicht geforct** – „high" laut Advisory-Metadaten, aber in dieser Anwendung faktisch nicht ausnutzbar; ein Major-Update der gesamten Routing-Bibliothek ohne konkreten erreichbaren Angriffspfad ist unverhältnismäßig riskant gegenüber dem Nutzen. |
+
+**Punkt 22 – Zod-Vereinheitlichung, dabei ein echter Bug gefunden und
+behoben:**
+
+Aufgaben, Verträge, Ziele und LinkedIn-Beiträge (die vier Routen mit
+identischem, bereits vorher geteiltem `validateXInput(body, {partial})
+→ {data, errors}`-Muster) nutzen jetzt ein gemeinsames, deklaratives
+Zod-Schema (`backend/src/validation.js`) statt einer pro Datei
+handgeschriebenen Feld-für-Feld-Prüfung. Route-Handler blieben dabei
+unverändert – nur die Validierungsfunktion selbst wurde ersetzt.
+
+**Beim Umstellen selbst ist ein Zod-Verhaltensdetail aufgefallen, das
+beinahe zu einer echten Regression geführt hätte:** Ein Feld mit eigenem
+`.optional()` innerhalb eines NICHT über `.partial()` geparsten Schemas
+(also beim POST) wird von Zod trotzdem mit `v=undefined` durch die
+`.transform()`-Funktion geschickt, statt übersprungen zu werden – nur
+`.partial()` auf dem **gesamten** Schema (bei PATCH) überspringt das
+korrekt. Das hätte `POST /api/goals` ohne mitgeschicktes `milestones`-Feld
+fälschlich mit 400 abgelehnt (durch eigene Tests noch während der
+Umstellung aufgefallen, bevor es committet wurde). Alle betroffenen
+Transformationen prüfen jetzt explizit auf `undefined` und reichen es
+unverändert durch. 13 neue Tests (`backend/test/validation-unification.test.js`)
+decken genau diesen Fall sowie Erfolg/Fehlerpfade für alle vier
+umgestellten Routen ab.
+
+**Bewusst nicht auf Zod umgestellt:** Notizen und Prompts (andere
+Struktur ohne geteilte `validateXInput`-Funktion, geringerer
+Vereinheitlichungs-Nutzen) sowie Rechnungen/Bereiche/Einstellungen/
+Dokumente/Kalender/Mail/Gesundheit/Suche/Auth (jeweils entweder bereits
+Zod-basiert, sehr klein, oder mit Speziallogik, die eine Umstellung
+riskanter als nützlich macht). **Dabei trotzdem ein echter, unabhängiger
+Bug in Notizen/Prompts gefunden und gezielt (ohne Zod) behoben:** `PATCH`
+prüfte bisher nicht, ob Titel/Inhalt nach dem Update leer wären, obwohl
+`POST` genau das verhindert – eine Notiz oder ein Prompt ließ sich per
+PATCH auf komplett leeren Titel und Inhalt setzen (faktisch unauffindbar/
+inhaltslos, aber nicht gelöscht). Zusätzlich ein Absturzrisiko behoben:
+ein nicht-String-`title`/`content`-Wert (z. B. eine Zahl) hätte bei
+`.trim()` einen ungefangenen `TypeError` (500 statt 400) ausgelöst – trat
+in `notes.js`, `prompts.js` und `linkedinPosts.js` auf, jetzt überall
+mit einer sauberen 400-Antwort abgefangen.
+
 ## Bewusst nicht umgesetzt (mit Begründung)
 
-**Restliche Punkte aus Abschnitt 1–6 (10–12, 22 vollständig, 27, 33):**
+**Restliche Punkte aus Abschnitt 1–6 (10, 11, 27, 33):**
 nicht angefasst (30–32, 34, 36 wurden geprüft, siehe Abschnitt 3 oben – dort
 zählt „geprüft und bestätigt" nicht als „nicht angefasst", auch wenn kein
-Code geändert wurde). Auswahl der wichtigsten Lücken für eine Folgerunde:
+Code geändert wurde; 12 und 22 sind jetzt in der Folgerunde oben bearbeitet).
+Auswahl der wichtigsten Lücken für eine weitere Runde:
 - **10 (Keychain), 11 (LAN-Freigabe-Härtung):** setzen Entscheidungen voraus
   (welcher Migrationspfad, welches Bedrohungsmodell für LAN-Zugriff), keine
-  reinen Bugfixes.
-- **12 (Dependency-Audit):** `npm audit` zeigt aktuell Findings in beiden
-  `package-lock.json` – nicht einzeln analysiert/gefixt, siehe „Bekannte
-  offene Punkte" unten.
-- **22 (vollständig einheitliche Validierung):** nur teilweise – eine
-  komplette Umstellung aller ~13 Routen-Dateien auf gemeinsame Zod-Schemas
-  wäre mechanisch möglich, aber ein großer, risikoarmer aber
-  aufwändiger Umbau ohne akuten Bug dahinter; zurückgestellt zugunsten der
-  Punkte mit tatsächlich gefundenen Fehlern.
+  reinen Bugfixes. Zu 10 zusätzlich: eine Umstellung würde die native
+  Swift-Hülle betreffen (macOS Keychain-API) – zusätzliches, in dieser
+  Runde bereits ungeprüftes Swift-Risiko, das eher auf einem echten Mac
+  entwickelt und sofort verifiziert werden sollte statt hier blind
+  angehäuft zu werden.
 - **23 (volle Cent-Spalten-Migration):** bewusst NICHT umgesetzt. Eine
   Umstellung von `amount REAL`/`cost REAL` auf Integer-Cent-Spalten ist ein
   Schema-Wechsel an echten Finanzdaten – genau die Art von „destruktiver
@@ -345,14 +400,14 @@ möglicherweise falschen Grundlage umzusetzen.
   erreichbar), nicht an einer Code-Änderung dieser Runde. Auf einem echten
   Mac mit normalem Internetzugang tritt das nicht auf; die App funktioniert
   mit Font-Fallback auch ohne die Google-Font.
-- `npm audit` meldet für `backend/` weiterhin 5 moderate/hohe Findings
-  (nicht durch diese Änderungen verursacht, vorbestehend) – nicht
-  analysiert, welche davon tatsächlich erreichbare Laufzeitpfade betreffen
-  vs. Dev-/Build-Only-Abhängigkeiten (Punkt 12 im Prompt).
-- `backend/src/scripts/hashPassword.js` (Kommandozeilen-Hilfsskript für den
-  `.env`-Fallback) hat noch nicht dieselbe 72-Byte-Prüfung wie die
-  HTTP-Routen – niedrige Priorität, da nur ein optionaler Alt-Installations-
-  Pfad, aber der Vollständigkeit halber hier vermerkt.
+- `npm audit` meldet für `backend/` und `frontend/` weiterhin insgesamt
+  10 Findings (4 moderate Backend, 4 moderate + 1 hohes Frontend, dazu
+  eine bereits behobene) – jetzt aber tatsächlich nach Erreichbarkeit
+  analysiert statt nur gezählt, siehe eigene Folgerunde oben. Bewusst
+  offen gelassen, weil jeder verbleibende Fund entweder nicht erreichbar
+  ist oder der Fix ein riskantes Major-Update einer Kernbibliothek
+  (Express, node-ical, Vite, React Router) ohne Testmöglichkeit für die
+  jeweils betroffene Kernfunktion wäre.
 - Bestehende Sitzungen (Tokens, die vor diesem Deploy ausgestellt wurden)
   werden durch die neue `token_version`-Prüfung beim ersten Request nach
   dem Update ungültig (kein `v`-Claim ≠ aktuelle Version) – einmaliges
@@ -371,9 +426,6 @@ möglicherweise falschen Grundlage umzusetzen.
   mail_ref-Werte mit kompatiblem Übergang behandeln") - eine rückwirkende
   Umschlüsselung der alten Einträge ist ohne die ursprüngliche
   IMAP-Verbindung nicht mehr möglich.
-- `npm audit` meldet für `backend/` weiterhin Findings (nicht durch diese
-  Änderungen verursacht, vorbestehend) – nicht analysiert, welche davon
-  tatsächlich erreichbare Laufzeitpfade betreffen (Punkt 12 im Prompt).
 - `backend/src/scripts/hashPassword.js` (Kommandozeilen-Hilfsskript für den
   `.env`-Fallback) hat noch nicht dieselbe 72-Byte-Prüfung wie die
   HTTP-Routen – niedrige Priorität, da nur ein optionaler Alt-Installations-
@@ -381,18 +433,20 @@ möglicherweise falschen Grundlage umzusetzen.
 
 ## Nächste sinnvolle Schritte (Vorschlag, keine Festlegung)
 
-1. `npm audit` beider `package-lock.json` einzeln durchgehen und
-   dokumentieren, was erreichbar ist (Punkt 12).
-2. Falls später wirklich benötigt: volle Cent-Spalten-Migration für Geld
-   (Punkt 23) und vollständig vereinheitlichte Zod-Validierung über alle
-   Routen (Punkt 22) – beides mit eigenem, vom Nutzer bestätigtem Anlauf.
-3. **Vor jeder Auslieferung zwingend:** `./macos/build-app.sh` auf einem
+1. **Vor jeder Auslieferung zwingend:** `./macos/build-app.sh` auf einem
    echten Mac mit Xcode ausführen und die Swift-Änderungen aus Abschnitt 5
    tatsächlich kompilieren/starten – sie sind bisher nur gegen den
    Quelltext gelesen, nicht gebaut. Dort auch die in Abschnitt 6
    geforderten nativen Smoke-Tests (VoiceOver, Sleep/Wake, Portkollision)
    durchführen; das ist auch der einzige Weg zur vollständigen Abnahme von
    Punkt 45 (VoiceOver) aus Abschnitt 4.
+2. Falls später wirklich benötigt: volle Cent-Spalten-Migration für Geld
+   (Punkt 23) – nur mit eigenem, vom Nutzer bestätigtem Anlauf samt
+   Backup-/Rollback-Plan, da dies ein Schema-Wechsel an echten
+   Finanzdaten wäre.
+3. Punkt 10 (Keychain) und 11 (LAN-Freigabe-Härtung) brauchen zuerst eine
+   Entscheidung (Migrationspfad bzw. Bedrohungsmodell) und – für Punkt 10 –
+   Zugriff auf einen echten Mac, da die native Swift-Hülle betroffen wäre.
 4. Abschnitte 7–11 erst nach Klärung, ob die Nachtblau-Neuausrichtung
    tatsächlich gewollt ist (siehe Diskrepanz oben), und dann in den in §10
    vorgeschlagenen Paketen B–F, nicht als Ganzes.

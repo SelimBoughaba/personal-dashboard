@@ -328,3 +328,29 @@ test("resolveStoredDocumentPath accepts exactly what generateStoredName produces
     assert.ok(resolved.startsWith(path.resolve(tmpDir)), "aufgelöster Pfad muss innerhalb des Datenverzeichnisses liegen");
   }
 });
+
+// ---------------------------------------------------------------------
+// Punkt 12 (npm audit): qs hat zwei moderate Advisories (Array-Limit-
+// Umgehung, DoS über isBuffer), erreichbar über Express' standardmäßigen
+// "extended" Query-Parser. Ein Fix ist nur über Express 5 verfügbar
+// (Major-Update). Diese App nutzt nirgends qs' erweiterte Syntax, daher
+// stattdessen auf Express' eingebauten "simple"-Parser (Node's
+// querystring-Modul, nicht von den qs-Advisories betroffen) umgestellt -
+// ohne Express selbst aktualisieren zu müssen.
+// ---------------------------------------------------------------------
+
+test("query parser ist auf 'simple' gesetzt (qs-Sicherheitslücken werden dadurch nie erreicht)", () => {
+  assert.equal(app.get("query parser"), "simple");
+});
+
+test("Klammer-artige Query-Strings bringen den Server nicht zum Absturz", async () => {
+  const res = await fetch(`${baseUrl}/api/tasks?filter[status]=offen&arr[]=1&arr[]=2`, {
+    headers: { Authorization: "Bearer ungueltig" },
+  });
+  // Ohne gültigen Token wird die Anfrage regulär mit 401 abgelehnt - der
+  // eigentliche Punkt hier ist, dass die Anfrage überhaupt sauber
+  // durchläuft (kein 500er/Absturz) und der Klammer-Query nicht als von
+  // qs verschachteltes Objekt interpretiert wird (siehe expliziter
+  // Parser-Test oben).
+  assert.equal(res.status, 401);
+});

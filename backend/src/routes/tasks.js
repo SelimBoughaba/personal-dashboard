@@ -1,36 +1,28 @@
 import { Router } from "express";
+import { z } from "zod";
 import { db, isValidArea, getDefaultAreaId } from "../db.js";
 import { TASK_PRIORITIES as PRIORITIES, TASK_STATUSES as STATUSES } from "../constants.js";
+import { validateWithSchema, optionalNullableDateString, optionalTextDefaultEmpty } from "../validation.js";
 
 export const tasksRouter = Router();
 
-function validateTaskInput(body, { partial = false } = {}) {
-  const errors = [];
-  const data = {};
+const taskSchema = z.object({
+  title: z
+    .string({ required_error: "Titel ist erforderlich.", invalid_type_error: "Titel ist erforderlich." })
+    .trim()
+    .min(1, "Titel ist erforderlich."),
+  due_date: optionalNullableDateString,
+  notes: optionalTextDefaultEmpty,
+  priority: z.enum(PRIORITIES, { errorMap: () => ({ message: "Ungültige Priorität." }) }).optional(),
+  area: z
+    .string()
+    .refine((v) => isValidArea(v), { message: "Ungültiger Bereich." })
+    .optional(),
+  status: z.enum(STATUSES, { errorMap: () => ({ message: "Ungültiger Status." }) }).optional(),
+});
 
-  if (!partial || body.title !== undefined) {
-    if (!body.title || typeof body.title !== "string" || !body.title.trim()) {
-      errors.push("Titel ist erforderlich.");
-    } else {
-      data.title = body.title.trim();
-    }
-  }
-  if (body.due_date !== undefined) data.due_date = body.due_date || null;
-  if (body.notes !== undefined) data.notes = body.notes || "";
-  if (body.priority !== undefined) {
-    if (!PRIORITIES.includes(body.priority)) errors.push("Ungültige Priorität.");
-    else data.priority = body.priority;
-  }
-  if (body.area !== undefined) {
-    if (!isValidArea(body.area)) errors.push("Ungültiger Bereich.");
-    else data.area = body.area;
-  }
-  if (body.status !== undefined) {
-    if (!STATUSES.includes(body.status)) errors.push("Ungültiger Status.");
-    else data.status = body.status;
-  }
-
-  return { data, errors };
+function validateTaskInput(body, options) {
+  return validateWithSchema(taskSchema, body, options);
 }
 
 // GET /api/tasks?area=evermont&sort=priority

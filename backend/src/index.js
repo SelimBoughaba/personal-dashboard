@@ -41,6 +41,17 @@ process.on("uncaughtException", (err) => {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 
+// Express nutzt standardmäßig ("extended") die qs-Bibliothek für
+// req.query, die aktuell zwei moderate Sicherheitslücken hat (Array-Limit-
+// Umgehung, DoS über kontrollierbares isBuffer) - ein Fix ist nur über ein
+// Major-Update auf Express 5 verfügbar (npm audit). Diese App nutzt an
+// keiner Stelle qs' erweiterte Syntax (verschachtelte Objekte/Arrays wie
+// "?filter[x]=y") - alle Query-Parameter sind flache Schlüssel/Wert-Paare
+// (z. B. ?area=alle&status=alle). "simple" verwendet stattdessen Node's
+// eingebautes querystring-Modul und ist damit von den qs-Advisories gar
+// nicht erst betroffen, ohne dass Express selbst aktualisiert werden muss.
+app.set("query parser", "simple");
+
 // Kein CORS-Middleware nötig: Frontend und Backend laufen immer same-origin
 // (im Dev-Modus per Vite-Proxy, im Produktivbetrieb liefert dieser Server
 // das Frontend selbst mit aus). Weniger Angriffsfläche als offenes CORS.

@@ -75,6 +75,11 @@ promptsRouter.patch("/:id", (req, res) => {
   if (body.area !== undefined && !isValidArea(body.area)) {
     return res.status(400).json({ error: "Ungültiger Bereich." });
   }
+  // body.title.trim() würde bei einem nicht-String-Wert (z. B. einer Zahl)
+  // mit einem ungefangenen TypeError abstürzen (500 statt 400).
+  if (body.title !== undefined && typeof body.title !== "string") {
+    return res.status(400).json({ error: "Titel muss Text sein." });
+  }
 
   const merged = {
     id: req.params.id,
@@ -84,6 +89,11 @@ promptsRouter.patch("/:id", (req, res) => {
     tags: body.tags !== undefined ? JSON.stringify(cleanTags(body.tags)) : existing.tags,
     pinned: body.pinned !== undefined ? (body.pinned ? 1 : 0) : existing.pinned,
   };
+
+  // Ohne diese Prüfung ließ sich ein Prompt per PATCH auf leeren Titel
+  // oder leeren Text setzen, obwohl POST beides einzeln verlangt.
+  if (!merged.title?.trim()) return res.status(400).json({ error: "Titel ist erforderlich." });
+  if (!merged.content?.trim()) return res.status(400).json({ error: "Prompt-Text ist erforderlich." });
 
   db.prepare(`
     UPDATE prompts SET title=@title, content=@content, area=@area, tags=@tags, pinned=@pinned, updated_at=datetime('now')

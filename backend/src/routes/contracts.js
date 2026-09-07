@@ -1,53 +1,69 @@
 import { Router } from "express";
+import { z } from "zod";
 import { db, isValidArea, getDefaultAreaId } from "../db.js";
 import { CONTRACT_STATUSES as STATUSES, CONTRACT_BILLING_CYCLES as CYCLES } from "../constants.js";
+import { validateWithSchema, optionalNullableDateString, optionalTextDefaultEmpty } from "../validation.js";
 
 export const contractsRouter = Router();
 
-function validateContractInput(body, { partial = false } = {}) {
-  const errors = [];
-  const data = {};
-
-  if (!partial || body.title !== undefined) {
-    if (!body.title || typeof body.title !== "string" || !body.title.trim()) {
-      errors.push("Titel ist erforderlich.");
-    } else {
-      data.title = body.title.trim();
+// "" oder null wird zu null (kein Wert eingetragen); jeder andere Wert muss
+// eine endliche Zahl sein - Number.isFinite statt nur !isNaN, weil
+// Number("Infinity") kein NaN ist, aber trotzdem kein sinnvoller
+// Kostenwert für eine REAL-Spalte.
+// v===undefined muss explizit vor v===""/null geprüft werden und
+// unverändert (undefined) durchgereicht werden, nicht als null behandelt
+// werden: Zod ruft .transform() bei einem NICHT-partial geparsten Schema
+// auch für ein komplett fehlendes Feld mit v=undefined auf (siehe
+// validation.js) - ohne diese Unterscheidung würde ein bei PATCH gar
+// nicht mitgeschicktes Feld fälschlich als "auf null setzen" interpretiert.
+const nullableFiniteCost = z
+  .union([z.string(), z.number(), z.null()])
+  .optional()
+  .transform((v, ctx) => {
+    if (v === undefined) return undefined;
+    if (v === "" || v === null) return null;
+    const num = Number(v);
+    if (!Number.isFinite(num)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Ungültige Kosten." });
+      return z.NEVER;
     }
-  }
-  if (body.provider !== undefined) data.provider = body.provider || "";
-  if (body.notes !== undefined) data.notes = body.notes || "";
-  if (body.next_renewal_date !== undefined) data.next_renewal_date = body.next_renewal_date || null;
-  if (body.area !== undefined) {
-    if (!isValidArea(body.area)) errors.push("Ungültiger Bereich.");
-    else data.area = body.area;
-  }
-  if (body.status !== undefined) {
-    if (!STATUSES.includes(body.status)) errors.push("Ungültiger Status.");
-    else data.status = body.status;
-  }
-  if (body.billing_cycle !== undefined) {
-    if (!CYCLES.includes(body.billing_cycle)) errors.push("Ungültiger Abrechnungszyklus.");
-    else data.billing_cycle = body.billing_cycle;
-  }
-  if (body.cost !== undefined) {
-    if (body.cost === "" || body.cost === null) data.cost = null;
-    // isFinite statt !isNaN: Number("Infinity") ist kein NaN, aber auch
-    // kein sinnvoller Kostenwert.
-    else if (!Number.isFinite(Number(body.cost))) errors.push("Ungültige Kosten.");
-    else data.cost = Number(body.cost);
-  }
-  if (body.cancellation_period_days !== undefined) {
-    if (body.cancellation_period_days === "" || body.cancellation_period_days === null) {
-      data.cancellation_period_days = null;
-    } else if (!Number.isInteger(Number(body.cancellation_period_days)) || Number(body.cancellation_period_days) < 0) {
-      errors.push("Ungültige Kündigungsfrist.");
-    } else {
-      data.cancellation_period_days = Number(body.cancellation_period_days);
-    }
-  }
+    return num;
+  });
 
-  return { data, errors };
+const nullableNonNegativeInteger = z
+  .union([z.string(), z.number(), z.null()])
+  .optional()
+  .transform((v, ctx) => {
+    if (v === undefined) return undefined;
+    if (v === "" || v === null) return null;
+    const num = Number(v);
+    if (!Number.isInteger(num) || num < 0) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Ungültige Kündigungsfrist." });
+      return z.NEVER;
+    }
+    return num;
+  });
+
+const contractSchema = z.object({
+  title: z
+    .string({ required_error: "Titel ist erforderlich.", invalid_type_error: "Titel ist erforderlich." })
+    .trim()
+    .min(1, "Titel ist erforderlich."),
+  provider: optionalTextDefaultEmpty,
+  notes: optionalTextDefaultEmpty,
+  next_renewal_date: optionalNullableDateString,
+  area: z
+    .string()
+    .refine((v) => isValidArea(v), { message: "Ungültiger Bereich." })
+    .optional(),
+  status: z.enum(STATUSES, { errorMap: () => ({ message: "Ungültiger Status." }) }).optional(),
+  billing_cycle: z.enum(CYCLES, { errorMap: () => ({ message: "Ungültiger Abrechnungszyklus." }) }).optional(),
+  cost: nullableFiniteCost,
+  cancellation_period_days: nullableNonNegativeInteger,
+});
+
+function validateContractInput(body, options) {
+  return validateWithSchema(contractSchema, body, options);
 }
 
 contractsRouter.get("/", (req, res) => {

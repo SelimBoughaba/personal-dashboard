@@ -1,29 +1,31 @@
 import { Router } from "express";
+import { z } from "zod";
 import { db, isValidArea, getDefaultAreaId } from "../db.js";
+import { validateWithSchema, optionalNullableDateString } from "../validation.js";
 
 export const linkedinPostsRouter = Router();
 
 const STATUSES = ["entwurf", "geplant", "veroeffentlicht"];
 
-function validateInput(body, { partial = false } = {}) {
-  const errors = [];
-  const data = {};
+const linkedinPostSchema = z.object({
+  // Bewusst NICHT getrimmt gespeichert (anders als z. B. Aufgaben-/
+  // Ziel-Titel) - entspricht dem bisherigen Verhalten, das den Inhalt
+  // unverändert übernahm. Vorher konnte ein nicht-String-Wert (z. B. eine
+  // Zahl) hier zu einem ungefangenen TypeError bei body.content.trim()
+  // führen (500 statt 400) - z.string() lehnt das jetzt sauber ab.
+  content: z
+    .string({ required_error: "Text ist erforderlich.", invalid_type_error: "Text ist erforderlich." })
+    .refine((v) => v.trim().length > 0, { message: "Text ist erforderlich." }),
+  area: z
+    .string()
+    .refine((v) => isValidArea(v), { message: "Ungültiger Bereich." })
+    .optional(),
+  status: z.enum(STATUSES, { errorMap: () => ({ message: "Ungültiger Status." }) }).optional(),
+  scheduled_date: optionalNullableDateString,
+});
 
-  if (!partial || body.content !== undefined) {
-    if (!body.content || !body.content.trim()) errors.push("Text ist erforderlich.");
-    else data.content = body.content;
-  }
-  if (body.area !== undefined) {
-    if (!isValidArea(body.area)) errors.push("Ungültiger Bereich.");
-    else data.area = body.area;
-  }
-  if (body.status !== undefined) {
-    if (!STATUSES.includes(body.status)) errors.push("Ungültiger Status.");
-    else data.status = body.status;
-  }
-  if (body.scheduled_date !== undefined) data.scheduled_date = body.scheduled_date || null;
-
-  return { data, errors };
+function validateInput(body, options) {
+  return validateWithSchema(linkedinPostSchema, body, options);
 }
 
 linkedinPostsRouter.get("/", (req, res) => {

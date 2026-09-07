@@ -70,9 +70,18 @@ Build-Skript, das einen fehlgeschlagenen Rebuild bereits vor dem
 eigentlichen Kompilieren gelöscht hätte. **Wichtige Einschränkung:** Diese
 Cloud-Sitzung hat kein Xcode – die Swift-Änderungen selbst sind sorgfältig
 geschrieben, aber nicht kompiliert; vor jeder Auslieferung muss
-`./macos/build-app.sh` auf einem echten Mac laufen. `cd backend &&
-npm test` führt die inzwischen 31 automatisierten Backend-Tests aus, `cd
-frontend && npm test` 4 weitere für die Zeitzonen-Korrektur.
+`./macos/build-app.sh` auf einem echten Mac laufen. Danach noch eine
+Folgerunde zu zwei zuvor zurückgestellten Punkten: `npm audit`-Funde nach
+tatsächlicher Erreichbarkeit statt blind geprüft (die einzige wirklich
+erreichbare Backend-Lücke behoben, ohne Express zu aktualisieren; die
+übrigen Funde brauchen riskante Major-Updates für nicht erreichbaren
+Code und wurden bewusst nicht geforct) sowie vier Routen (Aufgaben,
+Verträge, Ziele, LinkedIn-Beiträge) auf gemeinsame Zod-Validierung
+umgestellt – dabei einen echten Bug gefunden und behoben, bei dem
+Notizen/Prompts sich per Teil-Update auf komplett leeren Titel/Inhalt
+setzen ließen. `cd backend && npm test` führt die inzwischen 46
+automatisierten Backend-Tests aus, `cd frontend && npm test` 4 weitere
+für die Zeitzonen-Korrektur.
 
 ## Projektstruktur
 
