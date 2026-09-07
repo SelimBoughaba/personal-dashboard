@@ -96,6 +96,9 @@ const MORE_ITEMS = [
   { label: "Notizen", path: "/notizen", enabled: true },
   { label: "Prompt-Bibliothek", path: "/prompts", enabled: true },
   { label: "LinkedIn", path: "/linkedin", enabled: true },
+  // Prototyp für Punkt 57/58 - deutlich als Vorschau markiert, damit klar
+  // ist, dass dies (noch) nicht die neue Übersicht ersetzt.
+  { label: "Tageslinie", path: "/tageslinie", enabled: true, badge: "Vorschau" },
   { label: "Einstellungen", path: "/einstellungen", icon: "einstellungen", enabled: true },
 ];
 
@@ -204,12 +207,15 @@ function SidebarContent({ onNavigate, onOpenSearch }) {
                       key={item.label}
                       to={item.path}
                       className={({ isActive }) =>
-                        `flex items-center justify-between rounded-control px-2.5 py-2 text-[13px] transition-colors duration-200 ${
+                        `flex items-center justify-between gap-2 rounded-control px-2.5 py-2 text-[13px] transition-colors duration-200 ${
                           isActive ? "text-ivory" : "text-ivory/65 hover:text-ivory"
                         }`
                       }
                     >
-                      {item.label}
+                      <span>{item.label}</span>
+                      {item.badge && (
+                        <span className="rounded-full bg-accent/15 px-1.5 py-0.5 text-xs text-accent">{item.badge}</span>
+                      )}
                     </NavLink>
                   ) : (
                     <div

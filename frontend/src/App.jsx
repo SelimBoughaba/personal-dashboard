@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { AreasProvider } from "./context/AreasContext";
 import { Login } from "./pages/Login";
 import { Uebersicht } from "./pages/Uebersicht";
+import { Tageslinie } from "./pages/Tageslinie";
 import { Tasks } from "./pages/Tasks";
 import { Kalender } from "./pages/Kalender";
 import { Mail } from "./pages/Mail";
@@ -55,6 +56,16 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Uebersicht />
+          </ProtectedRoute>
+        }
+      />
+      {/* Prototyp für Punkt 57/58 (Tageslinie/Vorgangsakte) - bewusst
+          zusätzlich zu "/", nicht anstelle davon (siehe Tageslinie.jsx). */}
+      <Route
+        path="/tageslinie"
+        element={
+          <ProtectedRoute>
+            <Tageslinie />
           </ProtectedRoute>
         }
       />
