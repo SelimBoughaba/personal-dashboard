@@ -86,11 +86,17 @@ setzen ließen.
 Typografie-Skala und flache Geometrie (keine Glasflächen mehr) ersetzen
 das bisherige Waldgrün/Glas-Design. Die Übersicht zeigt jetzt eine
 Tageslinie (Termine/Fristen chronologisch in einer Spalte) statt einer
-Kachelwand, mit einer Vorgangsakte für Details zu einzelnen Einträgen.
-Rechnungen haben eine Kostenverlauf-Grafik. Gespeicherte Arbeitsansichten
-(Filterkombinationen benennen und pinnen) sowie Kontextlinks (manuell
-gesetzte, sichtbare Verknüpfungen zwischen Aufgaben, Rechnungen,
-Dokumenten, Verträgen, Zielen und Notizen) ergänzen mehrere Module.
+Kachelwand, mit einer Vorgangsakte für Details zu einzelnen Einträgen -
+dasselbe Vorgangsakte-Grundgerüst (Auswahl + Detailbereich seitlich auf
+breiten, vollflächig auf schmalen Fenstern) gibt es inzwischen auch bei
+Rechnungen und Verträgen, dort mit einer belegten Ereignisfolge
+("Angelegt/Eingegangen → Geprüft → Bezahlt", nur tatsächlich gespeicherte
+Zeitpunkte) bzw. einer Fristmarkierung (Kündigungsfrist, Verlängerung).
+Rechnungen haben zusätzlich eine Kostenverlauf-Grafik. Gespeicherte
+Arbeitsansichten (Filterkombinationen benennen und pinnen) sowie
+Kontextlinks (manuell gesetzte, sichtbare Verknüpfungen zwischen
+Aufgaben, Rechnungen, Dokumenten, Verträgen, Zielen und Notizen) ergänzen
+mehrere Module.
 
 **Arbeitsabläufe (Paket C):** Aufgaben können jetzt wiederkehren
 (täglich/wöchentlich/monatlich, mit einer Rückstands-Deckelung statt
