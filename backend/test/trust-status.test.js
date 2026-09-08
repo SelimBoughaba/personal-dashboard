@@ -77,10 +77,10 @@ test("GET /api/trust-status: ohne konfigurierten Kalender/Mail kein unbelegtes '
   assert.equal(res.body.integrations.calendar.configured, false);
   assert.equal(res.body.integrations.calendar.ok, null);
   assert.equal(res.body.integrations.mail.configured, false);
-  assert.equal(res.body.integrations.mail.lastError, null);
+  assert.deepEqual(res.body.integrations.mail.accounts, []);
 });
 
-test("GET /api/trust-status: konfiguriertes Postfach erscheint mit Anzahl, ohne Live-Verbindungsversuch", async () => {
+test("GET /api/trust-status: konfiguriertes Postfach erscheint einzeln (Punkt 87: Fehlerzustand pro Konto getrennt)", async () => {
   const created = await api("/api/settings/mail/accounts", {
     method: "POST",
     body: JSON.stringify({ id: "test-account", label: "Test", host: "imap.example.invalid", port: 993, user: "test@example.invalid", password: "xxxx" }),
@@ -89,7 +89,32 @@ test("GET /api/trust-status: konfiguriertes Postfach erscheint mit Anzahl, ohne 
 
   const res = await api("/api/trust-status");
   assert.equal(res.body.integrations.mail.configured, true);
-  assert.equal(res.body.integrations.mail.accountCount, 1);
+  assert.equal(res.body.integrations.mail.accounts.length, 1);
+  assert.equal(res.body.integrations.mail.accounts[0].id, "test-account");
+  assert.equal(res.body.integrations.mail.accounts[0].label, "Test");
+  assert.equal(res.body.integrations.mail.accounts[0].active, true);
+  assert.equal(res.body.integrations.mail.accounts[0].lastError, null);
+});
+
+test("GET /api/trust-status: ein zweites Konto mit eigenem Fehler zeigt das erste Konto nicht fälschlich als betroffen (Punkt 87)", async () => {
+  await api("/api/settings/mail/accounts", {
+    method: "POST",
+    body: JSON.stringify({ id: "gesundes-konto", label: "Gesund", host: "imap.example.invalid", port: 993, user: "a@example.invalid", password: "xxxx" }),
+  });
+  await api("/api/settings/mail/accounts", {
+    method: "POST",
+    body: JSON.stringify({ id: "gestoertes-konto", label: "Gestört", host: "imap.example.invalid", port: 993, user: "b@example.invalid", password: "xxxx" }),
+  });
+
+  const { recordIntegrationError, mailAccountErrorKey } = await import("../src/notifications.js");
+  recordIntegrationError(mailAccountErrorKey("gestoertes-konto"), "Postfach „Gestört“: Verbindung fehlgeschlagen", "IMAP prüfen.");
+
+  const res = await api("/api/trust-status");
+  const accounts = res.body.integrations.mail.accounts;
+  const healthy = accounts.find((a) => a.id === "gesundes-konto");
+  const broken = accounts.find((a) => a.id === "gestoertes-konto");
+  assert.equal(healthy.lastError, null, "ein gesundes Konto darf durch den Fehler eines anderen Kontos nicht betroffen erscheinen");
+  assert.ok(broken.lastError, "das gestörte Konto muss seinen eigenen Fehler zeigen");
 });
 
 test("GET /api/trust-status: letzte verifizierte Sicherung ist zunächst null, nach einem Export gesetzt", async () => {

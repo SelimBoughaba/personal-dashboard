@@ -25,7 +25,7 @@ import { db, dataDir } from "./db.js";
 import { getSetting, getIcloudConfig, getMailAccounts } from "./configStore.js";
 import { getDocumentsDir } from "./documentStorage.js";
 import { configuredMailAccounts } from "./mailAccounts.js";
-import { checkCalendarConnection } from "./notifications.js";
+import { checkCalendarConnection, mailAccountErrorKey } from "./notifications.js";
 import { TRASH_TABLES } from "./constants.js";
 
 function dirSizeBytes(dirPath) {
@@ -69,19 +69,27 @@ async function calendarStatus() {
   };
 }
 
+// Provideradapter-Fähigkeitsmodell, Teilumfang (Punkt 87): "letzte Fehler...
+// pro Konto getrennt halten" - ein Konto zeigt seinen eigenen zuletzt
+// aufgetretenen Fehler (siehe routes/invoices.js), kein globaler Zustand
+// mehr, der ein gesundes Konto fälschlich als betroffen erscheinen ließe.
 function mailStatus() {
   const accounts = getMailAccounts();
-  const configured = accounts.length > 0;
-  const activeCount = configuredMailAccounts().length;
-  if (!configured) return { configured: false, accountCount: 0, activeCount: 0, lastError: null, lastErrorAt: null };
+  if (accounts.length === 0) return { configured: false, accounts: [] };
 
-  const error = latestIntegrationEvent("error:mail");
+  const activeIds = new Set(configuredMailAccounts().map((a) => a.id));
   return {
     configured: true,
-    accountCount: accounts.length,
-    activeCount,
-    lastError: error ? error.body || error.title : null,
-    lastErrorAt: error ? error.created_at : null,
+    accounts: accounts.map((account) => {
+      const error = latestIntegrationEvent(mailAccountErrorKey(account.id));
+      return {
+        id: account.id,
+        label: account.label || account.id,
+        active: activeIds.has(account.id),
+        lastError: error ? error.body || error.title : null,
+        lastErrorAt: error ? error.created_at : null,
+      };
+    }),
   };
 }
 

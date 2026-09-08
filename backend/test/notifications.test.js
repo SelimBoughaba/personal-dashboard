@@ -153,16 +153,23 @@ test("PATCH /api/notifications/:key lehnt ein ungültiges snoozedUntil-Format ab
   assert.equal(res.status, 400);
 });
 
-test("recordBackgroundEvent legt ein Hintergrund-Ereignis an und löscht einen offenen Mail-Fehler", async () => {
-  recordIntegrationError("error:mail", "Mail-Verbindung fehlgeschlagen", "IMAP prüfen.");
+test("recordBackgroundEvent legt ein Hintergrund-Ereignis an, ohne selbst irgendeinen Fehlerzustand aufzulösen", async () => {
+  // Seit der Fehlerzustand pro Mail-Konto getrennt gehalten wird (Punkt 87,
+  // siehe mailAccountErrorKey()/routes/invoices.js), löst
+  // recordBackgroundEvent selbst KEINEN Fehlerzustand mehr auf - das war
+  // früher ein hartcodiertes "error:mail", das ein gestörtes Konto fälschlich
+  // neben einem funktionierenden zweiten hätte verschwinden lassen können.
+  // Das Auflösen ist jetzt Sache des Aufrufers, gezielt pro Konto.
+  recordIntegrationError("error:mail:test-account", "Mail-Verbindung fehlgeschlagen", "IMAP prüfen.");
   let res = await api("/api/notifications");
-  assert.ok(res.body.some((n) => n.key === "error:mail" && n.category === "integration_error"));
+  assert.ok(res.body.some((n) => n.key === "error:mail:test-account" && n.category === "integration_error"));
 
   recordBackgroundEvent("background:mailscan:test-tag", "3 neue Rechnungsvorschläge", "Aus dem Mail-Scan.");
   res = await api("/api/notifications");
   assert.ok(res.body.some((n) => n.key === "background:mailscan:test-tag" && n.category === "background"));
-  // Ein erfolgreicher Scan löst den zuvor gespeicherten Mail-Fehlerzustand auf.
-  assert.ok(!res.body.some((n) => n.key === "error:mail"));
+  assert.ok(res.body.some((n) => n.key === "error:mail:test-account"), "recordBackgroundEvent darf fremde Fehlerzustände nicht anfassen");
+
+  clearIntegrationError("error:mail:test-account");
 });
 
 test("recordBackgroundEvent ist idempotent für denselben Schlüssel (kein Duplikat, nur Aktualisierung)", async () => {

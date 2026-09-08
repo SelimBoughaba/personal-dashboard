@@ -236,6 +236,12 @@ async function scanAccount(account, rules) {
   return created;
 }
 
+// Liefert neben den neu angelegten Rechnungen auch das Ergebnis JEDES
+// einzelnen Kontos (Punkt 87, Teilumfang: "letzte Fehler ... pro Konto
+// getrennt halten") - der Aufrufer (routes/invoices.js) nutzt das, um
+// Integrationsfehler pro Postfach statt eines einzigen globalen Zustands
+// zu verfolgen, damit ein gestörtes Konto ein funktionierendes zweites
+// nicht als "auch fehlerhaft" erscheinen lässt.
 export async function scanForInvoices() {
   const accounts = configuredMailAccounts();
   if (accounts.length === 0) {
@@ -248,11 +254,20 @@ export async function scanForInvoices() {
   const settled = await Promise.allSettled(accounts.map((account) => scanAccount(account, rules)));
 
   const created = [];
+  const accountResults = [];
   settled.forEach((result, i) => {
+    const account = accounts[i];
     if (result.status === "fulfilled") {
       created.push(...result.value);
+      accountResults.push({ id: account.id, label: account.label || account.id, ok: true, error: null });
     } else {
-      console.error(`Rechnungs-Scan-Fehler (${accounts[i].id}):`, result.reason);
+      console.error(`Rechnungs-Scan-Fehler (${account.id}):`, result.reason);
+      accountResults.push({
+        id: account.id,
+        label: account.label || account.id,
+        ok: false,
+        error: "IMAP-Zugangsdaten/Host prüfen.",
+      });
     }
   });
 
@@ -260,8 +275,10 @@ export async function scanForInvoices() {
   // ein einzelnes gestörtes Postfach soll den Scan der anderen Konten
   // nicht verhindern.
   if (settled.every((r) => r.status === "rejected")) {
-    throw settled[0].reason;
+    const err = settled[0].reason;
+    err.accountResults = accountResults;
+    throw err;
   }
 
-  return created;
+  return { created, accountResults };
 }

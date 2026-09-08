@@ -143,8 +143,12 @@ dieselbe strenge Prüfung wie ein Restore - nicht nur "heruntergeladen"),
 den Integrationszustand (Kalender wird bei jedem Aufruf dieser Seite
 live neu geprüft; E-Mail bewusst nicht - ein IMAP-Test hätte
 Seiteneffekte, siehe notifications.js - stattdessen der zuletzt
-tatsächlich aufgetretene Fehler, nie ein unbelegtes "verbunden"),
-Datenfrische je Inhaltstyp, die Browser-Benachrichtigungsberechtigung
+tatsächlich aufgetretene Fehler, nie ein unbelegtes "verbunden". Bei
+mehreren Postfächern (Punkt 87, Teilumfang: "letzte Fehler... pro
+Konto getrennt halten") erscheint jedes Konto als eigene Zeile mit
+eigenem Fehlerzustand - ein gestörtes Postfach lässt ein daneben
+funktionierendes zweites nicht fälschlich als ebenfalls betroffen
+erscheinen), Datenfrische je Inhaltstyp, die Browser-Benachrichtigungsberechtigung
 und ausstehende lokale Hintergrundjobs - ehrlich "keine", da diese App
 bewusst keinen Cron/Hintergrunddienst hat (alles läuft bedarfsgesteuert
 beim jeweiligen Seitenaufruf). Die Ersteinrichtung (schrittweise,
@@ -175,7 +179,7 @@ Textzusammenfassung, Einheiten, Quelle, Datenstand und einer
 zugänglichen Tabellenalternative, wie schon der Kostenverlauf bei
 Rechnungen.
 
-`cd backend && npm test` führt die inzwischen 158 automatisierten
+`cd backend && npm test` führt die inzwischen 159 automatisierten
 Backend-Tests aus, `cd frontend && npm test` 4 weitere für die
 Zeitzonen-Korrektur.
 

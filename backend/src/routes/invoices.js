@@ -3,7 +3,7 @@ import { db, isValidArea, getDefaultAreaId } from "../db.js";
 import { scanForInvoices, parseGermanAmount } from "../invoiceScanner.js";
 import { INVOICE_STATUSES as STATUSES } from "../constants.js";
 import { toCsv, parseCsv } from "../csv.js";
-import { recordBackgroundEvent, recordIntegrationError } from "../notifications.js";
+import { recordBackgroundEvent, recordIntegrationError, clearIntegrationError, mailAccountErrorKey } from "../notifications.js";
 import { todayIso } from "../recurrence.js";
 
 export const invoicesRouter = Router();
@@ -28,9 +28,22 @@ invoicesRouter.get("/", (req, res) => {
   res.json(db.prepare(query).all(...params));
 });
 
+// Trägt den Erfolgs-/Fehlerzustand jedes einzelnen Kontos in die
+// Benachrichtigungs-/Vertrauens-Anzeige ein (Punkt 87: "letzte Fehler...
+// pro Konto getrennt halten") - ein gestörtes Konto darf ein daneben
+// funktionierendes zweites nicht als ebenfalls fehlerhaft erscheinen lassen.
+function applyAccountResults(accountResults) {
+  for (const { id, label, ok, error } of accountResults) {
+    const key = mailAccountErrorKey(id);
+    if (ok) clearIntegrationError(key);
+    else recordIntegrationError(key, `Postfach „${label}“: Verbindung fehlgeschlagen`, error);
+  }
+}
+
 invoicesRouter.post("/scan", async (req, res) => {
   try {
-    const created = await scanForInvoices();
+    const { created, accountResults } = await scanForInvoices();
+    applyAccountResults(accountResults);
     // Ein Ereignis pro Kalendertag statt pro Klick (Punkt 76:
     // "deduplizieren") - mehrere Scans am selben Tag aktualisieren nur den
     // Zähler des bestehenden Ereignisses. Nur bei tatsächlichen Neufunden,
@@ -50,7 +63,7 @@ invoicesRouter.post("/scan", async (req, res) => {
       });
     }
     console.error("Rechnungs-Scan-Fehler:", err);
-    recordIntegrationError("error:mail", "Mail-Verbindung fehlgeschlagen", "IMAP-Zugangsdaten/Host prüfen.");
+    if (err.accountResults) applyAccountResults(err.accountResults);
     res.status(502).json({
       error: "Postfach konnte nicht durchsucht werden. IMAP-Zugangsdaten/Host prüfen.",
     });

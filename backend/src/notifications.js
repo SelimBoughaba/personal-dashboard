@@ -23,6 +23,16 @@ import { getEvents } from "./caldav.js";
 const DEADLINE_LOOKAHEAD_DAYS = 7;
 export const TYPE_PATH = { aufgabe: "/aufgaben", rechnung: "/finanzen", vertrag: "/vertraege" };
 
+// Provideradapter-Fähigkeitsmodell, Teilumfang (Punkt 87): "letzte Fehler...
+// pro Konto getrennt halten" - ein einziger globaler "error:mail"-Schlüssel
+// hätte ein gestörtes Postfach fälschlich auf alle konfigurierten Konten
+// ausgeweitet. Zentral hier definiert, damit routes/invoices.js (schreibt)
+// und trustStatus.js (liest) garantiert denselben Schlüssel pro Konto
+// verwenden.
+export function mailAccountErrorKey(accountId) {
+  return `error:mail:${accountId}`;
+}
+
 function deadlineKey(type, id) {
   return `deadline:${type}:${id}`;
 }
@@ -89,16 +99,17 @@ export function clearIntegrationError(key) {
 // Ereignis für einen abgeschlossenen Hintergrundvorgang (aktuell: der
 // Mail-Scan für Rechnungsvorschläge). Ein Aufruf pro Kalendertag reicht -
 // mehrere Scans am selben Tag aktualisieren nur Zähler/Zeitstempel des
-// bestehenden Ereignisses statt eine wachsende Liste zu erzeugen.
+// bestehenden Ereignisses statt eine wachsende Liste zu erzeugen. Löst
+// bewusst KEINEN Integrationsfehler-Zustand mehr selbst auf (das war früher
+// ein hartcodiertes "error:mail") - seit dem Fehlerzustand pro Konto (Punkt
+// 87) entscheidet der Aufrufer (routes/invoices.js) selbst, welches/welche
+// Konten als wieder erfolgreich gelten.
 export function recordBackgroundEvent(key, title, body) {
   db.prepare(
     `INSERT INTO notification_events (key, category, title, body, created_at)
      VALUES (@key, 'background', @title, @body, datetime('now'))
      ON CONFLICT(key) DO UPDATE SET title = excluded.title, body = excluded.body, created_at = excluded.created_at`,
   ).run({ key, title, body: body || "" });
-  // Ein erfolgreicher Lauf löst denselben Integrationsfehler-Zustand auf,
-  // falls einer vom letzten fehlgeschlagenen Versuch noch offen war.
-  clearIntegrationError("error:mail");
 }
 
 function loadStates(keys) {

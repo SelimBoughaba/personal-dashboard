@@ -125,29 +125,35 @@ export function Vertrauen() {
                   }
                 />
               </div>
-              <div className="flex items-start justify-between gap-3 rounded-control border border-white/10 bg-white/[0.02] p-3">
-                <div>
-                  <p className="text-sm font-bold text-ivory/90">E-Mail (IMAP)</p>
-                  {!status.integrations.mail.configured && <p className="text-xs text-ivory/55">Kein Postfach eingerichtet.</p>}
-                  {status.integrations.mail.configured && (
-                    <p className="text-xs text-ivory/65">
-                      {status.integrations.mail.accountCount} Postfach/Postfächer ({status.integrations.mail.activeCount} aktiv).{" "}
-                      {status.integrations.mail.lastError
-                        ? `Letzter bekannter Fehler: ${status.integrations.mail.lastError}`
-                        : "Kein bekannter Fehler aus dem letzten Scan-Versuch – kein Live-Test, um keinen ungefragten Postfach-Scan auszulösen."}
-                    </p>
-                  )}
+              {!status.integrations.mail.configured && (
+                <div className="flex items-start justify-between gap-3 rounded-control border border-white/10 bg-white/[0.02] p-3">
+                  <div>
+                    <p className="text-sm font-bold text-ivory/90">E-Mail (IMAP)</p>
+                    <p className="text-xs text-ivory/55">Kein Postfach eingerichtet.</p>
+                  </div>
+                  <StatusDot tone="unknown" />
                 </div>
-                <StatusDot
-                  tone={
-                    !status.integrations.mail.configured
-                      ? "unknown"
-                      : status.integrations.mail.lastError
-                        ? "error"
-                        : "unknown"
-                  }
-                />
-              </div>
+              )}
+              {status.integrations.mail.configured &&
+                status.integrations.mail.accounts.map((account) => (
+                  <div
+                    key={account.id}
+                    className="flex items-start justify-between gap-3 rounded-control border border-white/10 bg-white/[0.02] p-3"
+                  >
+                    <div>
+                      <p className="text-sm font-bold text-ivory/90">
+                        E-Mail (IMAP) · {account.label}
+                        {!account.active && " · pausiert"}
+                      </p>
+                      <p className="text-xs text-ivory/65">
+                        {account.lastError
+                          ? `Letzter bekannter Fehler: ${account.lastError}`
+                          : "Kein bekannter Fehler aus dem letzten Scan-Versuch – kein Live-Test, um keinen ungefragten Postfach-Scan auszulösen."}
+                      </p>
+                    </div>
+                    <StatusDot tone={account.lastError ? "error" : "unknown"} />
+                  </div>
+                ))}
             </div>
           </GlassCard>
 
