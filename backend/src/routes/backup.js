@@ -12,12 +12,12 @@ export const backupRouter = Router();
 // globales Limit).
 const backupJsonParser = express.json({ limit: "40mb" });
 
-const BACKUP_VERSION = 9;
+const BACKUP_VERSION = 10;
 // Ältere Backup-Versionen kannten neuere Tabellen (documents, contracts, ...)
 // noch nicht. Beim Wiederherstellen eines älteren Backups bleibt die
 // jeweils fehlende Tabelle dann einfach unangetastet, statt gelöscht zu
 // werden – so bleiben ältere Backups kompatibel, ohne Daten zu verlieren.
-const SUPPORTED_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+const SUPPORTED_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 const OPTIONAL_TABLES = [
   { key: "documents", sinceVersion: 2 },
   { key: "contracts", sinceVersion: 3 },
@@ -27,6 +27,7 @@ const OPTIONAL_TABLES = [
   { key: "prompts", sinceVersion: 7 },
   { key: "linkedin_posts", sinceVersion: 8 },
   { key: "object_links", sinceVersion: 9 },
+  { key: "week_reviews", sinceVersion: 10 },
 ];
 const REQUIRED_TABLES = ["tasks", "invoices", "areas"];
 
@@ -65,6 +66,7 @@ function buildBackup() {
     prompts: db.prepare("SELECT * FROM prompts").all(),
     linkedin_posts: db.prepare("SELECT * FROM linkedin_posts").all(),
     object_links: db.prepare("SELECT * FROM object_links").all(),
+    week_reviews: db.prepare("SELECT * FROM week_reviews").all(),
     settings,
   };
 }
@@ -117,8 +119,9 @@ function validateBackup(data) {
     // würde jede Zeile fälschlich als "Bereich undefined nicht definiert"
     // abgelehnt, weil healthEntrySchema kein area-Feld hat. object_links
     // verknüpft andere Objekte über deren eigene ID, hat selbst aber keinen
-    // Bereich - dasselbe gilt hier.
-    if (table === "areas" || table === "health_entries" || table === "object_links") continue;
+    // Bereich - dasselbe gilt hier. week_reviews fasst über alle Bereiche
+    // hinweg zusammen (siehe README-Begründung bei health_entries).
+    if (table === "areas" || table === "health_entries" || table === "object_links" || table === "week_reviews") continue;
     const dangling = findDanglingAreaRef(table, clean[table], areaIds);
     if (dangling) return { ok: false, error: dangling };
   }
@@ -165,6 +168,7 @@ backupRouter.post("/preview", backupJsonParser, (req, res) => {
       prompts: data.prompts?.length || 0,
       linkedin_posts: data.linkedin_posts?.length || 0,
       object_links: data.object_links?.length || 0,
+      week_reviews: data.week_reviews?.length || 0,
       settings: Object.keys(data.settings).length,
     },
   });
@@ -207,6 +211,7 @@ backupRouter.post("/restore", backupJsonParser, (req, res) => {
     if (data.prompts) db.exec("DELETE FROM prompts;");
     if (data.linkedin_posts) db.exec("DELETE FROM linkedin_posts;");
     if (data.object_links) db.exec("DELETE FROM object_links;");
+    if (data.week_reviews) db.exec("DELETE FROM week_reviews;");
 
     const insertArea = db.prepare(
       "INSERT INTO areas (id, label, color, sort_order, is_default, archived, created_at, updated_at) VALUES (@id, @label, @color, @sort_order, @is_default, @archived, @created_at, @updated_at)",
@@ -298,6 +303,15 @@ backupRouter.post("/restore", backupJsonParser, (req, res) => {
          VALUES (@id, @a_type, @a_id, @b_type, @b_id, @created_at)`,
       );
       for (const link of data.object_links) insertLink.run(link);
+    }
+
+    if (data.week_reviews) {
+      const insertReview = db.prepare(
+        `INSERT INTO week_reviews (id, week_start, closed_at, summary) VALUES (@id, @week_start, @closed_at, @summary)`,
+      );
+      for (const review of data.week_reviews) {
+        insertReview.run({ ...review, summary: typeof review.summary === "string" ? review.summary : JSON.stringify(review.summary) });
+      }
     }
 
     for (const [key, value] of Object.entries(data.settings)) {

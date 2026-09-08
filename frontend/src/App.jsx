@@ -16,6 +16,7 @@ import { Gesundheit } from "./pages/Gesundheit";
 import { PromptBibliothek } from "./pages/PromptBibliothek";
 import { LinkedIn } from "./pages/LinkedIn";
 import { Fokus } from "./pages/Fokus";
+import { Wochenrueckblick } from "./pages/Wochenrueckblick";
 import { Onboarding } from "./pages/Onboarding";
 import { Layout } from "./components/Layout";
 
@@ -104,6 +105,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Fokus />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/wochenrueckblick"
+        element={
+          <ProtectedRoute>
+            <Wochenrueckblick />
           </ProtectedRoute>
         }
       />

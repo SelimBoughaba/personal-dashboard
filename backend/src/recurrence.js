@@ -27,6 +27,25 @@ export function todayIso() {
   return toIso(new Date());
 }
 
+// Allgemeine, komponentenbasierte Datumsarithmetik (nicht nur für
+// wiederkehrende Aufgaben) - z. B. für den Wochenrückblick (Punkt 68), um
+// Wochengrenzen zu berechnen, ohne dieselbe Millisekunden-Falle erneut
+// einzubauen.
+export function addDays(dateIso, days) {
+  const d = parseIso(dateIso);
+  d.setDate(d.getDate() + days);
+  return toIso(d);
+}
+
+// Montag der Woche, in der das Datum liegt (deutsche Wochenkonvention).
+export function startOfWeek(dateIso) {
+  const d = parseIso(dateIso);
+  const day = d.getDay(); // 0=So, 1=Mo, ..., 6=Sa
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diffToMonday);
+  return toIso(d);
+}
+
 // "Monatsende testen" (Punkt 66): 31. Januar + 1 Monat ist der 28./29.
 // Februar, nicht (wie JS' naives setMonth es liefern würde) der 2./3. März.
 // Der Ziel-Tag wird auf die tatsächliche Länge des Zielmonats begrenzt.

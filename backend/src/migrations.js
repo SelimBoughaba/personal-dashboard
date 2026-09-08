@@ -359,6 +359,25 @@ const MIGRATIONS = [
       `);
     },
   },
+  {
+    // Wochenrückblick (Punkt 68): nur der ABGESCHLOSSENE Rückblick wird
+    // gespeichert, und auch dann nur als datensparsamer Snapshot (Zahlen +
+    // Kurztitel, siehe routes/weekReviews.js) - nicht die vollständigen
+    // Aufgaben-/Rechnungsobjekte dieser Woche. Ein noch offener Rückblick
+    // wird jedes Mal frisch aus tasks/invoices/contracts/Kalender
+    // berechnet, landet also gar nicht in dieser Tabelle.
+    id: "0018_week_reviews_table",
+    up(db) {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS week_reviews (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          week_start TEXT NOT NULL UNIQUE,
+          closed_at TEXT NOT NULL DEFAULT (datetime('now')),
+          summary TEXT NOT NULL
+        );
+      `);
+    },
+  },
 ];
 
 export function runMigrations(db) {

@@ -243,6 +243,17 @@ export const objectLinkSchema = z.object({
   created_at: timestamp,
 });
 
+// summary ist bewusst nur als Text validiert (nicht als konkretes Objekt-
+// Schema mit einzeln geprüften Feldern) - der Snapshot-Inhalt ist reine
+// Anzeige-/Nachvollziehbarkeitsinformation (Punkt 68), keine Daten, die an
+// anderer Stelle referenziert oder wieder eingespielt würden.
+export const weekReviewSchema = z.object({
+  id,
+  week_start: dateOnly,
+  closed_at: timestamp,
+  summary: longText(20000),
+});
+
 // Settings: Auth-/Session-Secrets sind nie Teil eines gewöhnlichen Backups
 // (siehe routes/backup.js) – dieses Schema läuft daher nur über das, was
 // buildBackup() tatsächlich exportiert (Auth-Schlüssel dort bereits
@@ -262,6 +273,7 @@ export const TABLE_SCHEMAS = {
   prompts: promptSchema,
   linkedin_posts: linkedinPostSchema,
   object_links: objectLinkSchema,
+  week_reviews: weekReviewSchema,
 };
 
 // Validiert eine Tabelle vollständig und gibt entweder die geparsten
