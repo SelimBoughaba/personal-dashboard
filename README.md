@@ -2,8 +2,9 @@
 
 Lokales Dashboard für Aufgaben, Kalender, Finanzen und mehr – läuft nur im
 eigenen Heimnetz, kein öffentliches Hosting, keine Pflicht-Cloud-Dienste.
-Design orientiert sich an der Evermont-Markenidentität (Waldgrün, Ivory,
-Lime-Akzente, Manrope).
+Design: Nachtblau-Farbsystem, flache Geometrie (keine Glasflächen), Manrope
+(siehe „Design-Erweiterung (Paket B)" unten – löste das ursprüngliche
+Waldgrün/Glas-Design ab).
 
 **Stand:** Etappe 14 – Erweiterte Kalender- und Aufgabenansichten. Der
 Kalender hat jetzt zusätzlich zu Tag/Woche eine Monatsansicht sowie echte
@@ -79,9 +80,37 @@ Code und wurden bewusst nicht geforct) sowie vier Routen (Aufgaben,
 Verträge, Ziele, LinkedIn-Beiträge) auf gemeinsame Zod-Validierung
 umgestellt – dabei einen echten Bug gefunden und behoben, bei dem
 Notizen/Prompts sich per Teil-Update auf komplett leeren Titel/Inhalt
-setzen ließen. `cd backend && npm test` führt die inzwischen 46
-automatisierten Backend-Tests aus, `cd frontend && npm test` 4 weitere
-für die Zeitzonen-Korrektur.
+setzen ließen.
+
+**Design-Erweiterung (Paket B):** Neues Nachtblau-Farbsystem, eine klare
+Typografie-Skala und flache Geometrie (keine Glasflächen mehr) ersetzen
+das bisherige Waldgrün/Glas-Design. Die Übersicht zeigt jetzt eine
+Tageslinie (Termine/Fristen chronologisch in einer Spalte) statt einer
+Kachelwand, mit einer Vorgangsakte für Details zu einzelnen Einträgen.
+Rechnungen haben eine Kostenverlauf-Grafik. Gespeicherte Arbeitsansichten
+(Filterkombinationen benennen und pinnen) sowie Kontextlinks (manuell
+gesetzte, sichtbare Verknüpfungen zwischen Aufgaben, Rechnungen,
+Dokumenten, Verträgen, Zielen und Notizen) ergänzen mehrere Module.
+
+**Arbeitsabläufe (Paket C):** Aufgaben können jetzt wiederkehren
+(täglich/wöchentlich/monatlich, mit einer Rückstands-Deckelung statt
+unkontrollierter Serien-Nachholung nach längerer Abwesenheit). Ziele
+lassen sich mit anderen Objekten verknüpfen und bekommen einen selbst
+gewählten Überprüfungsturnus. Ein Fokusmodus (rein lokal, kein
+verstecktes Tracking, keine Streaks) sowie ein Wochenrückblick (reine
+Zählungen/Kurztitel aus echten Daten statt motivationaler KI-Erzählung;
+ein abgeschlossener Rückblick wird als datensparsamer, unveränderlicher
+Snapshot gespeichert) helfen beim Innehalten. Ein Benachrichtigungszentrum
+bündelt Fristen, Hintergrundereignisse und Integrationsfehler mit
+Ruhezeiten, Kategorie-Steuerung und optionalen (standardmäßig
+vorschau-freien) nativen Mitteilungen. Ein lokaler Papierkorb macht
+„Löschen" auf den acht wichtigen Inhaltstypen 30 Tage lang rückgängig
+machbar (bei Dokumenten inklusive der zugehörigen Datei), danach wird
+automatisch endgültig aufgeräumt – ohne eigenen Hintergrunddienst.
+
+`cd backend && npm test` führt die inzwischen 102 automatisierten
+Backend-Tests aus, `cd frontend && npm test` 4 weitere für die
+Zeitzonen-Korrektur.
 
 ## Projektstruktur
 
