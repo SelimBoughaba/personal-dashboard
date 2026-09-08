@@ -15,6 +15,7 @@ import { Notizen } from "./pages/Notizen";
 import { Gesundheit } from "./pages/Gesundheit";
 import { PromptBibliothek } from "./pages/PromptBibliothek";
 import { LinkedIn } from "./pages/LinkedIn";
+import { Fokus } from "./pages/Fokus";
 import { Onboarding } from "./pages/Onboarding";
 import { Layout } from "./components/Layout";
 
@@ -95,6 +96,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Ziele />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/fokus"
+        element={
+          <ProtectedRoute>
+            <Fokus />
           </ProtectedRoute>
         }
       />

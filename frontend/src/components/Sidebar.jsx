@@ -107,6 +107,7 @@ const NAV_ITEMS = [
 ];
 
 const MORE_ITEMS = [
+  { label: "Fokus", path: "/fokus", enabled: true },
   { label: "E-Mail", path: "/mail", enabled: true },
   { label: "Verträge & Abos", path: "/vertraege", enabled: true },
   { label: "Gesundheit", path: "/gesundheit", enabled: true },
