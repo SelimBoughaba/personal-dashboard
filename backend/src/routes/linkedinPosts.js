@@ -30,10 +30,10 @@ function validateInput(body, options) {
 
 linkedinPostsRouter.get("/", (req, res) => {
   const { status } = req.query;
-  let query = "SELECT * FROM linkedin_posts";
+  let query = "SELECT * FROM linkedin_posts WHERE deleted_at IS NULL";
   const params = [];
   if (status && status !== "alle") {
-    query += " WHERE status = ?";
+    query += " AND status = ?";
     params.push(status);
   }
   query += " ORDER BY scheduled_date IS NULL, scheduled_date ASC, created_at DESC";
@@ -59,7 +59,7 @@ linkedinPostsRouter.post("/", (req, res) => {
 });
 
 linkedinPostsRouter.patch("/:id", (req, res) => {
-  const existing = db.prepare("SELECT * FROM linkedin_posts WHERE id = ?").get(req.params.id);
+  const existing = db.prepare("SELECT * FROM linkedin_posts WHERE id = ? AND deleted_at IS NULL").get(req.params.id);
   if (!existing) return res.status(404).json({ error: "Beitrag nicht gefunden." });
 
   const { data, errors } = validateInput(req.body, { partial: true });
@@ -75,7 +75,10 @@ linkedinPostsRouter.patch("/:id", (req, res) => {
 });
 
 linkedinPostsRouter.delete("/:id", (req, res) => {
-  const info = db.prepare("DELETE FROM linkedin_posts WHERE id = ?").run(req.params.id);
+  // Papierkorb (Punkt 77): Soft-Delete statt echtem DELETE, siehe trash.js.
+  const info = db
+    .prepare("UPDATE linkedin_posts SET deleted_at = datetime('now') WHERE id = ? AND deleted_at IS NULL")
+    .run(req.params.id);
   if (info.changes === 0) return res.status(404).json({ error: "Beitrag nicht gefunden." });
   res.status(204).send();
 });

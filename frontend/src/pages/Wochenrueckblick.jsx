@@ -124,7 +124,7 @@ export function Wochenrueckblick() {
   }
 
   async function cancelTask(taskId) {
-    if (!window.confirm("Diese Aufgabe wirklich abbrechen (löschen)?")) return;
+    if (!window.confirm("Diese Aufgabe abbrechen und in den Papierkorb verschieben? Dort 30 Tage wiederherstellbar.")) return;
     await run(`cancel-${taskId}`, async () => {
       await apiFetch(`/tasks/${taskId}`, { method: "DELETE" });
       await load();

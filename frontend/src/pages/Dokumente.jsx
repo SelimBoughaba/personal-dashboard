@@ -129,7 +129,7 @@ export function Dokumente() {
   }
 
   async function deleteDocument(id) {
-    if (!window.confirm("Dieses Dokument wirklich löschen? Die Datei wird dabei unwiderruflich vom Server entfernt.")) return;
+    if (!window.confirm("Dieses Dokument in den Papierkorb verschieben? Dort 30 Tage wiederherstellbar, danach wird auch die Datei endgültig entfernt.")) return;
     await run(`delete-${id}`, async () => {
       await apiFetch(`/documents/${id}`, { method: "DELETE" });
       await load();

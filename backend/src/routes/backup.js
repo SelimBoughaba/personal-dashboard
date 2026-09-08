@@ -237,20 +237,20 @@ backupRouter.post("/restore", backupJsonParser, (req, res) => {
     for (const area of data.areas) insertArea.run(area);
 
     const insertTask = db.prepare(
-      "INSERT INTO tasks (id, title, notes, due_date, priority, area, status, created_at, updated_at, recurrence) VALUES (@id, @title, @notes, @due_date, @priority, @area, @status, @created_at, @updated_at, @recurrence)",
+      "INSERT INTO tasks (id, title, notes, due_date, priority, area, status, created_at, updated_at, recurrence, deleted_at) VALUES (@id, @title, @notes, @due_date, @priority, @area, @status, @created_at, @updated_at, @recurrence, @deleted_at)",
     );
     for (const task of data.tasks) insertTask.run(task);
 
     const insertInvoice = db.prepare(
-      `INSERT INTO invoices (id, mail_ref, sender, sender_name, subject, file_name, amount, due_date, area, status, received_at, created_at, updated_at, source, confirmed)
-       VALUES (@id, @mail_ref, @sender, @sender_name, @subject, @file_name, @amount, @due_date, @area, @status, @received_at, @created_at, @updated_at, @source, @confirmed)`,
+      `INSERT INTO invoices (id, mail_ref, sender, sender_name, subject, file_name, amount, due_date, area, status, received_at, created_at, updated_at, source, confirmed, deleted_at)
+       VALUES (@id, @mail_ref, @sender, @sender_name, @subject, @file_name, @amount, @due_date, @area, @status, @received_at, @created_at, @updated_at, @source, @confirmed, @deleted_at)`,
     );
     for (const invoice of data.invoices) insertInvoice.run(invoice);
 
     if (data.documents) {
       const insertDocument = db.prepare(
-        `INSERT INTO documents (id, title, file_name, stored_name, mime_type, size, area, tags, created_at, updated_at)
-         VALUES (@id, @title, @file_name, @stored_name, @mime_type, @size, @area, @tags, @created_at, @updated_at)`,
+        `INSERT INTO documents (id, title, file_name, stored_name, mime_type, size, area, tags, created_at, updated_at, deleted_at)
+         VALUES (@id, @title, @file_name, @stored_name, @mime_type, @size, @area, @tags, @created_at, @updated_at, @deleted_at)`,
       );
       for (const document of data.documents) {
         insertDocument.run({ ...document, tags: typeof document.tags === "string" ? document.tags : JSON.stringify(document.tags) });
@@ -259,16 +259,16 @@ backupRouter.post("/restore", backupJsonParser, (req, res) => {
 
     if (data.contracts) {
       const insertContract = db.prepare(
-        `INSERT INTO contracts (id, title, provider, area, cost, billing_cycle, cancellation_period_days, next_renewal_date, status, notes, created_at, updated_at)
-         VALUES (@id, @title, @provider, @area, @cost, @billing_cycle, @cancellation_period_days, @next_renewal_date, @status, @notes, @created_at, @updated_at)`,
+        `INSERT INTO contracts (id, title, provider, area, cost, billing_cycle, cancellation_period_days, next_renewal_date, status, notes, created_at, updated_at, deleted_at)
+         VALUES (@id, @title, @provider, @area, @cost, @billing_cycle, @cancellation_period_days, @next_renewal_date, @status, @notes, @created_at, @updated_at, @deleted_at)`,
       );
       for (const contract of data.contracts) insertContract.run(contract);
     }
 
     if (data.goals) {
       const insertGoal = db.prepare(
-        `INSERT INTO goals (id, title, description, area, target_date, status, progress, milestones, created_at, updated_at, review_freq, next_review_date)
-         VALUES (@id, @title, @description, @area, @target_date, @status, @progress, @milestones, @created_at, @updated_at, @review_freq, @next_review_date)`,
+        `INSERT INTO goals (id, title, description, area, target_date, status, progress, milestones, created_at, updated_at, review_freq, next_review_date, deleted_at)
+         VALUES (@id, @title, @description, @area, @target_date, @status, @progress, @milestones, @created_at, @updated_at, @review_freq, @next_review_date, @deleted_at)`,
       );
       for (const goal of data.goals) {
         insertGoal.run({ ...goal, milestones: typeof goal.milestones === "string" ? goal.milestones : JSON.stringify(goal.milestones) });
@@ -277,8 +277,8 @@ backupRouter.post("/restore", backupJsonParser, (req, res) => {
 
     if (data.notes) {
       const insertNote = db.prepare(
-        `INSERT INTO notes (id, title, content, area, tags, pinned, created_at, updated_at)
-         VALUES (@id, @title, @content, @area, @tags, @pinned, @created_at, @updated_at)`,
+        `INSERT INTO notes (id, title, content, area, tags, pinned, created_at, updated_at, deleted_at)
+         VALUES (@id, @title, @content, @area, @tags, @pinned, @created_at, @updated_at, @deleted_at)`,
       );
       for (const note of data.notes) {
         insertNote.run({ ...note, tags: typeof note.tags === "string" ? note.tags : JSON.stringify(note.tags) });
@@ -295,8 +295,8 @@ backupRouter.post("/restore", backupJsonParser, (req, res) => {
 
     if (data.prompts) {
       const insertPrompt = db.prepare(
-        `INSERT INTO prompts (id, title, content, area, tags, pinned, created_at, updated_at)
-         VALUES (@id, @title, @content, @area, @tags, @pinned, @created_at, @updated_at)`,
+        `INSERT INTO prompts (id, title, content, area, tags, pinned, created_at, updated_at, deleted_at)
+         VALUES (@id, @title, @content, @area, @tags, @pinned, @created_at, @updated_at, @deleted_at)`,
       );
       for (const prompt of data.prompts) {
         insertPrompt.run({ ...prompt, tags: typeof prompt.tags === "string" ? prompt.tags : JSON.stringify(prompt.tags) });
@@ -305,8 +305,8 @@ backupRouter.post("/restore", backupJsonParser, (req, res) => {
 
     if (data.linkedin_posts) {
       const insertPost = db.prepare(
-        `INSERT INTO linkedin_posts (id, content, area, status, scheduled_date, created_at, updated_at)
-         VALUES (@id, @content, @area, @status, @scheduled_date, @created_at, @updated_at)`,
+        `INSERT INTO linkedin_posts (id, content, area, status, scheduled_date, created_at, updated_at, deleted_at)
+         VALUES (@id, @content, @area, @status, @scheduled_date, @created_at, @updated_at, @deleted_at)`,
       );
       for (const post of data.linkedin_posts) insertPost.run(post);
     }

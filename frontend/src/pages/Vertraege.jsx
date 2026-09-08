@@ -105,7 +105,7 @@ export function Vertraege() {
   }
 
   async function deleteContract(id) {
-    if (!window.confirm("Diesen Vertrag wirklich löschen?")) return;
+    if (!window.confirm("Diesen Vertrag in den Papierkorb verschieben? Dort 30 Tage wiederherstellbar.")) return;
     await run(`delete-${id}`, async () => {
       await apiFetch(`/contracts/${id}`, { method: "DELETE" });
       await load();

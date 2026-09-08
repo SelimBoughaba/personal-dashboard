@@ -51,3 +51,23 @@ export const LINK_OBJECT_TYPES = Object.keys(LINK_OBJECT_TABLES);
 // notifications.js), diese Kategorien gelten nur für gespeicherte
 // Ereignisse.
 export const NOTIFICATION_EVENT_CATEGORIES = ["background", "integration_error"];
+
+// Papierkorb (Punkt 77): die acht Tabellen, deren "Löschen" jetzt ein
+// Soft-Delete ist (deleted_at, siehe Migration 0020) statt eines echten
+// DELETE. Bewusst NICHT dabei: areas (strukturelle Konfiguration, kein
+// Inhalt), health_entries (bereits sehr niedrigschwellige Einzelwerte),
+// object_links (reine Verknüpfungs-Zeiger, kein eigenständiges Objekt).
+// titleColumn dient nur der Anzeige im Papierkorb - bei linkedin_posts gibt
+// es keinen echten Titel, "content" wird dort in trash.js gekürzt gezeigt.
+export const TRASH_TABLES = {
+  aufgabe: { table: "tasks", titleColumn: "title", label: "Aufgabe" },
+  rechnung: { table: "invoices", titleColumn: "subject", label: "Rechnung" },
+  dokument: { table: "documents", titleColumn: "title", label: "Dokument" },
+  vertrag: { table: "contracts", titleColumn: "title", label: "Vertrag" },
+  ziel: { table: "goals", titleColumn: "title", label: "Ziel" },
+  notiz: { table: "notes", titleColumn: "title", label: "Notiz" },
+  prompt: { table: "prompts", titleColumn: "title", label: "Prompt" },
+  linkedin_beitrag: { table: "linkedin_posts", titleColumn: "content", label: "LinkedIn-Beitrag" },
+};
+export const TRASH_TYPES = Object.keys(TRASH_TABLES);
+export const TRASH_RETENTION_DAYS = 30;

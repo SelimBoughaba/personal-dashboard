@@ -8,9 +8,13 @@ function isValidType(type) {
   return Object.prototype.hasOwnProperty.call(LINK_OBJECT_TABLES, type);
 }
 
+// deleted_at IS NULL: alle sechs verlinkbaren Tabellen sind auch
+// TRASH_TABLES (Punkt 77) - ein im Papierkorb liegendes Objekt gilt hier
+// wie gelöscht, sonst ließe sich neu auf etwas verlinken, das gerade nicht
+// mehr sichtbar/aktiv ist.
 function existsById(type, id) {
   const { table } = LINK_OBJECT_TABLES[type];
-  return !!db.prepare(`SELECT 1 FROM ${table} WHERE id = ?`).get(id);
+  return !!db.prepare(`SELECT 1 FROM ${table} WHERE id = ? AND deleted_at IS NULL`).get(id);
 }
 
 // GET /api/links?type=aufgabe&id=5 - alle Verknüpfungen eines Objekts, mit
@@ -37,8 +41,10 @@ linksRouter.get("/", (req, res) => {
       const otherId = isA ? row.b_id : row.a_id;
       const def = LINK_OBJECT_TABLES[otherType];
       if (!def) return null; // Typ aus einer neueren Version, hier unbekannt
-      const other = db.prepare(`SELECT id, ${def.titleColumn} AS title FROM ${def.table} WHERE id = ?`).get(otherId);
-      if (!other) return null; // verlinktes Objekt wurde gelöscht
+      const other = db
+        .prepare(`SELECT id, ${def.titleColumn} AS title FROM ${def.table} WHERE id = ? AND deleted_at IS NULL`)
+        .get(otherId);
+      if (!other) return null; // verlinktes Objekt wurde gelöscht (oder liegt im Papierkorb)
       return { linkId: row.id, type: otherType, id: other.id, title: other.title || "(ohne Titel)" };
     })
     .filter(Boolean);

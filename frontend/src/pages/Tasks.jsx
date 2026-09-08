@@ -151,8 +151,8 @@ export function Tasks() {
     // vor dem Klick klarmachen, nicht erst hinterher überraschen.
     const message =
       task?.recurrence && task.status !== "erledigt"
-        ? "Dieses Vorkommen wird übersprungen, die Wiederholung läuft weiter (nächster Termin wird direkt angelegt). Wirklich löschen?"
-        : "Diese Aufgabe wirklich löschen?";
+        ? "Dieses Vorkommen wird übersprungen, die Wiederholung läuft weiter (nächster Termin wird direkt angelegt). In den Papierkorb verschieben (30 Tage wiederherstellbar)?"
+        : "Diese Aufgabe in den Papierkorb verschieben? Dort 30 Tage wiederherstellbar.";
     if (!window.confirm(message)) return;
     await run(`delete-${id}`, async () => {
       await apiFetch(`/tasks/${id}`, { method: "DELETE" });

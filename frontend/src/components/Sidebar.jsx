@@ -111,6 +111,7 @@ const MORE_ITEMS = [
   { label: "Fokus", path: "/fokus", enabled: true },
   { label: "Wochenrückblick", path: "/wochenrueckblick", enabled: true },
   { label: "Benachrichtigungen", path: "/benachrichtigungen", enabled: true },
+  { label: "Papierkorb", path: "/papierkorb", enabled: true },
   { label: "E-Mail", path: "/mail", enabled: true },
   { label: "Verträge & Abos", path: "/vertraege", enabled: true },
   { label: "Gesundheit", path: "/gesundheit", enabled: true },

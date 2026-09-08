@@ -66,7 +66,7 @@ export function LinkedIn() {
   }
 
   async function deletePost(id) {
-    if (!window.confirm("Diesen Beitrag wirklich löschen?")) return;
+    if (!window.confirm("Diesen Beitrag in den Papierkorb verschieben? Dort 30 Tage wiederherstellbar.")) return;
     await run(`delete-${id}`, async () => {
       await apiFetch(`/linkedin-posts/${id}`, { method: "DELETE" });
       await load();

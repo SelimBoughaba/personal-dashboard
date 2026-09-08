@@ -121,11 +121,11 @@ function spawnNextOccurrence(sourceRow) {
 // GET /api/tasks?area=evermont&sort=priority
 tasksRouter.get("/", (req, res) => {
   const { area, sort } = req.query;
-  let query = "SELECT * FROM tasks";
+  let query = "SELECT * FROM tasks WHERE deleted_at IS NULL";
   const params = [];
 
   if (area && area !== "alle") {
-    query += " WHERE area = ?";
+    query += " AND area = ?";
     params.push(area);
   }
 
@@ -162,7 +162,7 @@ tasksRouter.post("/", (req, res) => {
 });
 
 tasksRouter.patch("/:id", (req, res) => {
-  const existing = db.prepare("SELECT * FROM tasks WHERE id = ?").get(req.params.id);
+  const existing = db.prepare("SELECT * FROM tasks WHERE id = ? AND deleted_at IS NULL").get(req.params.id);
   if (!existing) return res.status(404).json({ error: "Aufgabe nicht gefunden." });
 
   const { data, errors } = validateTaskInput(req.body, { partial: true });
@@ -189,11 +189,16 @@ tasksRouter.patch("/:id", (req, res) => {
 });
 
 tasksRouter.delete("/:id", (req, res) => {
-  const existing = db.prepare("SELECT * FROM tasks WHERE id = ?").get(req.params.id);
+  const existing = db.prepare("SELECT * FROM tasks WHERE id = ? AND deleted_at IS NULL").get(req.params.id);
   if (!existing) return res.status(404).json({ error: "Aufgabe nicht gefunden." });
 
   if (existing.status !== "erledigt") spawnNextOccurrence(existing);
 
-  db.prepare("DELETE FROM tasks WHERE id = ?").run(req.params.id);
+  // Papierkorb (Punkt 77): Soft-Delete statt echtem DELETE - die Zeile
+  // bleibt innerhalb der Aufbewahrungsfrist wiederherstellbar (siehe
+  // trash.js). Alle GET/PATCH-Abfragen dieser Route filtern deleted_at
+  // IS NULL, eine im Papierkorb liegende Aufgabe ist also überall sonst
+  // wie gelöscht.
+  db.prepare("UPDATE tasks SET deleted_at = datetime('now') WHERE id = ?").run(req.params.id);
   res.status(204).send();
 });

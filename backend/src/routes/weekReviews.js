@@ -24,21 +24,21 @@ async function computeWeek(weekStart) {
   const nextWeekEnd = addDays(weekEnd, 7);
 
   const completed = db
-    .prepare(`SELECT id, title FROM tasks WHERE status = 'erledigt' AND date(updated_at) BETWEEN ? AND ? ORDER BY updated_at`)
+    .prepare(`SELECT id, title FROM tasks WHERE deleted_at IS NULL AND status = 'erledigt' AND date(updated_at) BETWEEN ? AND ? ORDER BY updated_at`)
     .all(weekStart, weekEnd);
 
   const leftover = db
-    .prepare(`SELECT id, title, due_date FROM tasks WHERE status = 'offen' AND due_date IS NOT NULL AND due_date <= ? ORDER BY due_date`)
+    .prepare(`SELECT id, title, due_date FROM tasks WHERE deleted_at IS NULL AND status = 'offen' AND due_date IS NOT NULL AND due_date <= ? ORDER BY due_date`)
     .all(weekEnd);
 
   const upcomingTasks = db
-    .prepare(`SELECT id, title, due_date FROM tasks WHERE status = 'offen' AND due_date BETWEEN ? AND ?`)
+    .prepare(`SELECT id, title, due_date FROM tasks WHERE deleted_at IS NULL AND status = 'offen' AND due_date BETWEEN ? AND ?`)
     .all(nextWeekStart, nextWeekEnd);
   const upcomingInvoices = db
-    .prepare(`SELECT id, subject, sender_name, due_date FROM invoices WHERE status = 'offen' AND due_date BETWEEN ? AND ?`)
+    .prepare(`SELECT id, subject, sender_name, due_date FROM invoices WHERE deleted_at IS NULL AND status = 'offen' AND due_date BETWEEN ? AND ?`)
     .all(nextWeekStart, nextWeekEnd);
   const upcomingContracts = db
-    .prepare(`SELECT id, title, next_renewal_date FROM contracts WHERE next_renewal_date BETWEEN ? AND ?`)
+    .prepare(`SELECT id, title, next_renewal_date FROM contracts WHERE deleted_at IS NULL AND next_renewal_date BETWEEN ? AND ?`)
     .all(nextWeekStart, nextWeekEnd);
 
   const upcomingDeadlines = [

@@ -412,6 +412,28 @@ const MIGRATIONS = [
       `);
     },
   },
+  {
+    // Papierkorb (Punkt 77): "Löschen" auf den acht wichtigen Inhaltstypen
+    // setzt ab jetzt nur noch deleted_at statt die Zeile wirklich zu
+    // entfernen - siehe trash.js für die Wiederherstellungs-/Aufbewahrungs-
+    // logik. health_entries/areas/object_links bleiben bewusst außen vor
+    // (siehe trash.js-Kommentar). NULL bleibt der Normalzustand (aktiv,
+    // nicht im Papierkorb) - jede bestehende Zeile bleibt dadurch unverändert
+    // sichtbar, kein Backfill nötig.
+    id: "0020_trash_columns",
+    up(db) {
+      db.exec(`
+        ALTER TABLE tasks ADD COLUMN deleted_at TEXT;
+        ALTER TABLE invoices ADD COLUMN deleted_at TEXT;
+        ALTER TABLE documents ADD COLUMN deleted_at TEXT;
+        ALTER TABLE contracts ADD COLUMN deleted_at TEXT;
+        ALTER TABLE goals ADD COLUMN deleted_at TEXT;
+        ALTER TABLE notes ADD COLUMN deleted_at TEXT;
+        ALTER TABLE prompts ADD COLUMN deleted_at TEXT;
+        ALTER TABLE linkedin_posts ADD COLUMN deleted_at TEXT;
+      `);
+    },
+  },
 ];
 
 export function runMigrations(db) {

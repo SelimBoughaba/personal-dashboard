@@ -34,7 +34,7 @@ function serialize(row) {
 documentsRouter.get("/", (req, res) => {
   const { area, tag, q } = req.query;
   let query = "SELECT * FROM documents";
-  const clauses = [];
+  const clauses = ["deleted_at IS NULL"];
   const params = [];
 
   if (area && area !== "alle") {
@@ -103,7 +103,7 @@ documentsRouter.post("/", upload.single("file"), (req, res) => {
 });
 
 documentsRouter.get("/:id/download", (req, res) => {
-  const doc = db.prepare("SELECT * FROM documents WHERE id = ?").get(req.params.id);
+  const doc = db.prepare("SELECT * FROM documents WHERE id = ? AND deleted_at IS NULL").get(req.params.id);
   if (!doc) return res.status(404).json({ error: "Dokument nicht gefunden." });
 
   // stored_name kommt aus der DB, nicht direkt vom Client – trotzdem wird
@@ -123,7 +123,7 @@ documentsRouter.get("/:id/download", (req, res) => {
 });
 
 documentsRouter.patch("/:id", (req, res) => {
-  const existing = db.prepare("SELECT * FROM documents WHERE id = ?").get(req.params.id);
+  const existing = db.prepare("SELECT * FROM documents WHERE id = ? AND deleted_at IS NULL").get(req.params.id);
   if (!existing) return res.status(404).json({ error: "Dokument nicht gefunden." });
 
   const body = req.body || {};
@@ -149,21 +149,14 @@ documentsRouter.patch("/:id", (req, res) => {
 });
 
 documentsRouter.delete("/:id", (req, res) => {
-  const doc = db.prepare("SELECT * FROM documents WHERE id = ?").get(req.params.id);
-  if (!doc) return res.status(404).json({ error: "Dokument nicht gefunden." });
-
-  const filePath = resolveStoredDocumentPath(doc.stored_name);
-  db.prepare("DELETE FROM documents WHERE id = ?").run(req.params.id);
-  if (filePath) {
-    fs.unlink(filePath, (err) => {
-      if (err && err.code !== "ENOENT") {
-        console.error(`Datei zu Dokument ${doc.id} konnte nicht gelöscht werden:`, err);
-      }
-    });
-  } else {
-    console.error(`Dokument ${doc.id}: ungültiger stored_name "${doc.stored_name}", Datei nicht gelöscht.`);
-  }
-
+  // Papierkorb (Punkt 77): Soft-Delete statt echtem DELETE - die Datei
+  // bleibt bewusst auf der Platte liegen (siehe trash.js), solange der
+  // Datensatz wiederherstellbar ist. Nur das endgültige Löschen im
+  // Papierkorb (routes/trash.js) entfernt die Datei wirklich.
+  const info = db
+    .prepare("UPDATE documents SET deleted_at = datetime('now') WHERE id = ? AND deleted_at IS NULL")
+    .run(req.params.id);
+  if (info.changes === 0) return res.status(404).json({ error: "Dokument nicht gefunden." });
   res.status(204).send();
 });
 

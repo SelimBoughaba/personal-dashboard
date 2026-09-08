@@ -103,7 +103,7 @@ function validateGoalInput(body, options) {
 goalsRouter.get("/", (req, res) => {
   const { area, status } = req.query;
   let query = "SELECT * FROM goals";
-  const clauses = [];
+  const clauses = ["deleted_at IS NULL"];
   const params = [];
 
   if (area && area !== "alle") {
@@ -157,7 +157,7 @@ goalsRouter.post("/", (req, res) => {
 });
 
 goalsRouter.patch("/:id", (req, res) => {
-  const existing = db.prepare("SELECT * FROM goals WHERE id = ?").get(req.params.id);
+  const existing = db.prepare("SELECT * FROM goals WHERE id = ? AND deleted_at IS NULL").get(req.params.id);
   if (!existing) return res.status(404).json({ error: "Ziel nicht gefunden." });
 
   const { data, errors } = validateGoalInput(req.body, { partial: true });
@@ -209,7 +209,7 @@ goalsRouter.patch("/:id", (req, res) => {
 // DST-/Monatsende-sichere Arithmetik wie bei wiederkehrenden Aufgaben),
 // nicht vom Client vorgerechnet und einfach übernommen.
 goalsRouter.post("/:id/mark-reviewed", (req, res) => {
-  const existing = db.prepare("SELECT * FROM goals WHERE id = ?").get(req.params.id);
+  const existing = db.prepare("SELECT * FROM goals WHERE id = ? AND deleted_at IS NULL").get(req.params.id);
   if (!existing) return res.status(404).json({ error: "Ziel nicht gefunden." });
   if (!existing.review_freq) return res.status(400).json({ error: "Kein Überprüfungsturnus festgelegt." });
 
@@ -224,7 +224,8 @@ goalsRouter.post("/:id/mark-reviewed", (req, res) => {
 });
 
 goalsRouter.delete("/:id", (req, res) => {
-  const info = db.prepare("DELETE FROM goals WHERE id = ?").run(req.params.id);
+  // Papierkorb (Punkt 77): Soft-Delete statt echtem DELETE, siehe trash.js.
+  const info = db.prepare("UPDATE goals SET deleted_at = datetime('now') WHERE id = ? AND deleted_at IS NULL").run(req.params.id);
   if (info.changes === 0) return res.status(404).json({ error: "Ziel nicht gefunden." });
   res.status(204).send();
 });

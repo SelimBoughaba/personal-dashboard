@@ -24,7 +24,7 @@ function cleanTags(input) {
 promptsRouter.get("/", (req, res) => {
   const { area, tag, q } = req.query;
   let query = "SELECT * FROM prompts";
-  const clauses = [];
+  const clauses = ["deleted_at IS NULL"];
   const params = [];
 
   if (area && area !== "alle") {
@@ -68,7 +68,7 @@ promptsRouter.post("/", (req, res) => {
 });
 
 promptsRouter.patch("/:id", (req, res) => {
-  const existing = db.prepare("SELECT * FROM prompts WHERE id = ?").get(req.params.id);
+  const existing = db.prepare("SELECT * FROM prompts WHERE id = ? AND deleted_at IS NULL").get(req.params.id);
   if (!existing) return res.status(404).json({ error: "Prompt nicht gefunden." });
 
   const body = req.body || {};
@@ -104,7 +104,8 @@ promptsRouter.patch("/:id", (req, res) => {
 });
 
 promptsRouter.delete("/:id", (req, res) => {
-  const info = db.prepare("DELETE FROM prompts WHERE id = ?").run(req.params.id);
+  // Papierkorb (Punkt 77): Soft-Delete statt echtem DELETE, siehe trash.js.
+  const info = db.prepare("UPDATE prompts SET deleted_at = datetime('now') WHERE id = ? AND deleted_at IS NULL").run(req.params.id);
   if (info.changes === 0) return res.status(404).json({ error: "Prompt nicht gefunden." });
   res.status(204).send();
 });

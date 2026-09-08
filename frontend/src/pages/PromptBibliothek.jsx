@@ -74,7 +74,7 @@ export function PromptBibliothek() {
   }
 
   async function deletePrompt(id) {
-    if (!window.confirm("Diesen Prompt wirklich löschen?")) return;
+    if (!window.confirm("Diesen Prompt in den Papierkorb verschieben? Dort 30 Tage wiederherstellbar.")) return;
     await run(`delete-${id}`, async () => {
       await apiFetch(`/prompts/${id}`, { method: "DELETE" });
       await load();

@@ -125,6 +125,9 @@ export const taskSchema = z.object({
   // die Spalte selbst TEXT (JSON) ist - dieselbe Speicherform wie
   // milestones bei Zielen.
   recurrence: z.union([longText(2000), z.null()]).optional().default(null),
+  // Papierkorb (Punkt 77): ältere Backups (Version < 11) kennen dieses Feld
+  // noch nicht - null (nicht im Papierkorb) ist dort der korrekte Default.
+  deleted_at: nullableTimestamp.optional().default(null),
 });
 
 export const invoiceSchema = z.object({
@@ -145,6 +148,9 @@ export const invoiceSchema = z.object({
   // entsprechen denen der Migration 0014 (manuell angelegt/schon bestätigt).
   source: shortText(50).default("manuell"),
   confirmed: boolInt.default(1),
+  // Papierkorb (Punkt 77): ältere Backups (Version < 11) kennen dieses Feld
+  // noch nicht - null (nicht im Papierkorb) ist dort der korrekte Default.
+  deleted_at: nullableTimestamp.optional().default(null),
 });
 
 export const documentSchema = z.object({
@@ -158,6 +164,9 @@ export const documentSchema = z.object({
   tags: tagsField,
   created_at: timestamp,
   updated_at: timestamp,
+  // Papierkorb (Punkt 77): ältere Backups (Version < 11) kennen dieses Feld
+  // noch nicht - null (nicht im Papierkorb) ist dort der korrekte Default.
+  deleted_at: nullableTimestamp.optional().default(null),
 });
 
 export const contractSchema = z.object({
@@ -173,6 +182,9 @@ export const contractSchema = z.object({
   notes: longText(20000),
   created_at: timestamp,
   updated_at: timestamp,
+  // Papierkorb (Punkt 77): ältere Backups (Version < 11) kennen dieses Feld
+  // noch nicht - null (nicht im Papierkorb) ist dort der korrekte Default.
+  deleted_at: nullableTimestamp.optional().default(null),
 });
 
 export const goalSchema = z.object({
@@ -190,6 +202,9 @@ export const goalSchema = z.object({
   // Felder noch nicht - null (kein Turnus festgelegt) ist dort korrekt.
   review_freq: z.union([z.enum(GOAL_REVIEW_FREQS), z.null()]).optional().default(null),
   next_review_date: nullableDateOnly.optional().default(null),
+  // Papierkorb (Punkt 77): ältere Backups (Version < 11) kennen dieses Feld
+  // noch nicht - null (nicht im Papierkorb) ist dort der korrekte Default.
+  deleted_at: nullableTimestamp.optional().default(null),
 });
 
 export const noteSchema = z.object({
@@ -201,6 +216,9 @@ export const noteSchema = z.object({
   pinned: boolInt,
   created_at: timestamp,
   updated_at: timestamp,
+  // Papierkorb (Punkt 77): ältere Backups (Version < 11) kennen dieses Feld
+  // noch nicht - null (nicht im Papierkorb) ist dort der korrekte Default.
+  deleted_at: nullableTimestamp.optional().default(null),
 });
 
 export const healthEntrySchema = z.object({
@@ -223,6 +241,9 @@ export const promptSchema = z.object({
   pinned: boolInt,
   created_at: timestamp,
   updated_at: timestamp,
+  // Papierkorb (Punkt 77): ältere Backups (Version < 11) kennen dieses Feld
+  // noch nicht - null (nicht im Papierkorb) ist dort der korrekte Default.
+  deleted_at: nullableTimestamp.optional().default(null),
 });
 
 export const linkedinPostSchema = z.object({
@@ -233,6 +254,9 @@ export const linkedinPostSchema = z.object({
   scheduled_date: nullableDateOnly,
   created_at: timestamp,
   updated_at: timestamp,
+  // Papierkorb (Punkt 77): ältere Backups (Version < 11) kennen dieses Feld
+  // noch nicht - null (nicht im Papierkorb) ist dort der korrekte Default.
+  deleted_at: nullableTimestamp.optional().default(null),
 });
 
 export const objectLinkSchema = z.object({

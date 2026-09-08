@@ -24,7 +24,7 @@ function cleanTags(input) {
 notesRouter.get("/", (req, res) => {
   const { area, tag, q } = req.query;
   let query = "SELECT * FROM notes";
-  const clauses = [];
+  const clauses = ["deleted_at IS NULL"];
   const params = [];
 
   if (area && area !== "alle") {
@@ -69,7 +69,7 @@ notesRouter.post("/", (req, res) => {
 });
 
 notesRouter.patch("/:id", (req, res) => {
-  const existing = db.prepare("SELECT * FROM notes WHERE id = ?").get(req.params.id);
+  const existing = db.prepare("SELECT * FROM notes WHERE id = ? AND deleted_at IS NULL").get(req.params.id);
   if (!existing) return res.status(404).json({ error: "Notiz nicht gefunden." });
 
   const body = req.body || {};
@@ -107,7 +107,8 @@ notesRouter.patch("/:id", (req, res) => {
 });
 
 notesRouter.delete("/:id", (req, res) => {
-  const info = db.prepare("DELETE FROM notes WHERE id = ?").run(req.params.id);
+  // Papierkorb (Punkt 77): Soft-Delete statt echtem DELETE, siehe trash.js.
+  const info = db.prepare("UPDATE notes SET deleted_at = datetime('now') WHERE id = ? AND deleted_at IS NULL").run(req.params.id);
   if (info.changes === 0) return res.status(404).json({ error: "Notiz nicht gefunden." });
   res.status(204).send();
 });

@@ -38,13 +38,13 @@ export function computeDeadlineNotifications() {
   const horizon = addDays(today, DEADLINE_LOOKAHEAD_DAYS);
 
   const tasks = db
-    .prepare(`SELECT id, title, due_date FROM tasks WHERE status = 'offen' AND due_date IS NOT NULL AND due_date <= ? ORDER BY due_date`)
+    .prepare(`SELECT id, title, due_date FROM tasks WHERE deleted_at IS NULL AND status = 'offen' AND due_date IS NOT NULL AND due_date <= ? ORDER BY due_date`)
     .all(horizon);
   const invoices = db
-    .prepare(`SELECT id, subject, sender_name, due_date FROM invoices WHERE status = 'offen' AND due_date IS NOT NULL AND due_date <= ? ORDER BY due_date`)
+    .prepare(`SELECT id, subject, sender_name, due_date FROM invoices WHERE deleted_at IS NULL AND status = 'offen' AND due_date IS NOT NULL AND due_date <= ? ORDER BY due_date`)
     .all(horizon);
   const contracts = db
-    .prepare(`SELECT id, title, next_renewal_date FROM contracts WHERE next_renewal_date IS NOT NULL AND next_renewal_date <= ? ORDER BY next_renewal_date`)
+    .prepare(`SELECT id, title, next_renewal_date FROM contracts WHERE deleted_at IS NULL AND next_renewal_date IS NOT NULL AND next_renewal_date <= ? ORDER BY next_renewal_date`)
     .all(horizon);
 
   const items = [

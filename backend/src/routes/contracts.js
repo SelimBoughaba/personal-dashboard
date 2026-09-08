@@ -69,7 +69,7 @@ function validateContractInput(body, options) {
 contractsRouter.get("/", (req, res) => {
   const { area, status } = req.query;
   let query = "SELECT * FROM contracts";
-  const clauses = [];
+  const clauses = ["deleted_at IS NULL"];
   const params = [];
 
   if (area && area !== "alle") {
@@ -110,7 +110,7 @@ contractsRouter.post("/", (req, res) => {
 });
 
 contractsRouter.patch("/:id", (req, res) => {
-  const existing = db.prepare("SELECT * FROM contracts WHERE id = ?").get(req.params.id);
+  const existing = db.prepare("SELECT * FROM contracts WHERE id = ? AND deleted_at IS NULL").get(req.params.id);
   if (!existing) return res.status(404).json({ error: "Vertrag nicht gefunden." });
 
   const { data, errors } = validateContractInput(req.body, { partial: true });
@@ -128,7 +128,10 @@ contractsRouter.patch("/:id", (req, res) => {
 });
 
 contractsRouter.delete("/:id", (req, res) => {
-  const info = db.prepare("DELETE FROM contracts WHERE id = ?").run(req.params.id);
+  // Papierkorb (Punkt 77): Soft-Delete statt echtem DELETE, siehe trash.js.
+  const info = db
+    .prepare("UPDATE contracts SET deleted_at = datetime('now') WHERE id = ? AND deleted_at IS NULL")
+    .run(req.params.id);
   if (info.changes === 0) return res.status(404).json({ error: "Vertrag nicht gefunden." });
   res.status(204).send();
 });

@@ -11,7 +11,7 @@ export const invoicesRouter = Router();
 invoicesRouter.get("/", (req, res) => {
   const { area, status } = req.query;
   let query = "SELECT * FROM invoices";
-  const clauses = [];
+  const clauses = ["deleted_at IS NULL"];
   const params = [];
 
   if (area && area !== "alle") {
@@ -101,7 +101,7 @@ invoicesRouter.post("/", (req, res) => {
 });
 
 invoicesRouter.patch("/:id", (req, res) => {
-  const existing = db.prepare("SELECT * FROM invoices WHERE id = ?").get(req.params.id);
+  const existing = db.prepare("SELECT * FROM invoices WHERE id = ? AND deleted_at IS NULL").get(req.params.id);
   if (!existing) return res.status(404).json({ error: "Rechnung nicht gefunden." });
 
   const body = req.body || {};
@@ -132,7 +132,10 @@ invoicesRouter.patch("/:id", (req, res) => {
 });
 
 invoicesRouter.delete("/:id", (req, res) => {
-  const info = db.prepare("DELETE FROM invoices WHERE id = ?").run(req.params.id);
+  // Papierkorb (Punkt 77): Soft-Delete statt echtem DELETE, siehe trash.js.
+  const info = db
+    .prepare("UPDATE invoices SET deleted_at = datetime('now') WHERE id = ? AND deleted_at IS NULL")
+    .run(req.params.id);
   if (info.changes === 0) return res.status(404).json({ error: "Rechnung nicht gefunden." });
   res.status(204).send();
 });
@@ -140,7 +143,7 @@ invoicesRouter.delete("/:id", (req, res) => {
 const CSV_HEADERS = ["Absender", "Betreff", "Betrag", "Faelligkeitsdatum", "Bereich", "Status"];
 
 invoicesRouter.get("/export.csv", (req, res) => {
-  const rows = db.prepare("SELECT * FROM invoices ORDER BY due_date IS NULL, due_date ASC").all();
+  const rows = db.prepare("SELECT * FROM invoices WHERE deleted_at IS NULL ORDER BY due_date IS NULL, due_date ASC").all();
   const csv = toCsv(
     CSV_HEADERS,
     rows.map((r) => [
