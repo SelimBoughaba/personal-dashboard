@@ -11,9 +11,12 @@ import { StatTile } from "../components/ui/StatTile";
 import { EmptyState } from "../components/ui/EmptyState";
 import { KostenverlaufChart } from "../components/KostenverlaufChart";
 import { SaveViewButton } from "../components/SaveViewButton";
+import { RelatedObjects } from "../components/RelatedObjects";
+import { DetailPanel, EventSequence } from "../components/DetailPanel";
 import { useAreas } from "../context/AreasContext";
 import { localIsoDate } from "../utils/date";
 import { useAsyncAction } from "../hooks/useAsyncAction";
+import { useDetailPanel } from "../hooks/useDetailPanel";
 
 const EMPTY_FORM = { sender_name: "", subject: "", amount: "", due_date: "", area: "", status: "offen" };
 
@@ -22,8 +25,30 @@ function formatAmount(value) {
   return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(value);
 }
 
+function formatDateTime(iso) {
+  return new Date(iso).toLocaleString("de-DE", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
+// Belegte Ereignisfolge einer Rechnung (Punkt 57): nur tatsächlich
+// gespeicherte Schritte, kein erfundenes Datum. Eine manuell angelegte
+// Rechnung hat kein "eingegangen" (kam nicht per Mail) - dort zeigt der
+// erste Schritt stattdessen "Angelegt" mit dem echten Anlagezeitpunkt,
+// statt entweder zu lügen oder komplett leer zu bleiben.
+function invoiceEventSteps(inv) {
+  const firstStep =
+    inv.source === "mail_scan" && inv.received_at
+      ? { label: "Eingegangen", date: formatDateTime(inv.received_at) }
+      : { label: "Angelegt", date: inv.created_at ? formatDateTime(inv.created_at) : null };
+  return [
+    firstStep,
+    { label: "Geprüft", date: inv.confirmed_at ? formatDateTime(inv.confirmed_at) : null },
+    { label: "Bezahlt", date: inv.paid_at ? formatDateTime(inv.paid_at) : null },
+  ];
+}
+
 export function Rechnungen() {
   const { activeAreas } = useAreas();
+  const panel = useDetailPanel();
   const [invoices, setInvoices] = useState([]);
   const [allInvoices, setAllInvoices] = useState([]);
   // Filter in der URL statt in reinem State - siehe Tasks.jsx für dieselbe
@@ -108,6 +133,7 @@ export function Rechnungen() {
   }
 
   function startEdit(inv) {
+    panel.reset();
     setEditingId(inv.id);
     setForm({
       sender_name: inv.sender_name || "",
@@ -203,6 +229,7 @@ export function Rechnungen() {
     if (!window.confirm("Diese Rechnung in den Papierkorb verschieben? Dort 30 Tage wiederherstellbar.")) return;
     await run(`delete-${id}`, async () => {
       await apiFetch(`/invoices/${id}`, { method: "DELETE" });
+      if (panel.selectedKey === id) panel.reset();
       await load();
     });
   }
@@ -213,6 +240,8 @@ export function Rechnungen() {
       await load();
     });
   }
+
+  const selectedInvoice = invoices.find((i) => i.id === panel.selectedKey) || null;
 
   return (
     <div className="space-y-6">
@@ -310,7 +339,8 @@ export function Rechnungen() {
         </GlassCard>
       )}
 
-      <div className="space-y-3">
+      <div className="flex flex-col items-start gap-6 lg:flex-row">
+      <div className={`min-w-0 flex-1 space-y-3 ${panel.mounted ? "hidden lg:block" : ""}`}>
         {invoices.length === 0 && (
           <EmptyState title="Keine Rechnungen in diesem Bereich" description="Über „+ Rechnung“ manuell anlegen oder Postfächer durchsuchen." />
         )}
@@ -319,7 +349,10 @@ export function Rechnungen() {
           const deleting = isPending(`delete-${inv.id}`);
           const confirming = isPending(`confirm-${inv.id}`);
           return (
-          <GlassCard key={inv.id} className={`flex items-start gap-3 !p-4 ${deleting ? "opacity-50" : ""}`}>
+          <GlassCard
+            key={inv.id}
+            className={`flex items-start gap-3 !p-4 ${deleting ? "opacity-50" : ""} ${panel.selectedKey === inv.id ? "border-accent/40" : ""}`}
+          >
             <input
               type="checkbox"
               checked={inv.status === "bezahlt"}
@@ -328,7 +361,7 @@ export function Rechnungen() {
               className="mt-1 h-4 w-4 rounded border-white/20 bg-white/5 accent-accent disabled:cursor-not-allowed disabled:opacity-50"
               title="Als bezahlt markieren"
             />
-            <div className="min-w-0 flex-1">
+            <button type="button" onClick={() => panel.open(inv.id)} className="min-w-0 flex-1 text-left">
               <p className={`font-bold ${inv.status === "bezahlt" ? "text-ivory/40 line-through" : "text-ivory"}`}>
                 {inv.sender_name || inv.sender || "Unbekannter Absender"}
               </p>
@@ -351,7 +384,7 @@ export function Rechnungen() {
                 )}
                 {inv.file_name && <span className="text-xs text-ivory/65">{inv.file_name}</span>}
               </div>
-            </div>
+            </button>
             <div className="flex shrink-0 gap-1">
               {!inv.confirmed && (
                 <Button
@@ -383,6 +416,66 @@ export function Rechnungen() {
           </GlassCard>
           );
         })}
+      </div>
+
+      <DetailPanel
+        mounted={panel.mounted}
+        atTarget={panel.atTarget}
+        onClose={panel.close}
+        eyebrow="Rechnung"
+        title={selectedInvoice ? selectedInvoice.sender_name || selectedInvoice.sender || selectedInvoice.subject || "Rechnung" : ""}
+      >
+        {selectedInvoice && (
+          <>
+            <div className="flex flex-wrap items-center gap-2">
+              <AreaBadge area={selectedInvoice.area} />
+              <span className="rounded-full bg-white/5 px-2 py-0.5 text-xs text-ivory/55">
+                {selectedInvoice.status === "bezahlt" ? "Bezahlt" : "Offen"}
+              </span>
+              {!selectedInvoice.confirmed && (
+                <span className="rounded-full border border-status-mittel/30 bg-status-mittel/10 px-2 py-0.5 text-xs text-status-mittel">
+                  Vorschlag
+                </span>
+              )}
+            </div>
+            <div className="text-sm text-ivory/80">
+              <p className="font-bold text-ivory/90">{formatAmount(selectedInvoice.amount)}</p>
+              {selectedInvoice.due_date && (
+                <p className="text-ivory/65">fällig {new Date(selectedInvoice.due_date).toLocaleDateString("de-DE")}</p>
+              )}
+              {selectedInvoice.subject && selectedInvoice.sender_name && <p className="mt-1 text-ivory/65">{selectedInvoice.subject}</p>}
+            </div>
+
+            <EventSequence steps={invoiceEventSteps(selectedInvoice)} />
+
+            <RelatedObjects type="rechnung" id={selectedInvoice.id} />
+
+            <div className="flex flex-wrap gap-2 border-t border-white/10 pt-3">
+              {!selectedInvoice.confirmed && (
+                <Button
+                  variant="ghost"
+                  className="!px-3 !py-1.5 text-xs"
+                  onClick={() => confirmInvoice(selectedInvoice)}
+                  disabled={isPending(`confirm-${selectedInvoice.id}`)}
+                >
+                  Bestätigen
+                </Button>
+              )}
+              <Button variant="ghost" className="!px-3 !py-1.5 text-xs" onClick={() => startEdit(selectedInvoice)}>
+                Bearbeiten
+              </Button>
+              <Button
+                variant="danger"
+                className="!px-3 !py-1.5 text-xs"
+                onClick={() => deleteInvoice(selectedInvoice.id)}
+                disabled={isPending(`delete-${selectedInvoice.id}`)}
+              >
+                Löschen
+              </Button>
+            </div>
+          </>
+        )}
+      </DetailPanel>
       </div>
     </div>
   );

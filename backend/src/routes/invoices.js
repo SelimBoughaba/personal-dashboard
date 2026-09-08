@@ -82,9 +82,12 @@ invoicesRouter.post("/", (req, res) => {
   const errors = validateInvoiceInput(body);
   if (errors.length) return res.status(400).json({ error: errors.join(" ") });
 
+  const confirmed = confirmedValue(body, true);
+  const status = body.status || "offen";
+
   const stmt = db.prepare(`
-    INSERT INTO invoices (sender, sender_name, subject, amount, due_date, area, status, source, confirmed)
-    VALUES (@sender, @sender_name, @subject, @amount, @due_date, @area, @status, 'manuell', @confirmed)
+    INSERT INTO invoices (sender, sender_name, subject, amount, due_date, area, status, source, confirmed, confirmed_at, paid_at)
+    VALUES (@sender, @sender_name, @subject, @amount, @due_date, @area, @status, 'manuell', @confirmed, @confirmed_at, @paid_at)
   `);
   const info = stmt.run({
     sender: body.sender || "",
@@ -93,8 +96,13 @@ invoicesRouter.post("/", (req, res) => {
     amount: body.amount === "" || body.amount === undefined ? null : Number(body.amount),
     due_date: body.due_date || null,
     area: body.area || getDefaultAreaId(),
-    status: body.status || "offen",
-    confirmed: confirmedValue(body, true) ? 1 : 0,
+    status,
+    confirmed: confirmed ? 1 : 0,
+    // Belegte Ereignisfolge (Punkt 57): manuell angelegt und sofort bestätigt/
+    // bezahlt heißt, dieser Schritt ist JETZT tatsächlich geschehen - kein
+    // erfundenes rückwirkendes Datum wie bei der Migration für Bestandsdaten.
+    confirmed_at: confirmed ? new Date().toISOString() : null,
+    paid_at: status === "bezahlt" ? new Date().toISOString() : null,
   });
 
   res.status(201).json(db.prepare("SELECT * FROM invoices WHERE id = ?").get(info.lastInsertRowid));
@@ -108,6 +116,18 @@ invoicesRouter.patch("/:id", (req, res) => {
   const errors = validateInvoiceInput(body);
   if (errors.length) return res.status(400).json({ error: errors.join(" ") });
 
+  const confirmed = confirmedValue(body, !!existing.confirmed);
+  const status = body.status ?? existing.status;
+
+  // Belegte Ereignisfolge (Punkt 57): confirmed_at/paid_at werden genau bei
+  // einem tatsächlichen Übergang gesetzt (sticky - ein erneutes Speichern
+  // einer bereits bestätigten Rechnung überschreibt den ursprünglichen
+  // Zeitpunkt nicht) und beim Rückgängigmachen wieder gelöscht, statt einen
+  // inzwischen falschen Zeitpunkt stehen zu lassen ("nur tatsächlich
+  // gespeicherte Schritte zeigen" gilt auch für einen widerrufenen Schritt).
+  const confirmed_at = confirmed ? existing.confirmed_at || new Date().toISOString() : null;
+  const paid_at = status === "bezahlt" ? existing.paid_at || new Date().toISOString() : null;
+
   const merged = {
     id: req.params.id,
     sender: body.sender ?? existing.sender,
@@ -117,14 +137,16 @@ invoicesRouter.patch("/:id", (req, res) => {
       body.amount === undefined ? existing.amount : body.amount === "" || body.amount === null ? null : Number(body.amount),
     due_date: body.due_date === undefined ? existing.due_date : body.due_date || null,
     area: body.area ?? existing.area,
-    status: body.status ?? existing.status,
-    confirmed: confirmedValue(body, !!existing.confirmed) ? 1 : 0,
+    status,
+    confirmed: confirmed ? 1 : 0,
+    confirmed_at,
+    paid_at,
   };
 
   db.prepare(`
     UPDATE invoices SET sender=@sender, sender_name=@sender_name, subject=@subject,
       amount=@amount, due_date=@due_date, area=@area, status=@status, confirmed=@confirmed,
-      updated_at=datetime('now')
+      confirmed_at=@confirmed_at, paid_at=@paid_at, updated_at=datetime('now')
     WHERE id=@id
   `).run(merged);
 

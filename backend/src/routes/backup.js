@@ -242,8 +242,8 @@ backupRouter.post("/restore", backupJsonParser, (req, res) => {
     for (const task of data.tasks) insertTask.run(task);
 
     const insertInvoice = db.prepare(
-      `INSERT INTO invoices (id, mail_ref, sender, sender_name, subject, file_name, amount, due_date, area, status, received_at, created_at, updated_at, source, confirmed, deleted_at)
-       VALUES (@id, @mail_ref, @sender, @sender_name, @subject, @file_name, @amount, @due_date, @area, @status, @received_at, @created_at, @updated_at, @source, @confirmed, @deleted_at)`,
+      `INSERT INTO invoices (id, mail_ref, sender, sender_name, subject, file_name, amount, due_date, area, status, received_at, created_at, updated_at, source, confirmed, deleted_at, confirmed_at, paid_at)
+       VALUES (@id, @mail_ref, @sender, @sender_name, @subject, @file_name, @amount, @due_date, @area, @status, @received_at, @created_at, @updated_at, @source, @confirmed, @deleted_at, @confirmed_at, @paid_at)`,
     );
     for (const invoice of data.invoices) insertInvoice.run(invoice);
 

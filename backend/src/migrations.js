@@ -434,6 +434,28 @@ const MIGRATIONS = [
       `);
     },
   },
+  {
+    // Belegte Ereignisfolge einer Rechnung (Punkt 57, eine der fünf
+    // Signatur-Stellen): "eingegangen -> geprüft -> bezahlt" darf laut
+    // Vorgabe nur tatsächlich gespeicherte Schritte zeigen. received_at gab
+    // es schon; confirmed_at/paid_at fehlten bisher - ohne sie ließe sich
+    // "geprüft am" bzw. "bezahlt am" nicht ehrlich belegen (updated_at
+    // ändert sich bei JEDER Bearbeitung, nicht nur bei diesen beiden
+    // Schritten, und wäre daher keine verlässliche Quelle für die
+    // Ereignisfolge).
+    id: "0021_invoice_event_timestamps",
+    up(db) {
+      db.exec(`
+        ALTER TABLE invoices ADD COLUMN confirmed_at TEXT;
+        ALTER TABLE invoices ADD COLUMN paid_at TEXT;
+      `);
+      // Bereits bestätigte/bezahlte Bestandsrechnungen rückwirkend mit einem
+      // Zeitstempel zu versehen wäre erfunden (der echte Zeitpunkt ist nicht
+      // mehr rekonstruierbar) - sie bleiben bewusst NULL und zeigen dadurch
+      // in der Ereignisfolge korrekt nur "eingegangen", nicht "geprüft"/
+      // "bezahlt am <Datum>" mit einem geratenen Datum.
+    },
+  },
 ];
 
 export function runMigrations(db) {

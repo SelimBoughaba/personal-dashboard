@@ -151,6 +151,12 @@ export const invoiceSchema = z.object({
   // Papierkorb (Punkt 77): ältere Backups (Version < 11) kennen dieses Feld
   // noch nicht - null (nicht im Papierkorb) ist dort der korrekte Default.
   deleted_at: nullableTimestamp.optional().default(null),
+  // Belegte Ereignisfolge (Punkt 57): ältere Backups kennen diese Felder
+  // noch nicht (neue Spalten auf einer bereits vorhandenen Pflichttabelle,
+  // daher kein eigener BACKUP_VERSION-Sprung nötig) - null (kein belegter
+  // Zeitpunkt) ist dort korrekt, kein erfundenes Datum.
+  confirmed_at: nullableTimestamp.optional().default(null),
+  paid_at: nullableTimestamp.optional().default(null),
 });
 
 export const documentSchema = z.object({

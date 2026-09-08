@@ -7,8 +7,11 @@ import { AreaBadge } from "../components/ui/AreaBadge";
 import { PageHeader } from "../components/ui/PageHeader";
 import { FilterChips } from "../components/ui/FilterChips";
 import { EmptyState } from "../components/ui/EmptyState";
+import { RelatedObjects } from "../components/RelatedObjects";
+import { DetailPanel, EventSequence } from "../components/DetailPanel";
 import { useAreas } from "../context/AreasContext";
 import { useAsyncAction } from "../hooks/useAsyncAction";
+import { useDetailPanel } from "../hooks/useDetailPanel";
 
 const EMPTY_FORM = {
   title: "",
@@ -41,8 +44,28 @@ function daysUntil(date) {
   return Math.ceil((date.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 }
 
+function formatDate(date) {
+  return date.toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric" });
+}
+
+// Fristmarkierung in Vertragsdetails (Punkt 57, eine der fünf Signatur-
+// Stellen): nur Fristen zeigen, die sich aus tatsächlich gespeicherten
+// Feldern ergeben (next_renewal_date, cancellation_period_days) - in
+// chronologischer Reihenfolge, die Kündigungsfrist endet vor der
+// Verlängerung selbst.
+function contractFristSteps(contract) {
+  const deadline = cancellationDeadline(contract);
+  const steps = [];
+  if (deadline) steps.push({ label: "Kündigungsfrist endet", date: formatDate(deadline) });
+  if (contract.next_renewal_date) {
+    steps.push({ label: "Nächste Verlängerung/Fälligkeit", date: formatDate(new Date(contract.next_renewal_date)) });
+  }
+  return steps;
+}
+
 export function Vertraege() {
   const { activeAreas } = useAreas();
+  const panel = useDetailPanel();
   const [contracts, setContracts] = useState([]);
   const [areaFilter, setAreaFilter] = useState("alle");
   const [statusFilter, setStatusFilter] = useState("alle");
@@ -69,6 +92,7 @@ export function Vertraege() {
   }
 
   function startEdit(c) {
+    panel.reset();
     setEditingId(c.id);
     setForm({
       title: c.title,
@@ -108,9 +132,12 @@ export function Vertraege() {
     if (!window.confirm("Diesen Vertrag in den Papierkorb verschieben? Dort 30 Tage wiederherstellbar.")) return;
     await run(`delete-${id}`, async () => {
       await apiFetch(`/contracts/${id}`, { method: "DELETE" });
+      if (panel.selectedKey === id) panel.reset();
       await load();
     });
   }
+
+  const selectedContract = contracts.find((c) => c.id === panel.selectedKey) || null;
 
   const soonToCancel = contracts.filter((c) => {
     if (c.status !== "aktiv") return false;
@@ -231,15 +258,19 @@ export function Vertraege() {
         </GlassCard>
       )}
 
-      <div className="space-y-3">
+      <div className="flex flex-col items-start gap-6 lg:flex-row">
+      <div className={`min-w-0 flex-1 space-y-3 ${panel.mounted ? "hidden lg:block" : ""}`}>
         {contracts.length === 0 && (
           <EmptyState title="Keine Verträge in diesem Bereich" description="Über „+ Vertrag“ deinen ersten Vertrag anlegen." />
         )}
         {contracts.map((c) => {
           const deleting = isPending(`delete-${c.id}`);
           return (
-          <GlassCard key={c.id} className={`flex items-start gap-3 !p-4 ${deleting ? "opacity-50" : ""}`}>
-            <div className="min-w-0 flex-1">
+          <GlassCard
+            key={c.id}
+            className={`flex items-start gap-3 !p-4 ${deleting ? "opacity-50" : ""} ${panel.selectedKey === c.id ? "border-accent/40" : ""}`}
+          >
+            <button type="button" onClick={() => panel.open(c.id)} className="min-w-0 flex-1 text-left">
               <p className="font-bold text-ivory">{c.title}</p>
               {c.provider && <p className="mt-0.5 text-sm text-ivory/55">{c.provider}</p>}
               <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -254,7 +285,7 @@ export function Vertraege() {
                   </span>
                 )}
               </div>
-            </div>
+            </button>
             <div className="flex shrink-0 gap-1">
               <Button variant="ghost" className="!px-2 !py-1 text-xs" onClick={() => startEdit(c)} disabled={deleting}>
                 Bearbeiten
@@ -271,6 +302,49 @@ export function Vertraege() {
           </GlassCard>
           );
         })}
+      </div>
+
+      <DetailPanel
+        mounted={panel.mounted}
+        atTarget={panel.atTarget}
+        onClose={panel.close}
+        eyebrow="Vertrag"
+        title={selectedContract ? selectedContract.title : ""}
+      >
+        {selectedContract && (
+          <>
+            <div className="flex flex-wrap items-center gap-2">
+              <AreaBadge area={selectedContract.area} />
+              <span className="rounded-full bg-white/5 px-2 py-0.5 text-xs text-ivory/55">{STATUS_LABELS[selectedContract.status]}</span>
+            </div>
+            <div className="text-sm text-ivory/80">
+              {selectedContract.provider && <p className="text-ivory/90">{selectedContract.provider}</p>}
+              <p className="font-bold text-ivory/90">
+                {formatAmount(selectedContract.cost)} / {CYCLE_LABELS[selectedContract.billing_cycle]}
+              </p>
+              {selectedContract.notes && <p className="mt-1 whitespace-pre-wrap text-ivory/65">{selectedContract.notes}</p>}
+            </div>
+
+            <EventSequence steps={contractFristSteps(selectedContract)} />
+
+            <RelatedObjects type="vertrag" id={selectedContract.id} />
+
+            <div className="flex flex-wrap gap-2 border-t border-white/10 pt-3">
+              <Button variant="ghost" className="!px-3 !py-1.5 text-xs" onClick={() => startEdit(selectedContract)}>
+                Bearbeiten
+              </Button>
+              <Button
+                variant="danger"
+                className="!px-3 !py-1.5 text-xs"
+                onClick={() => deleteContract(selectedContract.id)}
+                disabled={isPending(`delete-${selectedContract.id}`)}
+              >
+                Löschen
+              </Button>
+            </div>
+          </>
+        )}
+      </DetailPanel>
       </div>
     </div>
   );
