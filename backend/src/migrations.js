@@ -308,6 +308,30 @@ const MIGRATIONS = [
       db.exec(`UPDATE invoices SET source = 'mail_scan', confirmed = 0 WHERE mail_ref IS NOT NULL;`);
     },
   },
+  {
+    // Kontextlinks zwischen verwandten Objekten (Punkt 69 der Design-
+    // Erweiterung): eine Zeile pro sichtbarer, vom Nutzer selbst gesetzter
+    // Beziehung (z. B. Rechnung <-> Vertrag), kein automatisches Ableiten.
+    // a_type/a_id und b_type/b_id statt einer FK-Spalte pro Zieltabelle,
+    // weil eine Verknüpfung zwischen JEDEM Paar der in LINK_OBJECT_TABLES
+    // gelisteten Typen möglich sein soll, ohne für jede Kombination eine
+    // eigene Spalte zu brauchen.
+    id: "0015_object_links_table",
+    up(db) {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS object_links (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          a_type TEXT NOT NULL,
+          a_id INTEGER NOT NULL,
+          b_type TEXT NOT NULL,
+          b_id INTEGER NOT NULL,
+          created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_object_links_a ON object_links (a_type, a_id);
+        CREATE INDEX IF NOT EXISTS idx_object_links_b ON object_links (b_type, b_id);
+      `);
+    },
+  },
 ];
 
 export function runMigrations(db) {

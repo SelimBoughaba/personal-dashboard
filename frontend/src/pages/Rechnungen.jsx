@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { apiFetch, getToken } from "../api/client";
 import { GlassCard } from "../components/ui/GlassCard";
 import { Button } from "../components/ui/Button";
@@ -9,6 +10,7 @@ import { FilterChips } from "../components/ui/FilterChips";
 import { StatTile } from "../components/ui/StatTile";
 import { EmptyState } from "../components/ui/EmptyState";
 import { KostenverlaufChart } from "../components/KostenverlaufChart";
+import { SaveViewButton } from "../components/SaveViewButton";
 import { useAreas } from "../context/AreasContext";
 import { localIsoDate } from "../utils/date";
 import { useAsyncAction } from "../hooks/useAsyncAction";
@@ -24,8 +26,31 @@ export function Rechnungen() {
   const { activeAreas } = useAreas();
   const [invoices, setInvoices] = useState([]);
   const [allInvoices, setAllInvoices] = useState([]);
-  const [areaFilter, setAreaFilter] = useState("alle");
-  const [statusFilter, setStatusFilter] = useState("alle");
+  // Filter in der URL statt in reinem State - siehe Tasks.jsx für dieselbe
+  // Begründung (Punkt 75: eine gespeicherte Ansicht braucht eine
+  // wiederherstellbare URL).
+  const [searchParams, setSearchParams] = useSearchParams();
+  const areaFilter = searchParams.get("area") || "alle";
+  const statusFilter = searchParams.get("status") || "alle";
+
+  function setAreaFilter(value) {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (value === "alle") next.delete("area");
+      else next.set("area", value);
+      return next;
+    });
+  }
+
+  function setStatusFilter(value) {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (value === "alle") next.delete("status");
+      else next.set("status", value);
+      return next;
+    });
+  }
+
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -223,6 +248,7 @@ export function Rechnungen() {
           <Button variant="ghost" onClick={() => fileInputRef.current?.click()}>
             CSV import
           </Button>
+          <SaveViewButton />
           <Button onClick={() => (showForm ? resetForm() : openNewForm())} variant={showForm ? "ghost" : "primary"}>
             {showForm ? "Abbrechen" : "+ Rechnung"}
           </Button>

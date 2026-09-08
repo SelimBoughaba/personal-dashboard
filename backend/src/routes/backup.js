@@ -12,12 +12,12 @@ export const backupRouter = Router();
 // globales Limit).
 const backupJsonParser = express.json({ limit: "40mb" });
 
-const BACKUP_VERSION = 8;
+const BACKUP_VERSION = 9;
 // Ältere Backup-Versionen kannten neuere Tabellen (documents, contracts, ...)
 // noch nicht. Beim Wiederherstellen eines älteren Backups bleibt die
 // jeweils fehlende Tabelle dann einfach unangetastet, statt gelöscht zu
 // werden – so bleiben ältere Backups kompatibel, ohne Daten zu verlieren.
-const SUPPORTED_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8];
+const SUPPORTED_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 const OPTIONAL_TABLES = [
   { key: "documents", sinceVersion: 2 },
   { key: "contracts", sinceVersion: 3 },
@@ -26,6 +26,7 @@ const OPTIONAL_TABLES = [
   { key: "health_entries", sinceVersion: 6 },
   { key: "prompts", sinceVersion: 7 },
   { key: "linkedin_posts", sinceVersion: 8 },
+  { key: "object_links", sinceVersion: 9 },
 ];
 const REQUIRED_TABLES = ["tasks", "invoices", "areas"];
 
@@ -63,6 +64,7 @@ function buildBackup() {
     health_entries: db.prepare("SELECT * FROM health_entries").all(),
     prompts: db.prepare("SELECT * FROM prompts").all(),
     linkedin_posts: db.prepare("SELECT * FROM linkedin_posts").all(),
+    object_links: db.prepare("SELECT * FROM object_links").all(),
     settings,
   };
 }
@@ -113,8 +115,10 @@ function validateBackup(data) {
     // health_entries hat bewusst keine Bereichs-Zuordnung (siehe README:
     // Gesundheitsdaten sind bereichsübergreifend) - ohne diesen Ausschluss
     // würde jede Zeile fälschlich als "Bereich undefined nicht definiert"
-    // abgelehnt, weil healthEntrySchema kein area-Feld hat.
-    if (table === "areas" || table === "health_entries") continue;
+    // abgelehnt, weil healthEntrySchema kein area-Feld hat. object_links
+    // verknüpft andere Objekte über deren eigene ID, hat selbst aber keinen
+    // Bereich - dasselbe gilt hier.
+    if (table === "areas" || table === "health_entries" || table === "object_links") continue;
     const dangling = findDanglingAreaRef(table, clean[table], areaIds);
     if (dangling) return { ok: false, error: dangling };
   }
@@ -160,6 +164,7 @@ backupRouter.post("/preview", backupJsonParser, (req, res) => {
       health_entries: data.health_entries?.length || 0,
       prompts: data.prompts?.length || 0,
       linkedin_posts: data.linkedin_posts?.length || 0,
+      object_links: data.object_links?.length || 0,
       settings: Object.keys(data.settings).length,
     },
   });
@@ -201,6 +206,7 @@ backupRouter.post("/restore", backupJsonParser, (req, res) => {
     if (data.health_entries) db.exec("DELETE FROM health_entries;");
     if (data.prompts) db.exec("DELETE FROM prompts;");
     if (data.linkedin_posts) db.exec("DELETE FROM linkedin_posts;");
+    if (data.object_links) db.exec("DELETE FROM object_links;");
 
     const insertArea = db.prepare(
       "INSERT INTO areas (id, label, color, sort_order, is_default, archived, created_at, updated_at) VALUES (@id, @label, @color, @sort_order, @is_default, @archived, @created_at, @updated_at)",
@@ -280,6 +286,18 @@ backupRouter.post("/restore", backupJsonParser, (req, res) => {
          VALUES (@id, @content, @area, @status, @scheduled_date, @created_at, @updated_at)`,
       );
       for (const post of data.linkedin_posts) insertPost.run(post);
+    }
+
+    // Nach allen anderen Tabellen, damit die verknüpften Objekte (auf die
+    // a_id/b_id zeigen) beim Wiederherstellen bereits existieren - relevant
+    // nur für die Lesbarkeit des Restores, da object_links keinen echten
+    // FK-Constraint hat (siehe Migration 0015).
+    if (data.object_links) {
+      const insertLink = db.prepare(
+        `INSERT INTO object_links (id, a_type, a_id, b_type, b_id, created_at)
+         VALUES (@id, @a_type, @a_id, @b_type, @b_id, @created_at)`,
+      );
+      for (const link of data.object_links) insertLink.run(link);
     }
 
     for (const [key, value] of Object.entries(data.settings)) {

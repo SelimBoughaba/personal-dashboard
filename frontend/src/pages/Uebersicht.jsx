@@ -9,6 +9,7 @@ import { PriorityBadge } from "../components/ui/PriorityBadge";
 import { EmptyState } from "../components/ui/EmptyState";
 import { Select } from "../components/ui/Field";
 import { QuickCapture } from "../components/QuickCapture";
+import { RelatedObjects } from "../components/RelatedObjects";
 import { useAreas } from "../context/AreasContext";
 
 // Eine Arbeitsfläche statt einer Kachelwand (Punkt 53): Kopfleiste (Datum/
@@ -372,6 +373,13 @@ export function Uebersicht() {
                     <p className="whitespace-pre-wrap text-ivory/65">{selected.raw.notes}</p>
                   )}
                 </div>
+
+                {/* Termine kommen aus iCloud und haben keine eigene lokale
+                    Zeile, auf die eine Verknüpfung zeigen könnte - Punkt 69
+                    gilt daher nur für Aufgaben/Rechnungen hier. */}
+                {selected.type !== "event" && (
+                  <RelatedObjects type={selected.type === "task" ? "aufgabe" : "rechnung"} id={selected.raw.id} />
+                )}
 
                 <button
                   type="button"

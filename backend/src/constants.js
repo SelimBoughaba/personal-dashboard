@@ -29,3 +29,18 @@ export const AREA_OWNED_TABLES = [
   "prompts",
   "linkedin_posts",
 ];
+
+// Kontextlinks zwischen verwandten Objekten (Punkt 69, Teilumfang: sichtbare,
+// manuell gepflegte Beziehungen statt eines vollen Vorgangs-/Projektmodells).
+// Nur Objekttypen mit einer eigenen Tabelle und einer id-Spalte - Termine
+// kommen ausschließlich aus iCloud (siehe caldav.js) und haben keine eigene
+// lokale Zeile, auf die eine dauerhafte Verknüpfung zeigen könnte.
+export const LINK_OBJECT_TABLES = {
+  aufgabe: { table: "tasks", titleColumn: "title" },
+  rechnung: { table: "invoices", titleColumn: "subject" },
+  dokument: { table: "documents", titleColumn: "title" },
+  vertrag: { table: "contracts", titleColumn: "title" },
+  ziel: { table: "goals", titleColumn: "title" },
+  notiz: { table: "notes", titleColumn: "title" },
+};
+export const LINK_OBJECT_TYPES = Object.keys(LINK_OBJECT_TABLES);

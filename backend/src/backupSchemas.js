@@ -20,6 +20,7 @@ import {
   GOAL_STATUSES,
   HEALTH_ENTRY_TYPES,
   LINKEDIN_POST_STATUSES,
+  LINK_OBJECT_TYPES,
 } from "./constants.js";
 
 const id = z.number().int().positive();
@@ -222,6 +223,15 @@ export const linkedinPostSchema = z.object({
   updated_at: timestamp,
 });
 
+export const objectLinkSchema = z.object({
+  id,
+  a_type: z.enum(LINK_OBJECT_TYPES),
+  a_id: id,
+  b_type: z.enum(LINK_OBJECT_TYPES),
+  b_id: id,
+  created_at: timestamp,
+});
+
 // Settings: Auth-/Session-Secrets sind nie Teil eines gewöhnlichen Backups
 // (siehe routes/backup.js) – dieses Schema läuft daher nur über das, was
 // buildBackup() tatsächlich exportiert (Auth-Schlüssel dort bereits
@@ -240,6 +250,7 @@ export const TABLE_SCHEMAS = {
   health_entries: healthEntrySchema,
   prompts: promptSchema,
   linkedin_posts: linkedinPostSchema,
+  object_links: objectLinkSchema,
 };
 
 // Validiert eine Tabelle vollständig und gibt entweder die geparsten

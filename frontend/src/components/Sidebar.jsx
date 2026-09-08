@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
+import { useSavedViews } from "../hooks/useSavedViews";
 
 const ICONS = {
   uebersicht: (
@@ -72,6 +73,9 @@ const ICONS = {
   ),
   chevron: (
     <path d="M9 6l6 6-6 6" />
+  ),
+  ansichten: (
+    <path d="M6 3h9l3 3v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Zm3 4h6M9 11h6M9 15h4" />
   ),
 };
 
@@ -171,6 +175,83 @@ function NavRow({ item, collapsed }) {
   );
 }
 
+// Gespeicherte Arbeitsansichten (Punkt 75) - nur sichtbar, wenn wirklich
+// welche gepinnt sind (keine leere, dauerhaft reservierte Sektion). Jeder
+// Eintrag verlinkt auf Pfad+Filter-Query der Seite, auf der er gespeichert
+// wurde; ein eigener "×"-Button löst direkt hier das Entpinnen aus, ohne
+// erst zur Einstellungsseite wechseln zu müssen.
+function SavedViewsSection({ collapsed }) {
+  const { views, removeView } = useSavedViews();
+  const [open, setOpen] = useState(false);
+
+  if (views.length === 0) return null;
+
+  const list = (
+    <ul className={collapsed ? "space-y-0.5" : "ml-8 mt-1 space-y-0.5 border-l border-white/10 pl-3"}>
+      {views.map((v) => (
+        <li key={v.id} className="group flex items-center justify-between gap-1">
+          <NavLink
+            to={`${v.path}?${v.search}`}
+            className={({ isActive }) =>
+              `min-w-0 flex-1 truncate rounded-control px-2.5 py-2 text-[13px] transition-colors duration-200 ${
+                isActive ? "text-ivory" : "text-ivory/65 hover:text-ivory"
+              }`
+            }
+          >
+            {v.label}
+          </NavLink>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              removeView(v.id);
+            }}
+            aria-label={`Ansicht „${v.label}“ entfernen`}
+            className="shrink-0 px-1 text-ivory/40 opacity-0 hover:text-status-hoch group-hover:opacity-100 group-focus-within:opacity-100"
+          >
+            ×
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+
+  if (collapsed) {
+    return (
+      <div className="relative">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setOpen((v) => !v);
+          }}
+          title="Ansichten"
+          className="flex w-full items-center justify-center rounded-control py-2.5 text-sm text-ivory/65 transition-colors duration-200 hover:bg-white/[0.04] hover:text-ivory"
+        >
+          <Icon name="ansichten" />
+        </button>
+        {open && (
+          <>
+            <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
+            <div className="overlay-panel absolute left-full top-0 z-40 ml-2 w-52 p-1.5">{list}</div>
+          </>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="flex items-center gap-3 rounded-control px-3 py-2.5 text-sm text-ivory/65">
+        <Icon name="ansichten" />
+        <span className="flex-1 text-left">Ansichten</span>
+      </div>
+      {list}
+    </div>
+  );
+}
+
 // "Links eine lesbare einklappbare Navigation" (Punkt 53): im eingeklappten
 // Zustand bleiben nur die Icons (mit Tooltip per title) sichtbar, "Mehr"
 // öffnet dann statt der eingerückten Liste ein schwebendes Popover daneben -
@@ -249,6 +330,8 @@ function SidebarContent({ onNavigate, onOpenSearch, collapsed, onToggleCollapse 
         {NAV_ITEMS.map((item) => (
           <NavRow key={item.label} item={item} collapsed={collapsed} />
         ))}
+
+        <SavedViewsSection collapsed={collapsed} />
 
         <div className="relative">
           <button

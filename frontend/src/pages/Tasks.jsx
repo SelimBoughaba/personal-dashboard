@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { apiFetch } from "../api/client";
 import { GlassCard } from "../components/ui/GlassCard";
 import { Button } from "../components/ui/Button";
@@ -9,6 +10,7 @@ import { PageHeader } from "../components/ui/PageHeader";
 import { FilterChips } from "../components/ui/FilterChips";
 import { SegmentedControl } from "../components/ui/SegmentedControl";
 import { EmptyState } from "../components/ui/EmptyState";
+import { SaveViewButton } from "../components/SaveViewButton";
 import { useAreas } from "../context/AreasContext";
 import { useAsyncAction } from "../hooks/useAsyncAction";
 
@@ -22,9 +24,42 @@ const PRIORITY_COLUMNS = [
 export function Tasks() {
   const { activeAreas } = useAreas();
   const [tasks, setTasks] = useState([]);
-  const [areaFilter, setAreaFilter] = useState("alle");
-  const [sort, setSort] = useState("due_date");
-  const [view, setView] = useState("liste");
+  // Filter leben in der URL statt in reinem Komponenten-State, damit eine
+  // "Ansicht speichern" (Punkt 75) tatsächlich etwas Wiederherstellbares
+  // speichert - nur nicht-Standardwerte landen in der Query, damit die URL
+  // beim Standardzustand sauber bleibt.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const areaFilter = searchParams.get("area") || "alle";
+  const sort = searchParams.get("sort") || "due_date";
+  const view = searchParams.get("view") || "liste";
+
+  function setAreaFilter(value) {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (value === "alle") next.delete("area");
+      else next.set("area", value);
+      return next;
+    });
+  }
+
+  function setSort(value) {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (value === "due_date") next.delete("sort");
+      else next.set("sort", value);
+      return next;
+    });
+  }
+
+  function setView(value) {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (value === "liste") next.delete("view");
+      else next.set("view", value);
+      return next;
+    });
+  }
+
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -121,6 +156,7 @@ export function Tasks() {
               <option value="priority">Nach Priorität</option>
             </Select>
           )}
+          <SaveViewButton />
           <Button onClick={() => (showForm ? resetForm() : openNewForm())} variant={showForm ? "ghost" : "primary"}>
             {showForm ? "Abbrechen" : "+ Aufgabe"}
           </Button>

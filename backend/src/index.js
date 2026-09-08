@@ -23,6 +23,7 @@ import { healthRouter } from "./routes/health.js";
 import { searchRouter } from "./routes/search.js";
 import { promptsRouter } from "./routes/prompts.js";
 import { linkedinPostsRouter } from "./routes/linkedinPosts.js";
+import { linksRouter } from "./routes/links.js";
 import { requireAuth } from "./middleware/auth.js";
 import { db } from "./db.js";
 
@@ -111,6 +112,7 @@ app.use("/api/health-entries", requireAuth, healthRouter);
 app.use("/api/search", requireAuth, searchRouter);
 app.use("/api/prompts", requireAuth, promptsRouter);
 app.use("/api/linkedin-posts", requireAuth, linkedinPostsRouter);
+app.use("/api/links", requireAuth, linksRouter);
 
 app.use("/api", (req, res) => {
   res.status(404).json({ error: "Nicht gefunden." });
