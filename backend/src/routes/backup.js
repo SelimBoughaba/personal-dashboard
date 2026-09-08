@@ -2,6 +2,7 @@ import { Router } from "express";
 import express from "express";
 import { db } from "../db.js";
 import { validateTable, validateSettings, findDanglingAreaRef } from "../backupSchemas.js";
+import { setSetting } from "../configStore.js";
 
 export const backupRouter = Router();
 
@@ -154,6 +155,21 @@ function validateBackup(data) {
 // verschlüsselten Volume).
 backupRouter.get("/", (req, res) => {
   const backup = buildBackup();
+
+  // Vertrauensbereich (Punkt 80): "letzte VERIFIZIERTE Sicherung" - nicht nur
+  // "zuletzt heruntergeladen". Derselbe strikte Schema-Check wie beim
+  // Restore läuft hier direkt gegen den frisch erzeugten Export; nur wenn er
+  // besteht, gilt die Sicherung als verifiziert. Ein Fehlschlag hier würde
+  // einen echten Bug (z. B. Schema-Drift) aufdecken statt ihn zu verschweigen -
+  // der Export wird trotzdem ausgeliefert (der Nutzer braucht seine Daten
+  // unabhängig davon), nur der "verifiziert"-Zeitstempel bleibt dann aus.
+  const verification = validateBackup(backup);
+  if (verification.ok) {
+    setSetting("trust.last_backup_verified_at", new Date().toISOString());
+  } else {
+    console.error("Backup-Selbstverifikation fehlgeschlagen (Export wird trotzdem ausgeliefert):", verification.error);
+  }
+
   res.setHeader("Content-Type", "application/json");
   res.setHeader(
     "Content-Disposition",

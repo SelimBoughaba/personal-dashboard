@@ -11,6 +11,7 @@ import { Einstellungen } from "./pages/Einstellungen";
 import { Dokumente } from "./pages/Dokumente";
 import { Vertraege } from "./pages/Vertraege";
 import { Vorgaenge } from "./pages/Vorgaenge";
+import { Vertrauen } from "./pages/Vertrauen";
 import { Ziele } from "./pages/Ziele";
 import { Notizen } from "./pages/Notizen";
 import { Gesundheit } from "./pages/Gesundheit";
@@ -164,6 +165,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Vorgaenge />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/vertrauen"
+        element={
+          <ProtectedRoute>
+            <Vertrauen />
           </ProtectedRoute>
         }
       />

@@ -115,6 +115,7 @@ const MORE_ITEMS = [
   { label: "E-Mail", path: "/mail", enabled: true },
   { label: "Verträge & Abos", path: "/vertraege", enabled: true },
   { label: "Vorgänge", path: "/vorgaenge", enabled: true },
+  { label: "Vertrauen & Einrichtung", path: "/vertrauen", enabled: true },
   { label: "Gesundheit", path: "/gesundheit", enabled: true },
   { label: "Notizen", path: "/notizen", enabled: true },
   { label: "Prompt-Bibliothek", path: "/prompts", enabled: true },

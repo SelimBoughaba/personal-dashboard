@@ -136,7 +136,23 @@ Kontostand und keine verfügbare Liquidität** – ohne Bankanbindung würde
 das nur vorgetäuscht; eine Bankanbindung bleibt eine mögliche spätere,
 eigenständige Entscheidung.
 
-`cd backend && npm test` führt die inzwischen 137 automatisierten
+**Vertrauen & Einrichtung (Paket D, Punkt 80):** Neue Seite unter „Mehr"
+zeigt Speicherort (Datenbank- und Dokumentenordner samt Größe), die
+letzte VERIFIZIERTE Sicherung (der Export durchläuft direkt danach
+dieselbe strenge Prüfung wie ein Restore - nicht nur "heruntergeladen"),
+den Integrationszustand (Kalender wird bei jedem Aufruf dieser Seite
+live neu geprüft; E-Mail bewusst nicht - ein IMAP-Test hätte
+Seiteneffekte, siehe notifications.js - stattdessen der zuletzt
+tatsächlich aufgetretene Fehler, nie ein unbelegtes "verbunden"),
+Datenfrische je Inhaltstyp, die Browser-Benachrichtigungsberechtigung
+und ausstehende lokale Hintergrundjobs - ehrlich "keine", da diese App
+bewusst keinen Cron/Hintergrunddienst hat (alles läuft bedarfsgesteuert
+beim jeweiligen Seitenaufruf). Die Ersteinrichtung (schrittweise,
+optionale Schritte wie Kalender/E-Mail überspringbar) gab es bereits vor
+diesem Punkt; einen Demo-Modus gibt es in dieser App nicht - "isoliert
+und gekennzeichnet, falls es ihn gäbe" ist damit gegenstandslos.
+
+`cd backend && npm test` führt die inzwischen 143 automatisierten
 Backend-Tests aus, `cd frontend && npm test` 4 weitere für die
 Zeitzonen-Korrektur.
 
