@@ -81,3 +81,24 @@ export const TRASH_TABLES = {
 };
 export const TRASH_TYPES = Object.keys(TRASH_TABLES);
 export const TRASH_RETENTION_DAYS = 30;
+
+// Lokaler Suchindex mit Datenschutzgrenzen (Punkt 86): genau die Felder, die
+// schon die vorherige LIKE-Suche durchsucht hat - keine Ausweitung auf neue
+// oder sensiblere Inhalte. Bewusst NICHT indexiert: Mail-Text (kein
+// Volltext-Import von Nachrichteninhalten, siehe routes/mail.js), Gesundheits-
+// werte (health_entries), Rechnungsbeträge (Zahl, kein Suchtext) und alles in
+// der settings-Tabelle (Kalender-/Mail-Zugangsdaten, Passwort-Hash, JWT-
+// Secret) - Geheimnisse werden hier nie indexiert. Von migrations.js
+// (Migration 0025: FTS5-Tabellen + Trigger) UND routes/search.js gemeinsam
+// genutzt, damit beide garantiert dieselbe Feldliste verwenden.
+export const SEARCH_TABLES = [
+  { table: "tasks", columns: ["title", "notes"] },
+  { table: "invoices", columns: ["sender_name", "subject"] },
+  { table: "documents", columns: ["title", "file_name"] },
+  { table: "contracts", columns: ["title", "provider"] },
+  { table: "goals", columns: ["title", "description"] },
+  { table: "notes", columns: ["title", "content"] },
+  { table: "prompts", columns: ["title", "content"] },
+  { table: "linkedin_posts", columns: ["content"] },
+  { table: "vorgaenge", columns: ["title", "description"] },
+];

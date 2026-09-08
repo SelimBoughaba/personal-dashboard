@@ -157,7 +157,13 @@ lokale OCR/Texterfassung):** Details siehe „Dokumente-Modul" weiter
 unten - sichere, byte-geprüfte Inline-Vorschau für Bilder/PDF und
 SHA-256-Dateiduplikathinweise als reine, nicht blockierende Hinweise.
 
-`cd backend && npm test` führt die inzwischen 151 automatisierten
+**Lokaler Suchindex mit SQLite-FTS5 (Paket D, Punkt 86):** Details siehe
+„Globale Suche / Kommandopalette" weiter unten - Präfix-Treffer,
+UND-verknüpfte Mehrwortsuche und `bm25()`-Ranking über echte FTS5-
+Indizes statt `LIKE`-Abfragen, mit denselben Suchfeldern wie zuvor
+(keine Ausweitung auf sensiblere Inhalte).
+
+`cd backend && npm test` führt die inzwischen 158 automatisierten
 Backend-Tests aus, `cd frontend && npm test` 4 weitere für die
 Zeitzonen-Korrektur.
 
@@ -515,13 +521,32 @@ mobilen Header:
   schnellen Wechseln.
 - Mit Eingabetext durchsucht sie server-seitig Aufgaben (Titel/Notizen),
   Rechnungen (Absender/Betreff), Dokumente (Titel/Dateiname), Verträge
-  (Titel/Anbieter), Ziele (Titel/Beschreibung) und Notizen (Titel/Inhalt)
-  gleichzeitig, gruppiert nach Kategorie (max. 5 Treffer pro Kategorie).
+  (Titel/Anbieter), Ziele (Titel/Beschreibung), Notizen (Titel/Inhalt),
+  Prompts (Titel/Inhalt), LinkedIn-Beiträge (Inhalt) und Vorgänge (Titel/
+  Beschreibung) gleichzeitig, gruppiert nach Kategorie (max. 5 Treffer pro
+  Kategorie).
 - Ein Klick auf einen Treffer navigiert zur jeweiligen Modul-Seite (z. B.
   „Aufgaben" oder „Notizen") – **kein Deep-Link zu einem einzelnen,
   hervorgehobenen Eintrag** innerhalb der Seite, das wäre ein größerer
   Umbau der einzelnen Module und ist als spätere Verbesserung denkbar.
-- Kein Fuzzy-Matching/keine Tippfehler-Toleranz, reine `LIKE`-Textsuche.
+- **Lokaler Suchindex mit SQLite-FTS5 (Paket D, Punkt 86):** Die Suche
+  läuft über echte FTS5-Volltextindizes statt über `LIKE`-Abfragen -
+  Wortpräfix-Treffer (z. B. findet „Steuererkl" schon „Steuererklärung"),
+  mehrere Wörter werden UND-verknüpft, Ranking über FTS5' eingebautes
+  `bm25()`. Ein Index pro Tabelle wird über SQL-Trigger bei jedem
+  Anlegen/Ändern/Löschen automatisch synchron gehalten (kein
+  Hintergrundjob, kein manueller Neuaufbau nötig - siehe Migration 0025
+  in `backend/src/migrations.js` für die vollständige Begründung
+  inklusive des dokumentierten `INSERT INTO <tabelle>_fts(<tabelle>_fts)
+  VALUES('rebuild')`-Befehls für den seltenen Fall eines manuellen
+  Neuaufbaus). Die Originaltabellen bleiben Quelle der Wahrheit: der
+  Index selbst entscheidet nie über Sichtbarkeit im Papierkorb, das
+  übernimmt weiterhin ein `deleted_at IS NULL`-Filter in der eigentlichen
+  Abfrage. **Bewusst nicht durchsucht:** Mail-Inhalte, Gesundheitswerte
+  und alles in den Einstellungen (Kalender-/Mail-Zugangsdaten,
+  Passwort-Hash) - Geheimnisse werden nie indexiert, keine Ausweitung
+  über die bisherigen Suchfelder hinaus. Kein Fuzzy-Matching/keine
+  Tippfehler-Toleranz, keine Cloud-Embeddings oder Vektordatenbank.
 
 ## Kalender-Sync einrichten (iCloud)
 

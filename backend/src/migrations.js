@@ -4,6 +4,8 @@
 // nie verändert – so bleibt der Verlauf für jede Installation nachvollziehbar
 // und bestehende Daten (Aufgaben, Rechnungen, ...) gehen nie verloren.
 
+import { SEARCH_TABLES } from "./constants.js";
+
 // Historische Momentaufnahme für Migration 0013 (siehe dort): AREA_OWNED_TABLES
 // in constants.js wächst mit jeder neuen bereichsgebundenen Tabelle (zuletzt
 // "vorgaenge", Migration 0022). Migration 0013 lief aber bereits, als nur
@@ -511,6 +513,55 @@ const MIGRATIONS = [
     up(db) {
       db.exec(`ALTER TABLE documents ADD COLUMN sha256 TEXT;`);
       db.exec(`CREATE INDEX IF NOT EXISTS idx_documents_sha256 ON documents(sha256);`);
+    },
+  },
+  {
+    // Lokaler Suchindex mit Datenschutzgrenzen (Punkt 86): "Zuerst SQLite-FTS
+    // für freigegebene lokale Textfelder evaluieren; inkrementelle Pflege,
+    // Löschpropagation, Neuaufbau und Ranking dokumentieren." Ersetzt die
+    // bisherigen LIKE-Abfragen in routes/search.js durch FTS5-"external
+    // content"-Tabellen - der Index selbst speichert keine eigenen Daten,
+    // sondern nur einen durchsuchbaren Auszug der jeweiligen Originaltabelle
+    // (content_rowid='id'); die Originaltabelle bleibt "Quelle der Wahrheit"
+    // (auch für den deleted_at-Papierkorbfilter, den weiterhin die eigentliche
+    // Suchabfrage per JOIN übernimmt, nicht der Index selbst).
+    //
+    // Inkrementelle Pflege + Löschpropagation: drei Trigger pro Tabelle
+    // halten den Index bei jedem INSERT/UPDATE/DELETE synchron (Standard-
+    // Sync-Muster für FTS5-"external content", siehe SQLite-Dokumentation) -
+    // kein Neuaufbau bei jeder Änderung, kein Hintergrunddienst nötig.
+    //
+    // Neuaufbau: sollte der Index je aus dem Takt geraten (z. B. nach einer
+    // manuellen Datenreparatur außerhalb der App), baut
+    // `INSERT INTO <fts>(<fts>) VALUES('rebuild');` pro Tabelle den Index
+    // vollständig aus der jeweiligen Originaltabelle neu auf (offizieller
+    // FTS5-"rebuild"-Befehl) - hier dokumentiert, da es dafür bewusst keine
+    // eigene UI/Route gibt (kein bekannter Bedarf bisher).
+    //
+    // Ranking: routes/search.js sortiert MATCH-Treffer über FTS5' eingebautes
+    // bm25()-Ranking (kleiner Wert = relevanter), keine eigene Ranking-Logik.
+    id: "0025_search_fts5",
+    up(db) {
+      for (const { table, columns } of SEARCH_TABLES) {
+        const fts = `${table}_fts`;
+        const colList = columns.join(", ");
+        const newCols = columns.map((c) => `new.${c}`).join(", ");
+        const oldCols = columns.map((c) => `old.${c}`).join(", ");
+        db.exec(`
+          CREATE VIRTUAL TABLE IF NOT EXISTS ${fts} USING fts5(${colList}, content='${table}', content_rowid='id');
+          INSERT INTO ${fts}(rowid, ${colList}) SELECT id, ${colList} FROM ${table};
+          CREATE TRIGGER ${table}_search_ai AFTER INSERT ON ${table} BEGIN
+            INSERT INTO ${fts}(rowid, ${colList}) VALUES (new.id, ${newCols});
+          END;
+          CREATE TRIGGER ${table}_search_ad AFTER DELETE ON ${table} BEGIN
+            INSERT INTO ${fts}(${fts}, rowid, ${colList}) VALUES('delete', old.id, ${oldCols});
+          END;
+          CREATE TRIGGER ${table}_search_au AFTER UPDATE ON ${table} BEGIN
+            INSERT INTO ${fts}(${fts}, rowid, ${colList}) VALUES('delete', old.id, ${oldCols});
+            INSERT INTO ${fts}(rowid, ${colList}) VALUES (new.id, ${newCols});
+          END;
+        `);
+      }
     },
   },
 ];
