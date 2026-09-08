@@ -163,6 +163,18 @@ UND-verknüpfte Mehrwortsuche und `bm25()`-Ranking über echte FTS5-
 Indizes statt `LIKE`-Abfragen, mit denselben Suchfeldern wie zuvor
 (keine Ausweitung auf sensiblere Inhalte).
 
+**Kapazitätsleiste (Paket D, Rest von Punkt 60):** Auf der Übersicht
+zeigt „Kapazität heute" die heutigen Kalendertermine mit bekannter
+Uhrzeit auf einer echten 24-Stunden-Achse (00–24 Uhr) - bewusst keine
+erfundene Tageskapazität wie eine angenommene Arbeitszeit als
+Bezugsgröße. Die verplante Zeit wird über eine Intervallvereinigung
+berechnet, damit sich überschneidende Termine nicht doppelt gezählt
+werden. Ganztägige Termine haben keine bekannte Zeitspanne und werden
+ausgeschlossen und benannt statt als 0-Dauer-Block gezählt. Mit
+Textzusammenfassung, Einheiten, Quelle, Datenstand und einer
+zugänglichen Tabellenalternative, wie schon der Kostenverlauf bei
+Rechnungen.
+
 `cd backend && npm test` führt die inzwischen 158 automatisierten
 Backend-Tests aus, `cd frontend && npm test` 4 weitere für die
 Zeitzonen-Korrektur.

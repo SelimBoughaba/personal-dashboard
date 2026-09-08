@@ -10,6 +10,7 @@ import { EmptyState } from "../components/ui/EmptyState";
 import { Select } from "../components/ui/Field";
 import { QuickCapture } from "../components/QuickCapture";
 import { RelatedObjects } from "../components/RelatedObjects";
+import { KapazitaetsleisteChart } from "../components/KapazitaetsleisteChart";
 import { useAreas } from "../context/AreasContext";
 
 // Eine Arbeitsfläche statt einer Kachelwand (Punkt 53): Kopfleiste (Datum/
@@ -272,6 +273,8 @@ export function Uebersicht() {
           )}
         </GlassCard>
       )}
+
+      {settingsLoaded && !errors.events && <KapazitaetsleisteChart events={filteredEvents} />}
 
       {/* Tageslinie als dominierende Arbeitsfläche + Vorgangsakte/Nächste Schritte (Punkte 53/57/58) */}
       <div className="flex flex-col items-start gap-6 lg:flex-row">
