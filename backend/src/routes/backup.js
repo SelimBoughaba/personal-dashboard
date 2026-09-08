@@ -12,12 +12,12 @@ export const backupRouter = Router();
 // globales Limit).
 const backupJsonParser = express.json({ limit: "40mb" });
 
-const BACKUP_VERSION = 11;
+const BACKUP_VERSION = 12;
 // Ältere Backup-Versionen kannten neuere Tabellen (documents, contracts, ...)
 // noch nicht. Beim Wiederherstellen eines älteren Backups bleibt die
 // jeweils fehlende Tabelle dann einfach unangetastet, statt gelöscht zu
 // werden – so bleiben ältere Backups kompatibel, ohne Daten zu verlieren.
-const SUPPORTED_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+const SUPPORTED_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 const OPTIONAL_TABLES = [
   { key: "documents", sinceVersion: 2 },
   { key: "contracts", sinceVersion: 3 },
@@ -30,6 +30,7 @@ const OPTIONAL_TABLES = [
   { key: "week_reviews", sinceVersion: 10 },
   { key: "notification_events", sinceVersion: 11 },
   { key: "notification_states", sinceVersion: 11 },
+  { key: "vorgaenge", sinceVersion: 12 },
 ];
 const REQUIRED_TABLES = ["tasks", "invoices", "areas"];
 
@@ -71,6 +72,7 @@ function buildBackup() {
     week_reviews: db.prepare("SELECT * FROM week_reviews").all(),
     notification_events: db.prepare("SELECT * FROM notification_events").all(),
     notification_states: db.prepare("SELECT * FROM notification_states").all(),
+    vorgaenge: db.prepare("SELECT * FROM vorgaenge").all(),
     settings,
   };
 }
@@ -185,6 +187,7 @@ backupRouter.post("/preview", backupJsonParser, (req, res) => {
       week_reviews: data.week_reviews?.length || 0,
       notification_events: data.notification_events?.length || 0,
       notification_states: data.notification_states?.length || 0,
+      vorgaenge: data.vorgaenge?.length || 0,
       settings: Object.keys(data.settings).length,
     },
   });
@@ -230,6 +233,7 @@ backupRouter.post("/restore", backupJsonParser, (req, res) => {
     if (data.week_reviews) db.exec("DELETE FROM week_reviews;");
     if (data.notification_events) db.exec("DELETE FROM notification_events;");
     if (data.notification_states) db.exec("DELETE FROM notification_states;");
+    if (data.vorgaenge) db.exec("DELETE FROM vorgaenge;");
 
     const insertArea = db.prepare(
       "INSERT INTO areas (id, label, color, sort_order, is_default, archived, created_at, updated_at) VALUES (@id, @label, @color, @sort_order, @is_default, @archived, @created_at, @updated_at)",
@@ -259,8 +263,8 @@ backupRouter.post("/restore", backupJsonParser, (req, res) => {
 
     if (data.contracts) {
       const insertContract = db.prepare(
-        `INSERT INTO contracts (id, title, provider, area, cost, billing_cycle, cancellation_period_days, next_renewal_date, status, notes, created_at, updated_at, deleted_at)
-         VALUES (@id, @title, @provider, @area, @cost, @billing_cycle, @cancellation_period_days, @next_renewal_date, @status, @notes, @created_at, @updated_at, @deleted_at)`,
+        `INSERT INTO contracts (id, title, provider, area, cost, billing_cycle, cancellation_period_days, next_renewal_date, status, notes, created_at, updated_at, deleted_at, review_task_id)
+         VALUES (@id, @title, @provider, @area, @cost, @billing_cycle, @cancellation_period_days, @next_renewal_date, @status, @notes, @created_at, @updated_at, @deleted_at, @review_task_id)`,
       );
       for (const contract of data.contracts) insertContract.run(contract);
     }
@@ -311,10 +315,18 @@ backupRouter.post("/restore", backupJsonParser, (req, res) => {
       for (const post of data.linkedin_posts) insertPost.run(post);
     }
 
-    // Nach allen anderen Tabellen, damit die verknüpften Objekte (auf die
-    // a_id/b_id zeigen) beim Wiederherstellen bereits existieren - relevant
-    // nur für die Lesbarkeit des Restores, da object_links keinen echten
-    // FK-Constraint hat (siehe Migration 0015).
+    if (data.vorgaenge) {
+      const insertVorgang = db.prepare(
+        `INSERT INTO vorgaenge (id, title, description, area, status, created_at, updated_at, deleted_at)
+         VALUES (@id, @title, @description, @area, @status, @created_at, @updated_at, @deleted_at)`,
+      );
+      for (const vorgang of data.vorgaenge) insertVorgang.run(vorgang);
+    }
+
+    // Nach allen anderen Tabellen (inkl. vorgaenge), damit die verknüpften
+    // Objekte (auf die a_id/b_id zeigen) beim Wiederherstellen bereits
+    // existieren - relevant nur für die Lesbarkeit des Restores, da
+    // object_links keinen echten FK-Constraint hat (siehe Migration 0015).
     if (data.object_links) {
       const insertLink = db.prepare(
         `INSERT INTO object_links (id, a_type, a_id, b_type, b_id, created_at)

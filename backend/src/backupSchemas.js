@@ -23,6 +23,7 @@ import {
   LINKEDIN_POST_STATUSES,
   LINK_OBJECT_TYPES,
   NOTIFICATION_EVENT_CATEGORIES,
+  VORGANG_STATUSES,
 } from "./constants.js";
 
 const id = z.number().int().positive();
@@ -191,6 +192,11 @@ export const contractSchema = z.object({
   // Papierkorb (Punkt 77): ältere Backups (Version < 11) kennen dieses Feld
   // noch nicht - null (nicht im Papierkorb) ist dort der korrekte Default.
   deleted_at: nullableTimestamp.optional().default(null),
+  // Fristenradar-Prüfaufgabe (Punkt 70): verweist auf die automatisch
+  // angelegte Aufgabe für die aktuelle Kündigungsfrist. Ältere Backups
+  // kennen dieses Feld noch nicht - null (keine Prüfaufgabe angelegt) ist
+  // dort der korrekte Default.
+  review_task_id: z.union([z.number().int().positive(), z.null()]).optional().default(null),
 });
 
 export const goalSchema = z.object({
@@ -265,6 +271,19 @@ export const linkedinPostSchema = z.object({
   deleted_at: nullableTimestamp.optional().default(null),
 });
 
+// Vorgang (Punkt 69, voller Umfang): selbst nur ein weiterer Objekttyp im
+// object_links-System, siehe constants.js.
+export const vorgangSchema = z.object({
+  id,
+  title: shortText(500),
+  description: longText(20000),
+  area: shortText(100),
+  status: z.enum(VORGANG_STATUSES),
+  created_at: timestamp,
+  updated_at: timestamp,
+  deleted_at: nullableTimestamp.optional().default(null),
+});
+
 export const objectLinkSchema = z.object({
   id,
   a_type: z.enum(LINK_OBJECT_TYPES),
@@ -330,6 +349,7 @@ export const TABLE_SCHEMAS = {
   week_reviews: weekReviewSchema,
   notification_events: notificationEventSchema,
   notification_states: notificationStateSchema,
+  vorgaenge: vorgangSchema,
 };
 
 // Validiert eine Tabelle vollständig und gibt entweder die geparsten

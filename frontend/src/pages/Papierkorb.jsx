@@ -66,7 +66,7 @@ export function Papierkorb() {
     <div className="space-y-6">
       <PageHeader
         title="Papierkorb"
-        description={`Gelöschte Aufgaben, Rechnungen, Dokumente, Verträge, Ziele, Notizen, Prompts und LinkedIn-Beiträge bleiben ${retentionDays} Tage wiederherstellbar, danach werden sie automatisch endgültig entfernt.`}
+        description={`Gelöschte Aufgaben, Rechnungen, Dokumente, Verträge, Ziele, Notizen, Prompts, LinkedIn-Beiträge und Vorgänge bleiben ${retentionDays} Tage wiederherstellbar, danach werden sie automatisch endgültig entfernt.`}
       />
 
       {error && <p className="text-sm text-status-hoch">{error}</p>}

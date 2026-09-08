@@ -10,6 +10,7 @@ import { Rechnungen } from "./pages/Rechnungen";
 import { Einstellungen } from "./pages/Einstellungen";
 import { Dokumente } from "./pages/Dokumente";
 import { Vertraege } from "./pages/Vertraege";
+import { Vorgaenge } from "./pages/Vorgaenge";
 import { Ziele } from "./pages/Ziele";
 import { Notizen } from "./pages/Notizen";
 import { Gesundheit } from "./pages/Gesundheit";
@@ -155,6 +156,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Vertraege />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/vorgaenge"
+        element={
+          <ProtectedRoute>
+            <Vorgaenge />
           </ProtectedRoute>
         }
       />

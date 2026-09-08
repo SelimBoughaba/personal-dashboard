@@ -95,5 +95,18 @@ searchRouter.get("/", (req, res) => {
       }),
     );
 
+  db.prepare("SELECT id, title, description FROM vorgaenge WHERE deleted_at IS NULL AND (title LIKE ? OR description LIKE ?) LIMIT ?")
+    .all(like, like, LIMIT_PER_CATEGORY)
+    .forEach((r) =>
+      results.push({
+        type: "vorgang",
+        typeLabel: "Vorgang",
+        id: r.id,
+        title: r.title,
+        subtitle: r.description || "",
+        path: "/vorgaenge",
+      }),
+    );
+
   res.json(results);
 });

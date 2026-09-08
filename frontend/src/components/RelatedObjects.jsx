@@ -7,8 +7,24 @@ import { useAsyncAction } from "../hooks/useAsyncAction";
 // verknüpfen selbst, nichts wird automatisch abgeleitet oder vermutet -
 // "Beziehungen sichtbar und manuell korrigierbar", kein volles
 // Vorgangs-/Projektmodell mit Rollen/Sprints.
-const TYPE_LABEL = { aufgabe: "Aufgabe", rechnung: "Rechnung", dokument: "Dokument", vertrag: "Vertrag", ziel: "Ziel", notiz: "Notiz" };
-const TYPE_PATH = { aufgabe: "/aufgaben", rechnung: "/finanzen", dokument: "/dokumente", vertrag: "/vertraege", ziel: "/ziele", notiz: "/notizen" };
+const TYPE_LABEL = {
+  aufgabe: "Aufgabe",
+  rechnung: "Rechnung",
+  dokument: "Dokument",
+  vertrag: "Vertrag",
+  ziel: "Ziel",
+  notiz: "Notiz",
+  vorgang: "Vorgang",
+};
+const TYPE_PATH = {
+  aufgabe: "/aufgaben",
+  rechnung: "/finanzen",
+  dokument: "/dokumente",
+  vertrag: "/vertraege",
+  ziel: "/ziele",
+  notiz: "/notizen",
+  vorgang: "/vorgaenge",
+};
 const LINKABLE_TYPES = Object.keys(TYPE_LABEL);
 
 export function RelatedObjects({ type, id }) {
@@ -126,7 +142,7 @@ export function RelatedObjects({ type, id }) {
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Aufgabe, Rechnung, Dokument, Vertrag, Ziel oder Notiz suchen…"
+            placeholder="Aufgabe, Rechnung, Dokument, Vertrag, Ziel, Notiz oder Vorgang suchen…"
             className="w-full rounded-control border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-sm text-ivory placeholder:text-muted focus:border-accent/40 focus:outline-none"
           />
           {searching && <p className="px-1 text-xs text-ivory/55">Suche…</p>}

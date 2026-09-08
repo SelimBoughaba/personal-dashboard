@@ -4,7 +4,14 @@
 // nie verändert – so bleibt der Verlauf für jede Installation nachvollziehbar
 // und bestehende Daten (Aufgaben, Rechnungen, ...) gehen nie verloren.
 
-import { AREA_OWNED_TABLES } from "./constants.js";
+// Historische Momentaufnahme für Migration 0013 (siehe dort): AREA_OWNED_TABLES
+// in constants.js wächst mit jeder neuen bereichsgebundenen Tabelle (zuletzt
+// "vorgaenge", Migration 0022). Migration 0013 lief aber bereits, als nur
+// diese acht Tabellen existierten - eine Neuinstallation spielt alle
+// Migrationen der Reihe nach ab, und 0013 darf daher nie auf eine Tabelle
+// zugreifen, die erst eine spätere Migration überhaupt erst anlegt. Live-Code
+// (z. B. routes/areas.js) verwendet weiterhin die aktuelle AREA_OWNED_TABLES.
+const AREA_OWNED_TABLES_AT_0013 = ["tasks", "invoices", "documents", "contracts", "goals", "notes", "prompts", "linkedin_posts"];
 
 const DEFAULT_AREA_COLORS = {
   corelegal: "#e8b866",
@@ -258,7 +265,7 @@ const MIGRATIONS = [
     // Repariert Bereichsreferenzen, die vor dieser Änderung entstanden sein
     // könnten (z. B. durch die zuvor unvollständige Bereichslöschung in
     // routes/areas.js, die nur tasks/invoices reassignt hat). Läuft einmalig
-    // über alle Tabellen aus AREA_OWNED_TABLES; jede Zeile, deren area-Wert
+    // über alle Tabellen aus AREA_OWNED_TABLES_AT_0013; jede Zeile, deren area-Wert
     // in keiner aktuell existierenden areas.id-Zeile vorkommt, wird auf den
     // aktiven Default-Bereich umgehängt statt auf einen "toten" Bereich
     // zeigen zu lassen.
@@ -271,7 +278,7 @@ const MIGRATIONS = [
         db.prepare("SELECT id FROM areas ORDER BY sort_order ASC LIMIT 1").get()?.id;
       if (!fallback) return; // keine Bereiche vorhanden - kann bei einer Neuinstallation nach 0001 nicht vorkommen
 
-      for (const table of AREA_OWNED_TABLES) {
+      for (const table of AREA_OWNED_TABLES_AT_0013) {
         const badAreas = db
           .prepare(`SELECT DISTINCT area FROM ${table}`)
           .all()
@@ -454,6 +461,43 @@ const MIGRATIONS = [
       // mehr rekonstruierbar) - sie bleiben bewusst NULL und zeigen dadurch
       // in der Ereignisfolge korrekt nur "eingegangen", nicht "geprüft"/
       // "bezahlt am <Datum>" mit einem geratenen Datum.
+    },
+  },
+  {
+    // Vorgang (Punkt 69, voller Umfang): eine eigene, bewusst schmale
+    // Tabelle - die "Bündelung" mehrerer Objekte passiert NICHT über eigene
+    // Fremdschlüssel hier, sondern über ganz normale object_links-Zeilen
+    // (siehe constants.js LINK_OBJECT_TABLES, jetzt inkl. "vorgang"). Damit
+    // ist ein Vorgang von Anfang an papierkorbfähig (deleted_at) und in
+    // Suche/Backup genauso behandelt wie die anderen sechs Inhaltstypen.
+    id: "0022_vorgaenge_table",
+    up(db) {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS vorgaenge (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          title TEXT NOT NULL,
+          description TEXT NOT NULL DEFAULT '',
+          area TEXT NOT NULL DEFAULT 'allgemein',
+          status TEXT NOT NULL DEFAULT 'aktiv' CHECK (status IN ('aktiv', 'abgeschlossen')),
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+          deleted_at TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_vorgaenge_area ON vorgaenge(area);
+      `);
+    },
+  },
+  {
+    // Fristenradar-Ausbaustufe (Punkt 70): "Erinnerung und eine lokal
+    // erstellte Prüfaufgabe". review_task_id hält fest, ob für die AKTUELL
+    // anstehende Kündigungsfrist bereits eine Aufgabe existiert - ohne das
+    // würde jeder Abruf (kein Cron, siehe trash.js-Präzedenzfall) bei
+    // weiterhin naher Frist erneut eine Aufgabe anlegen. Wird bei jeder
+    // NEUEN Frist (nächste next_renewal_date-Änderung) wieder auf NULL
+    // gesetzt, siehe routes/contracts.js.
+    id: "0023_contract_review_task",
+    up(db) {
+      db.exec(`ALTER TABLE contracts ADD COLUMN review_task_id INTEGER;`);
     },
   },
 ];

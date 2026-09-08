@@ -110,11 +110,22 @@ Snapshot gespeichert) helfen beim Innehalten. Ein Benachrichtigungszentrum
 bündelt Fristen, Hintergrundereignisse und Integrationsfehler mit
 Ruhezeiten, Kategorie-Steuerung und optionalen (standardmäßig
 vorschau-freien) nativen Mitteilungen. Ein lokaler Papierkorb macht
-„Löschen" auf den acht wichtigen Inhaltstypen 30 Tage lang rückgängig
+„Löschen" auf den neun wichtigen Inhaltstypen 30 Tage lang rückgängig
 machbar (bei Dokumenten inklusive der zugehörigen Datei), danach wird
 automatisch endgültig aufgeräumt – ohne eigenen Hintergrunddienst.
 
-`cd backend && npm test` führt die inzwischen 102 automatisierten
+**Vorgänge (Paket D, Punkt 69 vollständig):** Ein neuer Inhaltstyp
+„Vorgang" (Titel, Beschreibung, Bereich, Status) bündelt Aufgaben,
+Notizen, Dokumente, Rechnungen, Verträge und Ziele unter einem
+gemeinsamen Namen. Bewusst kein eigenes Beziehungsmodell: das Bündeln
+sind ganz normale Kontextlinks zwischen dem Vorgang und den gebündelten
+Objekten (dieselbe Verknüpfungsfunktion wie überall sonst), kein
+Team-Projektmanagement mit Rollen, Sprints oder Pflichtprozessen. Die
+eigene Seite „Vorgänge" nutzt dasselbe Vorgangsakte-Grundgerüst wie
+Rechnungen/Verträge; Vorgänge sind außerdem durchsuchbar und Teil des
+Papierkorbs.
+
+`cd backend && npm test` führt die inzwischen 118 automatisierten
 Backend-Tests aus, `cd frontend && npm test` 4 weitere für die
 Zeitzonen-Korrektur.
 
