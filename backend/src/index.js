@@ -28,6 +28,7 @@ import { weekReviewsRouter } from "./routes/weekReviews.js";
 import { notificationsRouter } from "./routes/notifications.js";
 import { trashRouter } from "./routes/trash.js";
 import { vorgaengeRouter } from "./routes/vorgaenge.js";
+import { financeOutlookRouter } from "./routes/financeOutlook.js";
 import { requireAuth } from "./middleware/auth.js";
 import { db } from "./db.js";
 
@@ -121,6 +122,7 @@ app.use("/api/week-reviews", requireAuth, weekReviewsRouter);
 app.use("/api/notifications", requireAuth, notificationsRouter);
 app.use("/api/trash", requireAuth, trashRouter);
 app.use("/api/vorgaenge", requireAuth, vorgaengeRouter);
+app.use("/api/finance-outlook", requireAuth, financeOutlookRouter);
 
 app.use("/api", (req, res) => {
   res.status(404).json({ error: "Nicht gefunden." });

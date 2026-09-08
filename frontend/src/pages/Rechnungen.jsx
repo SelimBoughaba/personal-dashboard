@@ -10,6 +10,7 @@ import { FilterChips } from "../components/ui/FilterChips";
 import { StatTile } from "../components/ui/StatTile";
 import { EmptyState } from "../components/ui/EmptyState";
 import { KostenverlaufChart } from "../components/KostenverlaufChart";
+import { FinanceOutlook } from "../components/FinanceOutlook";
 import { SaveViewButton } from "../components/SaveViewButton";
 import { RelatedObjects } from "../components/RelatedObjects";
 import { DetailPanel, EventSequence } from "../components/DetailPanel";
@@ -258,6 +259,8 @@ export function Rechnungen() {
       </div>
 
       <KostenverlaufChart invoices={chartInvoices} areaLabel={chartAreaLabel} />
+
+      <FinanceOutlook />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <FilterChips options={[{ id: "alle", label: "Alle" }, ...activeAreas]} value={areaFilter} onChange={setAreaFilter} />

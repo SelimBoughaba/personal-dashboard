@@ -125,7 +125,18 @@ eigene Seite „Vorgänge" nutzt dasselbe Vorgangsakte-Grundgerüst wie
 Rechnungen/Verträge; Vorgänge sind außerdem durchsuchbar und Teil des
 Papierkorbs.
 
-`cd backend && npm test` führt die inzwischen 123 automatisierten
+**Finanzieller Ausblick (Paket D, Punkt 71):** Auf „Finanzen" fasst ein
+neuer Abschnitt offene Rechnungen und wiederkehrende Verträge zu einer
+30-/90-Tage-Vorschau zusammen, getrennt nach bereits Bezahlt, Geplant
+und Unklar (fehlender Betrag oder fehlendes Datum). Monatliche/jährliche
+Verträge werden anhand von Verlängerungsdatum und Abrechnungszyklus
+projiziert; eine über Kontextlinks mit einem Vertrag verknüpfte Rechnung
+wird für denselben Abrechnungszyklus nur einmal gezählt. Bewusst **kein
+Kontostand und keine verfügbare Liquidität** – ohne Bankanbindung würde
+das nur vorgetäuscht; eine Bankanbindung bleibt eine mögliche spätere,
+eigenständige Entscheidung.
+
+`cd backend && npm test` führt die inzwischen 137 automatisierten
 Backend-Tests aus, `cd frontend && npm test` 4 weitere für die
 Zeitzonen-Korrektur.
 
