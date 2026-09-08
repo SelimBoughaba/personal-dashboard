@@ -125,7 +125,7 @@ eigene Seite „Vorgänge" nutzt dasselbe Vorgangsakte-Grundgerüst wie
 Rechnungen/Verträge; Vorgänge sind außerdem durchsuchbar und Teil des
 Papierkorbs.
 
-`cd backend && npm test` führt die inzwischen 118 automatisierten
+`cd backend && npm test` führt die inzwischen 123 automatisierten
 Backend-Tests aus, `cd frontend && npm test` 4 weitere für die
 Zeitzonen-Korrektur.
 
@@ -401,6 +401,17 @@ Unter „Mehr" → „Verträge & Abos" in der Sidebar:
   Push- oder E-Mail-Benachrichtigung bei geschlossener App – dafür gibt
   es aktuell keinen Versandweg (siehe „Benachrichtigungen" in den
   Einstellungen).
+- **Fristenradar, zweite Stufe (Punkt 70):** rückt eine Kündigungsfrist
+  auf 30 Tage oder weniger heran, legt die App zusätzlich zur Warnung
+  automatisch eine mit dem Vertrag verknüpfte Aufgabe „Kündigungsfrist
+  prüfen: …" an (Priorität Hoch, fällig am Fristende) – sichtbar sowohl
+  unter „Aufgaben" als auch in der Vorgangsakte des Vertrags. Kein Cron:
+  die Prüfung läuft lazy bei jedem Abruf der Vertragsliste mit, wie der
+  Papierkorb-Ablauf. Pro Frist entsteht nur eine Aufgabe; ändert sich das
+  Verlängerungsdatum oder die Kündigungsfrist, gilt das als neue Frist
+  und eine neue Aufgabe kann entstehen (die alte bleibt unverändert
+  bestehen). Keine automatische Kündigung, keine Rechtsauskunft – nur
+  eine Erinnerung zum selbst Prüfen.
 - Nach Bereich filterbar, wie die übrigen Module.
 
 ## Ziele

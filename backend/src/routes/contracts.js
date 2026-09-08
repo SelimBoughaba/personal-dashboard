@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db, isValidArea, getDefaultAreaId } from "../db.js";
 import { CONTRACT_STATUSES as STATUSES, CONTRACT_BILLING_CYCLES as CYCLES } from "../constants.js";
 import { validateWithSchema, optionalNullableDateString, optionalTextDefaultEmpty } from "../validation.js";
+import { ensureContractReviewTasks } from "../contractReview.js";
 
 export const contractsRouter = Router();
 
@@ -67,6 +68,8 @@ function validateContractInput(body, options) {
 }
 
 contractsRouter.get("/", (req, res) => {
+  ensureContractReviewTasks();
+
   const { area, status } = req.query;
   let query = "SELECT * FROM contracts";
   const clauses = ["deleted_at IS NULL"];
@@ -117,10 +120,22 @@ contractsRouter.patch("/:id", (req, res) => {
   if (errors.length) return res.status(400).json({ error: errors.join(" ") });
 
   const merged = { ...existing, ...data, id: req.params.id };
+
+  // Fristenradar (Punkt 70): ändert sich die Frist selbst (Verlängerungs-
+  // datum oder Kündigungsfrist), gilt eine bereits angelegte Prüfaufgabe nur
+  // noch für die ALTE Frist - review_task_id zurücksetzen, damit
+  // ensureContractReviewTasks() für die neue Frist wieder eine anlegen kann.
+  // Die alte Aufgabe bleibt bestehen (der Nutzer entscheidet selbst, ob sie
+  // noch relevant ist), wird aber nicht automatisch verändert oder gelöscht.
+  if (merged.next_renewal_date !== existing.next_renewal_date || merged.cancellation_period_days !== existing.cancellation_period_days) {
+    merged.review_task_id = null;
+  }
+
   db.prepare(`
     UPDATE contracts SET title=@title, provider=@provider, area=@area, cost=@cost,
       billing_cycle=@billing_cycle, cancellation_period_days=@cancellation_period_days,
-      next_renewal_date=@next_renewal_date, status=@status, notes=@notes, updated_at=datetime('now')
+      next_renewal_date=@next_renewal_date, status=@status, notes=@notes,
+      review_task_id=@review_task_id, updated_at=datetime('now')
     WHERE id=@id
   `).run(merged);
 
