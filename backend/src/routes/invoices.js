@@ -3,6 +3,8 @@ import { db, isValidArea, getDefaultAreaId } from "../db.js";
 import { scanForInvoices, parseGermanAmount } from "../invoiceScanner.js";
 import { INVOICE_STATUSES as STATUSES } from "../constants.js";
 import { toCsv, parseCsv } from "../csv.js";
+import { recordBackgroundEvent, recordIntegrationError } from "../notifications.js";
+import { todayIso } from "../recurrence.js";
 
 export const invoicesRouter = Router();
 
@@ -29,6 +31,17 @@ invoicesRouter.get("/", (req, res) => {
 invoicesRouter.post("/scan", async (req, res) => {
   try {
     const created = await scanForInvoices();
+    // Ein Ereignis pro Kalendertag statt pro Klick (Punkt 76:
+    // "deduplizieren") - mehrere Scans am selben Tag aktualisieren nur den
+    // Zähler des bestehenden Ereignisses. Nur bei tatsächlichen Neufunden,
+    // damit ein "0 neue" Scan nicht die Liste mit Nichts-Meldungen füllt.
+    if (created.length > 0) {
+      recordBackgroundEvent(
+        `background:mailscan:${todayIso()}`,
+        `${created.length} neue Rechnungsvorschläge`,
+        "Aus dem Mail-Scan, noch ungeprüft.",
+      );
+    }
     res.json({ new: created.length });
   } catch (err) {
     if (err.code === "NOT_CONFIGURED") {
@@ -37,6 +50,7 @@ invoicesRouter.post("/scan", async (req, res) => {
       });
     }
     console.error("Rechnungs-Scan-Fehler:", err);
+    recordIntegrationError("error:mail", "Mail-Verbindung fehlgeschlagen", "IMAP-Zugangsdaten/Host prüfen.");
     res.status(502).json({
       error: "Postfach konnte nicht durchsucht werden. IMAP-Zugangsdaten/Host prüfen.",
     });

@@ -45,3 +45,9 @@ export const LINK_OBJECT_TABLES = {
   notiz: { table: "notes", titleColumn: "title" },
 };
 export const LINK_OBJECT_TYPES = Object.keys(LINK_OBJECT_TABLES);
+
+// Benachrichtigungszentrum (Punkt 76). "deadline" taucht hier bewusst NICHT
+// auf: Fristen werden nie in notification_events gespeichert (siehe
+// notifications.js), diese Kategorien gelten nur für gespeicherte
+// Ereignisse.
+export const NOTIFICATION_EVENT_CATEGORIES = ["background", "integration_error"];

@@ -17,6 +17,7 @@ import { PromptBibliothek } from "./pages/PromptBibliothek";
 import { LinkedIn } from "./pages/LinkedIn";
 import { Fokus } from "./pages/Fokus";
 import { Wochenrueckblick } from "./pages/Wochenrueckblick";
+import { Benachrichtigungen } from "./pages/Benachrichtigungen";
 import { Onboarding } from "./pages/Onboarding";
 import { Layout } from "./components/Layout";
 
@@ -113,6 +114,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Wochenrueckblick />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/benachrichtigungen"
+        element={
+          <ProtectedRoute>
+            <Benachrichtigungen />
           </ProtectedRoute>
         }
       />

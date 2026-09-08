@@ -2,6 +2,7 @@ import { NavLink } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useSavedViews } from "../hooks/useSavedViews";
+import { useNotifications } from "../hooks/useNotifications";
 
 const ICONS = {
   uebersicht: (
@@ -109,6 +110,7 @@ const NAV_ITEMS = [
 const MORE_ITEMS = [
   { label: "Fokus", path: "/fokus", enabled: true },
   { label: "Wochenrückblick", path: "/wochenrueckblick", enabled: true },
+  { label: "Benachrichtigungen", path: "/benachrichtigungen", enabled: true },
   { label: "E-Mail", path: "/mail", enabled: true },
   { label: "Verträge & Abos", path: "/vertraege", enabled: true },
   { label: "Gesundheit", path: "/gesundheit", enabled: true },
@@ -262,6 +264,13 @@ function SavedViewsSection({ collapsed }) {
 function SidebarContent({ onNavigate, onOpenSearch, collapsed, onToggleCollapse }) {
   const { logout } = useAuth();
   const [moreOpen, setMoreOpen] = useState(false);
+  // withPreferences:false - reine Zähler-Anzeige, kein doppeltes Laden der
+  // Einstellungen und kein doppeltes Auslösen nativer Mitteilungen neben
+  // einer parallel geöffneten Benachrichtigungsseite (siehe useNotifications).
+  const { unreadCount } = useNotifications({ withPreferences: false });
+  const moreItems = MORE_ITEMS.map((item) =>
+    item.path === "/benachrichtigungen" && unreadCount > 0 ? { ...item, badge: String(unreadCount) } : item,
+  );
 
   return (
     <div className="flex h-full flex-col" onClick={onNavigate}>
@@ -371,7 +380,7 @@ function SidebarContent({ onNavigate, onOpenSearch, collapsed, onToggleCollapse 
               <>
                 <div className="fixed inset-0 z-30" onClick={() => setMoreOpen(false)} />
                 <div className="overlay-panel absolute left-full top-0 z-40 ml-2 w-52 space-y-0.5 p-1.5">
-                  {MORE_ITEMS.map((item) => (
+                  {moreItems.map((item) => (
                     <MoreLink key={item.label} item={item} />
                   ))}
                 </div>
@@ -391,7 +400,7 @@ function SidebarContent({ onNavigate, onOpenSearch, collapsed, onToggleCollapse 
             >
               <div className="min-h-0">
                 <div className="ml-8 mt-1 space-y-0.5 border-l border-white/10 pl-3">
-                  {MORE_ITEMS.map((item) => (
+                  {moreItems.map((item) => (
                     <MoreLink key={item.label} item={item} />
                   ))}
                 </div>

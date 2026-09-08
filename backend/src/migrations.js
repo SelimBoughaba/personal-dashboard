@@ -378,6 +378,40 @@ const MIGRATIONS = [
       `);
     },
   },
+  {
+    // Benachrichtigungszentrum (Punkt 76): Fristen und Integrationsfehler
+    // werden bei jedem Abruf LIVE aus tasks/invoices/contracts bzw. aus dem
+    // Ergebnis des letzten echten Verbindungsversuchs berechnet (siehe
+    // notifications.js) - nichts davon liegt dauerhaft in einer Tabelle.
+    // Zwei schmale Tabellen genügen: notification_events hält nur die
+    // Ereignisse, die sich NICHT aus dem aktuellen Datenstand
+    // rekonstruieren lassen (abgeschlossener Hintergrund-Scan, laufender
+    // Integrationsfehler) - mit bewusst generischem, nicht-sensiblem
+    // Titel/Text (z. B. "3 neue Rechnungsvorschläge", nie Absender/Beträge).
+    // notification_states hält je Benachrichtigung nur den
+    // Gelesen/Erledigt/Verschoben-Status (Schlüssel statt Fremdschlüssel,
+    // damit dieselbe Tabelle sowohl live berechnete als auch gespeicherte
+    // Benachrichtigungen abdecken kann).
+    id: "0019_notifications_tables",
+    up(db) {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS notification_events (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          key TEXT NOT NULL UNIQUE,
+          category TEXT NOT NULL,
+          title TEXT NOT NULL,
+          body TEXT NOT NULL DEFAULT '',
+          created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE TABLE IF NOT EXISTS notification_states (
+          key TEXT PRIMARY KEY,
+          read_at TEXT,
+          done_at TEXT,
+          snoozed_until TEXT
+        );
+      `);
+    },
+  },
 ];
 
 export function runMigrations(db) {

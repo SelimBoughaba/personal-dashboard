@@ -22,6 +22,7 @@ import {
   HEALTH_ENTRY_TYPES,
   LINKEDIN_POST_STATUSES,
   LINK_OBJECT_TYPES,
+  NOTIFICATION_EVENT_CATEGORIES,
 } from "./constants.js";
 
 const id = z.number().int().positive();
@@ -254,6 +255,29 @@ export const weekReviewSchema = z.object({
   summary: longText(20000),
 });
 
+// Benachrichtigungszentrum (Punkt 76): title/body bleiben bewusst
+// generischer, nicht-sensibler Text (siehe notifications.js) - "kein
+// ewiges Volltextprotokoll sämtlicher sensibler Inhalte" gilt also schon
+// für den Inhalt selbst, nicht erst für dessen Backup-Behandlung.
+export const notificationEventSchema = z.object({
+  id,
+  key: shortText(200),
+  category: z.enum(NOTIFICATION_EVENT_CATEGORIES),
+  title: shortText(500),
+  body: shortText(2000),
+  created_at: timestamp,
+});
+
+// Kein id-Feld - der Schlüssel selbst ist Primärschlüssel (siehe Migration
+// 0019), damit dieselbe Zustandstabelle live berechnete (Fristen) und
+// gespeicherte Benachrichtigungen einheitlich abdecken kann.
+export const notificationStateSchema = z.object({
+  key: shortText(200),
+  read_at: nullableTimestamp,
+  done_at: nullableTimestamp,
+  snoozed_until: nullableDateOnly,
+});
+
 // Settings: Auth-/Session-Secrets sind nie Teil eines gewöhnlichen Backups
 // (siehe routes/backup.js) – dieses Schema läuft daher nur über das, was
 // buildBackup() tatsächlich exportiert (Auth-Schlüssel dort bereits
@@ -274,6 +298,8 @@ export const TABLE_SCHEMAS = {
   linkedin_posts: linkedinPostSchema,
   object_links: objectLinkSchema,
   week_reviews: weekReviewSchema,
+  notification_events: notificationEventSchema,
+  notification_states: notificationStateSchema,
 };
 
 // Validiert eine Tabelle vollständig und gibt entweder die geparsten
