@@ -695,6 +695,39 @@ iPhone automatisch beim nächsten Öffnen.
 - Google-/Gmail-OAuth, native Apple-Calendar-Integration und Outlook/
   Microsoft-365-Postfächer sind vorbereitet, aber noch nicht angebunden
   (siehe „Welche externen Verbindungen funktionieren wirklich?").
+- **Änderungshistorie/Konfliktschutz (Paket D, Punkt 84) zurückgestellt:**
+  Datensätze tragen keine Revisionsnummer; ein zweites offenes Fenster
+  oder ein Hintergrundjob, der denselben Datensatz gleichzeitig
+  bearbeitet, überschreibt die andere Änderung stillschweigend statt
+  einen erklärbaren Konflikt zu zeigen. Für eine lokale
+  Einzelnutzer-App ohne Hintergrunddienst ist das Risiko bisher gering
+  (kein bekannter Fall aus echter Nutzung); eine echte Umsetzung würde
+  aber JEDE PATCH-Route der App anfassen (Revisionsfeld + Vergleich)
+  und ist deshalb bewusst zurückgestellt, statt sie unter Zeitdruck
+  unvollständig einzuführen.
+- **Versionierte API-Verträge (Paket D, Punkt 85) zurückgestellt:**
+  Es gibt bereits einheitliche Zod-Validierung (Punkt 22) und getrennte
+  Datum-ohne-Uhrzeit-/Zeitpunkt-Typen im Code, aber kein formales,
+  dokumentiertes/versioniertes API-Vertragssystem. Ohne externe
+  API-Konsumenten (nur das eine mitgelieferte Frontend spricht mit
+  diesem Server) fehlt der konkrete Bedarf für den Aufwand einer
+  formalen Vertragsschicht.
+- **Diagnosepaket-Export (Teil von Paket D, Punkt 91) zurückgestellt:**
+  Es gibt keinen Export eines auf Geheimnisse geprüften
+  Diagnosepakets (Logs/Systemzustand) zur Fehlersuche - die „Vertrauen
+  & Einrichtung"-Seite (Punkt 80) deckt den Statusteil ab, ein
+  eigenständiges Diagnose-Exportformat mit Geheimnisprüfung wäre ein
+  neues, eigenständiges Feature ohne bisher konkreten Bedarf.
+- **Bereits erfüllt, ohne eigenen neuen Code:** Punkt 83 (einheitliche
+  Beziehungen/Objektidentität) ist durch das bestehende
+  Kontextlinks-System abgedeckt (stabile interne IDs, typisierte
+  Beziehungen über `LINK_OBJECT_TABLES`, zentral durchgesetzte
+  Existenz-/Löschregeln in `routes/links.js#existsById`). Punkt 90
+  (Datenherkunft) ist durch die bestehenden `source`/`confirmed`/
+  `mail_ref`-Felder bei Rechnungen abgedeckt - der Scanner fügt nur
+  per `INSERT` mit einem eindeutigen `mail_ref` neu hinzu, es gibt
+  keinen Code-Pfad, der eine erneute Extraktion über eine bereits
+  bestätigte, manuell korrigierte Rechnung schreiben würde.
 
 ## Nächste Etappen
 
