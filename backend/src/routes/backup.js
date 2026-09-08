@@ -269,8 +269,8 @@ backupRouter.post("/restore", backupJsonParser, (req, res) => {
 
     if (data.documents) {
       const insertDocument = db.prepare(
-        `INSERT INTO documents (id, title, file_name, stored_name, mime_type, size, area, tags, created_at, updated_at, deleted_at)
-         VALUES (@id, @title, @file_name, @stored_name, @mime_type, @size, @area, @tags, @created_at, @updated_at, @deleted_at)`,
+        `INSERT INTO documents (id, title, file_name, stored_name, mime_type, size, area, tags, created_at, updated_at, deleted_at, sha256)
+         VALUES (@id, @title, @file_name, @stored_name, @mime_type, @size, @area, @tags, @created_at, @updated_at, @deleted_at, @sha256)`,
       );
       for (const document of data.documents) {
         insertDocument.run({ ...document, tags: typeof document.tags === "string" ? document.tags : JSON.stringify(document.tags) });

@@ -500,6 +500,19 @@ const MIGRATIONS = [
       db.exec(`ALTER TABLE contracts ADD COLUMN review_task_id INTEGER;`);
     },
   },
+  {
+    // Dokumentarbeitsplatz (Punkt 72): "Dateiduplikathinweise anhand Hash."
+    // sha256 wird beim Upload aus dem tatsächlichen Dateiinhalt berechnet
+    // (siehe routes/documents.js) - bei bereits vorhandenen Dokumenten aus
+    // der Zeit vor dieser Migration bleibt das Feld NULL (kein rückwirkendes
+    // Neu-Hashen bestehender Dateien), sie nehmen also erst nach einem
+    // erneuten Upload an der Dublettenerkennung teil.
+    id: "0024_document_hash",
+    up(db) {
+      db.exec(`ALTER TABLE documents ADD COLUMN sha256 TEXT;`);
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_documents_sha256 ON documents(sha256);`);
+    },
+  },
 ];
 
 export function runMigrations(db) {

@@ -152,7 +152,12 @@ optionale Schritte wie Kalender/E-Mail überspringbar) gab es bereits vor
 diesem Punkt; einen Demo-Modus gibt es in dieser App nicht - "isoliert
 und gekennzeichnet, falls es ihn gäbe" ist damit gegenstandslos.
 
-`cd backend && npm test` führt die inzwischen 143 automatisierten
+**Dokumentarbeitsplatz (Paket D, Punkt 72, ohne die zurückgestellte
+lokale OCR/Texterfassung):** Details siehe „Dokumente-Modul" weiter
+unten - sichere, byte-geprüfte Inline-Vorschau für Bilder/PDF und
+SHA-256-Dateiduplikathinweise als reine, nicht blockierende Hinweise.
+
+`cd backend && npm test` führt die inzwischen 151 automatisierten
 Backend-Tests aus, `cd frontend && npm test` 4 weitere für die
 Zeitzonen-Korrektur.
 
@@ -407,11 +412,26 @@ Unter „Dokumente" in der Sidebar:
   Datei neu hochzuladen.
 - **Herunterladen:** lädt die Originaldatei mit ihrem ursprünglichen
   Dateinamen herunter.
-- **Löschen:** entfernt sowohl den Datenbank-Eintrag als auch die Datei
-  auf der Platte unwiderruflich.
-- Es gibt aktuell keine Vorschau/kein Rendering von Dateiinhalten
-  innerhalb der App (z. B. kein eingebetteter PDF-Viewer) – Dokumente
-  werden zum Ansehen heruntergeladen und lokal geöffnet.
+- **Löschen:** verschiebt Datenbank-Eintrag und Datei in den Papierkorb
+  (30 Tage wiederherstellbar, siehe „Lokaler Papierkorb" oben), danach
+  werden beide endgültig entfernt.
+- **Dokumentarbeitsplatz (Punkt 72, ohne die zurückgestellte lokale OCR/
+  Texterfassung):** Ein Klick öffnet die Dokumentakte (dasselbe
+  Vorgangsakte-Grundgerüst wie bei Rechnungen/Verträgen/Vorgängen) mit
+  einer **sicheren Inline-Vorschau** für Bilder (PNG/JPEG/GIF/WEBP) und
+  PDF. Die Vorschau vertraut dabei nie dem vom Client beim Upload
+  behaupteten Dateityp, sondern prüft die tatsächlichen Dateibytes
+  (Magic-Bytes) - eine als Bild getarnte HTML-/Skriptdatei bekommt keine
+  Inline-Vorschau (bewusst kein `image/svg+xml`, da SVG eingebettetes
+  JavaScript enthalten kann). Nicht erkannte Formate zeigen einen
+  Hinweis statt eines Downloads. Jeder Upload berechnet zusätzlich einen
+  SHA-256-Hash des Dateiinhalts; liegt bereits eine inhaltsgleiche Datei
+  vor, erscheint ein reiner **Hinweis** ("Eine Datei mit identischem
+  Inhalt liegt bereits vor") - beide Dateien bleiben unabhängig
+  bestehen, nichts wird automatisch zusammengeführt oder gelöscht. Über
+  die Dokumentakte lässt sich ein Dokument außerdem mit Aufgaben,
+  Rechnungen, Verträgen, Zielen, Notizen und Vorgängen verknüpfen
+  (dieselben Kontextlinks wie überall sonst).
 
 ## Verträge & Abos
 

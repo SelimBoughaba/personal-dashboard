@@ -7,8 +7,12 @@ import { AreaBadge } from "../components/ui/AreaBadge";
 import { PageHeader } from "../components/ui/PageHeader";
 import { FilterChips } from "../components/ui/FilterChips";
 import { EmptyState } from "../components/ui/EmptyState";
+import { RelatedObjects } from "../components/RelatedObjects";
+import { DetailPanel } from "../components/DetailPanel";
+import { DocumentPreview } from "../components/DocumentPreview";
 import { useAreas } from "../context/AreasContext";
 import { useAsyncAction } from "../hooks/useAsyncAction";
+import { useDetailPanel } from "../hooks/useDetailPanel";
 
 function formatSize(bytes) {
   if (bytes < 1024) return `${bytes} B`;
@@ -18,6 +22,7 @@ function formatSize(bytes) {
 
 export function Dokumente() {
   const { activeAreas } = useAreas();
+  const panel = useDetailPanel();
   const [documents, setDocuments] = useState([]);
   const [areaFilter, setAreaFilter] = useState("alle");
   const [query, setQuery] = useState("");
@@ -26,6 +31,7 @@ export function Dokumente() {
   const [uploadTags, setUploadTags] = useState("");
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const [duplicateNotice, setDuplicateNotice] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({ title: "", area: "", tags: "" });
   const fileInputRef = useRef(null);
@@ -57,6 +63,7 @@ export function Dokumente() {
       return;
     }
     setError("");
+    setDuplicateNotice("");
     setUploading(true);
     try {
       const body = new FormData();
@@ -72,7 +79,15 @@ export function Dokumente() {
             .filter(Boolean),
         ),
       );
-      await apiFetch("/documents", { method: "POST", body });
+      const created = await apiFetch("/documents", { method: "POST", body });
+      // Dateiduplikathinweis anhand Hash (Punkt 72): rein informativ, der
+      // Upload läuft unabhängig davon durch - "unterschiedliche
+      // Dateiversionen nicht automatisch zusammenführen oder löschen".
+      if (created.duplicateOf) {
+        setDuplicateNotice(
+          `Hinweis: Eine Datei mit identischem Inhalt liegt bereits vor („${created.duplicateOf.title}"). Beide Dateien bleiben unabhängig erhalten.`,
+        );
+      }
       setUploadTitle("");
       setUploadTags("");
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -107,6 +122,7 @@ export function Dokumente() {
   }
 
   function startEdit(doc) {
+    panel.reset();
     setEditingId(doc.id);
     setEditForm({ title: doc.title, area: doc.area, tags: doc.tags.join(", ") });
   }
@@ -132,9 +148,12 @@ export function Dokumente() {
     if (!window.confirm("Dieses Dokument in den Papierkorb verschieben? Dort 30 Tage wiederherstellbar, danach wird auch die Datei endgültig entfernt.")) return;
     await run(`delete-${id}`, async () => {
       await apiFetch(`/documents/${id}`, { method: "DELETE" });
+      if (panel.selectedKey === id) panel.reset();
       await load();
     });
   }
+
+  const selectedDocument = documents.find((d) => d.id === panel.selectedKey) || null;
 
   return (
     <div className="space-y-6">
@@ -177,6 +196,7 @@ export function Dokumente() {
         </form>
       </GlassCard>
 
+      {duplicateNotice && <p className="text-sm text-status-mittel">{duplicateNotice}</p>}
       {(error || actionError) && <p className="text-sm text-status-hoch">{error || actionError}</p>}
 
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -189,96 +209,155 @@ export function Dokumente() {
         />
       </div>
 
-      <div className="space-y-3">
-        {documents.length === 0 && (
-          <EmptyState title="Keine Dokumente gefunden" description="Datei oben hochladen oder Filter/Suche anpassen." />
-        )}
-        {documents.map((doc) =>
-          editingId === doc.id ? (
-            <GlassCard key={doc.id} className="!p-4">
-              <form onSubmit={saveEdit} className="grid gap-3 sm:grid-cols-3">
-                <FormField label="Titel">
-                  <Input value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} />
-                </FormField>
-                <FormField label="Bereich">
-                  <Select value={editForm.area} onChange={(e) => setEditForm({ ...editForm, area: e.target.value })}>
-                    {activeAreas.map((a) => (
-                      <option key={a.id} value={a.id}>
-                        {a.label}
-                      </option>
-                    ))}
-                  </Select>
-                </FormField>
-                <FormField label="Tags">
-                  <Input value={editForm.tags} onChange={(e) => setEditForm({ ...editForm, tags: e.target.value })} />
-                </FormField>
-                <div className="flex gap-2 sm:col-span-3">
-                  <Button type="submit" disabled={isPending("edit-save")}>
-                    {isPending("edit-save") ? "Speichert…" : "Speichern"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => setEditingId(null)}
-                    disabled={isPending("edit-save")}
-                  >
-                    Abbrechen
-                  </Button>
-                </div>
-              </form>
-            </GlassCard>
-          ) : (
-            (() => {
-              const deleting = isPending(`delete-${doc.id}`);
-              return (
-              <GlassCard key={doc.id} className={`flex items-start gap-3 !p-4 ${deleting ? "opacity-50" : ""}`}>
-                <div className="min-w-0 flex-1">
-                  <p className="font-bold text-ivory">{doc.title}</p>
-                  <p className="mt-0.5 truncate text-sm text-ivory/55">{doc.file_name}</p>
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <AreaBadge area={doc.area} />
-                    <span className="text-xs text-ivory/65">{formatSize(doc.size)}</span>
-                    <span className="text-xs text-ivory/65">
-                      {new Date(doc.created_at).toLocaleDateString("de-DE")}
-                    </span>
-                    {doc.tags.map((tag) => (
+      <div className="flex flex-col items-start gap-6 lg:flex-row">
+        <div className={`min-w-0 flex-1 space-y-3 ${panel.mounted ? "hidden lg:block" : ""}`}>
+          {documents.length === 0 && (
+            <EmptyState title="Keine Dokumente gefunden" description="Datei oben hochladen oder Filter/Suche anpassen." />
+          )}
+          {documents.map((doc) =>
+            editingId === doc.id ? (
+              <GlassCard key={doc.id} className="!p-4">
+                <form onSubmit={saveEdit} className="grid gap-3 sm:grid-cols-3">
+                  <FormField label="Titel">
+                    <Input value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} />
+                  </FormField>
+                  <FormField label="Bereich">
+                    <Select value={editForm.area} onChange={(e) => setEditForm({ ...editForm, area: e.target.value })}>
+                      {activeAreas.map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.label}
+                        </option>
+                      ))}
+                    </Select>
+                  </FormField>
+                  <FormField label="Tags">
+                    <Input value={editForm.tags} onChange={(e) => setEditForm({ ...editForm, tags: e.target.value })} />
+                  </FormField>
+                  <div className="flex gap-2 sm:col-span-3">
+                    <Button type="submit" disabled={isPending("edit-save")}>
+                      {isPending("edit-save") ? "Speichert…" : "Speichern"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => setEditingId(null)}
+                      disabled={isPending("edit-save")}
+                    >
+                      Abbrechen
+                    </Button>
+                  </div>
+                </form>
+              </GlassCard>
+            ) : (
+              (() => {
+                const deleting = isPending(`delete-${doc.id}`);
+                return (
+                <GlassCard
+                  key={doc.id}
+                  className={`flex items-start gap-3 !p-4 ${deleting ? "opacity-50" : ""} ${panel.selectedKey === doc.id ? "border-accent/40" : ""}`}
+                >
+                  <button type="button" onClick={() => panel.open(doc.id)} className="min-w-0 flex-1 text-left">
+                    <p className="font-bold text-ivory">{doc.title}</p>
+                    <p className="mt-0.5 truncate text-sm text-ivory/55">{doc.file_name}</p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <AreaBadge area={doc.area} />
+                      <span className="text-xs text-ivory/65">{formatSize(doc.size)}</span>
+                      <span className="text-xs text-ivory/65">
+                        {new Date(doc.created_at).toLocaleDateString("de-DE")}
+                      </span>
+                      {doc.tags.map((tag) => (
+                        <span key={tag} className="rounded-full bg-white/5 px-2 py-0.5 text-xs text-ivory/55">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </button>
+                  <div className="flex shrink-0 gap-1">
+                    <Button
+                      variant="ghost"
+                      className="!px-2 !py-1 text-xs"
+                      onClick={() => handleDownload(doc)}
+                      disabled={deleting}
+                    >
+                      Herunterladen
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="!px-2 !py-1 text-xs"
+                      onClick={() => startEdit(doc)}
+                      disabled={deleting}
+                    >
+                      Bearbeiten
+                    </Button>
+                    <Button
+                      variant="danger"
+                      className="!px-2 !py-1 text-xs"
+                      onClick={() => deleteDocument(doc.id)}
+                      disabled={deleting}
+                    >
+                      {deleting ? "Löscht…" : "Löschen"}
+                    </Button>
+                  </div>
+                </GlassCard>
+                );
+              })()
+            ),
+          )}
+        </div>
+
+        <DetailPanel
+          mounted={panel.mounted}
+          atTarget={panel.atTarget}
+          onClose={panel.close}
+          eyebrow="Dokument"
+          title={selectedDocument ? selectedDocument.title : ""}
+        >
+          {selectedDocument && (
+            <>
+              <div className="flex flex-wrap items-center gap-2">
+                <AreaBadge area={selectedDocument.area} />
+                <span className="text-xs text-ivory/65">{formatSize(selectedDocument.size)}</span>
+              </div>
+
+              <DocumentPreview documentId={selectedDocument.id} />
+
+              <div className="text-sm text-ivory/80">
+                <p className="text-ivory/65">{selectedDocument.file_name}</p>
+                <p className="text-xs text-ivory/55">
+                  Hochgeladen am {new Date(selectedDocument.created_at).toLocaleDateString("de-DE")}
+                </p>
+                {selectedDocument.tags.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {selectedDocument.tags.map((tag) => (
                       <span key={tag} className="rounded-full bg-white/5 px-2 py-0.5 text-xs text-ivory/55">
                         {tag}
                       </span>
                     ))}
                   </div>
-                </div>
-                <div className="flex shrink-0 gap-1">
-                  <Button
-                    variant="ghost"
-                    className="!px-2 !py-1 text-xs"
-                    onClick={() => handleDownload(doc)}
-                    disabled={deleting}
-                  >
-                    Herunterladen
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    className="!px-2 !py-1 text-xs"
-                    onClick={() => startEdit(doc)}
-                    disabled={deleting}
-                  >
-                    Bearbeiten
-                  </Button>
-                  <Button
-                    variant="danger"
-                    className="!px-2 !py-1 text-xs"
-                    onClick={() => deleteDocument(doc.id)}
-                    disabled={deleting}
-                  >
-                    {deleting ? "Löscht…" : "Löschen"}
-                  </Button>
-                </div>
-              </GlassCard>
-              );
-            })()
-          ),
-        )}
+                )}
+              </div>
+
+              <RelatedObjects type="dokument" id={selectedDocument.id} />
+
+              <div className="flex flex-wrap gap-2 border-t border-white/10 pt-3">
+                <Button variant="ghost" className="!px-3 !py-1.5 text-xs" onClick={() => handleDownload(selectedDocument)}>
+                  Herunterladen
+                </Button>
+                <Button variant="ghost" className="!px-3 !py-1.5 text-xs" onClick={() => startEdit(selectedDocument)}>
+                  Bearbeiten
+                </Button>
+                <Button
+                  variant="danger"
+                  className="!px-3 !py-1.5 text-xs"
+                  onClick={() => deleteDocument(selectedDocument.id)}
+                  disabled={isPending(`delete-${selectedDocument.id}`)}
+                >
+                  Löschen
+                </Button>
+              </div>
+            </>
+          )}
+        </DetailPanel>
       </div>
     </div>
   );

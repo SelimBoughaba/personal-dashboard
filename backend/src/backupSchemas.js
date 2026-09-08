@@ -174,6 +174,13 @@ export const documentSchema = z.object({
   // Papierkorb (Punkt 77): ältere Backups (Version < 11) kennen dieses Feld
   // noch nicht - null (nicht im Papierkorb) ist dort der korrekte Default.
   deleted_at: nullableTimestamp.optional().default(null),
+  // Dateiduplikathinweise (Punkt 72): ältere Backups und vor der Migration
+  // hochgeladene Dokumente kennen diesen Hash noch nicht - null (kein Hash
+  // berechnet) ist dort der korrekte Default.
+  sha256: z
+    .union([z.string().regex(/^[0-9a-f]{64}$/), z.null()])
+    .optional()
+    .default(null),
 });
 
 export const contractSchema = z.object({
