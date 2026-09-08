@@ -117,6 +117,12 @@ export const taskSchema = z.object({
   status: z.enum(TASK_STATUSES),
   created_at: timestamp,
   updated_at: timestamp,
+  // Ältere Backups (vor wiederkehrenden Aufgaben, Punkt 66) kennen dieses
+  // Feld noch nicht - null (keine Wiederholung) ist dort der korrekte
+  // Default, kein Rateergebnis. Als Text validiert (nicht als Objekt), weil
+  // die Spalte selbst TEXT (JSON) ist - dieselbe Speicherform wie
+  // milestones bei Zielen.
+  recurrence: z.union([longText(2000), z.null()]).optional().default(null),
 });
 
 export const invoiceSchema = z.object({

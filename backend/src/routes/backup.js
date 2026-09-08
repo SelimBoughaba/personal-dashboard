@@ -214,7 +214,7 @@ backupRouter.post("/restore", backupJsonParser, (req, res) => {
     for (const area of data.areas) insertArea.run(area);
 
     const insertTask = db.prepare(
-      "INSERT INTO tasks (id, title, notes, due_date, priority, area, status, created_at, updated_at) VALUES (@id, @title, @notes, @due_date, @priority, @area, @status, @created_at, @updated_at)",
+      "INSERT INTO tasks (id, title, notes, due_date, priority, area, status, created_at, updated_at, recurrence) VALUES (@id, @title, @notes, @due_date, @priority, @area, @status, @created_at, @updated_at, @recurrence)",
     );
     for (const task of data.tasks) insertTask.run(task);
 

@@ -15,11 +15,14 @@ import { useAreas } from "../context/AreasContext";
 import { useAsyncAction } from "../hooks/useAsyncAction";
 
 const EMPTY_FORM = { title: "", due_date: "", priority: "mittel", area: "", notes: "" };
+const EMPTY_RECURRENCE = { freq: "weekly", interval: 1, weekdaysOnly: false, mode: "fest", until: "" };
 const PRIORITY_COLUMNS = [
   { id: "hoch", label: "Hoch" },
   { id: "mittel", label: "Mittel" },
   { id: "niedrig", label: "Niedrig" },
 ];
+
+const RECURRENCE_FREQ_LABEL = { daily: "Täglich", weekly: "Wöchentlich", monthly: "Monatlich" };
 
 export function Tasks() {
   const { activeAreas } = useAreas();
@@ -63,6 +66,8 @@ export function Tasks() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [recurring, setRecurring] = useState(false);
+  const [recurrence, setRecurrence] = useState(EMPTY_RECURRENCE);
   const [error, setError] = useState("");
   const { run, isPending, error: actionError } = useAsyncAction();
 
@@ -85,11 +90,15 @@ export function Tasks() {
       area: task.area,
       notes: task.notes || "",
     });
+    setRecurring(!!task.recurrence);
+    setRecurrence(task.recurrence ? { ...task.recurrence, until: task.recurrence.until || "" } : EMPTY_RECURRENCE);
     setShowForm(true);
   }
 
   function resetForm() {
     setForm(EMPTY_FORM);
+    setRecurring(false);
+    setRecurrence(EMPTY_RECURRENCE);
     setEditingId(null);
     setShowForm(false);
   }
@@ -97,20 +106,28 @@ export function Tasks() {
   function openNewForm() {
     const defaultArea = activeAreas.find((a) => a.is_default) || activeAreas[0];
     setForm({ ...EMPTY_FORM, area: defaultArea?.id || "" });
+    setRecurring(false);
+    setRecurrence(EMPTY_RECURRENCE);
     setShowForm(true);
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
+    const payload = {
+      ...form,
+      recurrence: recurring
+        ? { ...recurrence, interval: Number(recurrence.interval) || 1, until: recurrence.until || null }
+        : null,
+    };
     await run("submit", async () => {
       if (editingId) {
         await apiFetch(`/tasks/${editingId}`, {
           method: "PATCH",
-          body: JSON.stringify(form),
+          body: JSON.stringify(payload),
         });
       } else {
-        await apiFetch("/tasks", { method: "POST", body: JSON.stringify(form) });
+        await apiFetch("/tasks", { method: "POST", body: JSON.stringify(payload) });
       }
       resetForm();
       await loadTasks();
@@ -127,8 +144,16 @@ export function Tasks() {
     });
   }
 
-  async function deleteTask(id) {
-    if (!window.confirm("Diese Aufgabe wirklich löschen?")) return;
+  async function deleteTask(id, task) {
+    // Löschen einer offenen wiederkehrenden Aufgabe beendet die Serie
+    // NICHT (siehe routes/tasks.js: es wird als "dieses eine Vorkommen
+    // überspringen" verstanden) - das muss der Bestätigungsdialog schon
+    // vor dem Klick klarmachen, nicht erst hinterher überraschen.
+    const message =
+      task?.recurrence && task.status !== "erledigt"
+        ? "Dieses Vorkommen wird übersprungen, die Wiederholung läuft weiter (nächster Termin wird direkt angelegt). Wirklich löschen?"
+        : "Diese Aufgabe wirklich löschen?";
+    if (!window.confirm(message)) return;
     await run(`delete-${id}`, async () => {
       await apiFetch(`/tasks/${id}`, { method: "DELETE" });
       await loadTasks();
@@ -208,6 +233,66 @@ export function Tasks() {
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
               />
             </FormField>
+
+            <div className="sm:col-span-2 space-y-3 rounded-control border border-white/10 bg-white/[0.02] p-3">
+              <label className="flex items-center gap-2 text-sm text-ivory/85">
+                <input
+                  type="checkbox"
+                  checked={recurring}
+                  onChange={(e) => setRecurring(e.target.checked)}
+                  className="h-4 w-4 accent-accent"
+                />
+                Wiederholt sich
+              </label>
+
+              {recurring && (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <FormField label="Häufigkeit">
+                    <Select value={recurrence.freq} onChange={(e) => setRecurrence({ ...recurrence, freq: e.target.value })}>
+                      <option value="daily">Täglich</option>
+                      <option value="weekly">Wöchentlich</option>
+                      <option value="monthly">Monatlich</option>
+                    </Select>
+                  </FormField>
+                  <FormField label="Intervall">
+                    <Input
+                      type="number"
+                      min="1"
+                      max="365"
+                      value={recurrence.interval}
+                      onChange={(e) => setRecurrence({ ...recurrence, interval: e.target.value })}
+                    />
+                  </FormField>
+                  <FormField label="Modus">
+                    <Select value={recurrence.mode} onChange={(e) => setRecurrence({ ...recurrence, mode: e.target.value })}>
+                      <option value="fest">Fester Rhythmus</option>
+                      <option value="nach_abschluss">Nach Abschluss</option>
+                    </Select>
+                  </FormField>
+                  <FormField label="Ende der Serie (optional)">
+                    <Input
+                      type="date"
+                      value={recurrence.until}
+                      onChange={(e) => setRecurrence({ ...recurrence, until: e.target.value })}
+                    />
+                  </FormField>
+                  <label className="flex items-center gap-2 text-sm text-ivory/85 sm:col-span-2">
+                    <input
+                      type="checkbox"
+                      checked={recurrence.weekdaysOnly}
+                      onChange={(e) => setRecurrence({ ...recurrence, weekdaysOnly: e.target.checked })}
+                      className="h-4 w-4 accent-accent"
+                    />
+                    Nur werktags (fällt ein Termin auf Sa/So, rutscht er auf den nächsten Werktag)
+                  </label>
+                  <p className="text-xs text-ivory/55 sm:col-span-2">
+                    „Fester Rhythmus" zählt ab dem ursprünglichen Fälligkeitsdatum weiter, auch wenn eine Erledigung
+                    verspätet erfolgt. „Nach Abschluss" zählt erst ab dem Tag der tatsächlichen Erledigung.
+                  </p>
+                </div>
+              )}
+            </div>
+
             <div className="sm:col-span-2">
               <Button type="submit" disabled={isPending("submit")}>
                 {isPending("submit") ? "Speichert…" : editingId ? "Speichern" : "Anlegen"}
@@ -297,6 +382,16 @@ function TaskCard({ task, onToggle, onEdit, onDelete, toggling = false, deleting
               fällig {new Date(task.due_date).toLocaleDateString("de-DE")}
             </span>
           )}
+          {task.recurrence && (
+            <span
+              className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1 text-xs text-ivory/70"
+              title={`Wiederholt sich ${RECURRENCE_FREQ_LABEL[task.recurrence.freq].toLowerCase()}${
+                task.recurrence.interval > 1 ? ` (alle ${task.recurrence.interval})` : ""
+              }`}
+            >
+              ↻ wiederholt sich
+            </span>
+          )}
         </div>
       </div>
       <div className="flex shrink-0 gap-1">
@@ -306,7 +401,7 @@ function TaskCard({ task, onToggle, onEdit, onDelete, toggling = false, deleting
         <Button
           variant="danger"
           className="!px-2 !py-1 text-xs"
-          onClick={() => onDelete(task.id)}
+          onClick={() => onDelete(task.id, task)}
           disabled={deleting}
         >
           {deleting ? "Löscht…" : "Löschen"}

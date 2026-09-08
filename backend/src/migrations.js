@@ -332,6 +332,19 @@ const MIGRATIONS = [
       `);
     },
   },
+  {
+    // Wiederkehrende Aufgaben (Punkt 66): die Wiederholungsregel liegt als
+    // JSON auf der aktuell offenen Instanz selbst (Freq/Intervall/nur
+    // werktags/Modus/Enddatum), keine eigene Tabelle - jede erzeugte
+    // Folgeinstanz ist eine ganz normale, unabhängige tasks-Zeile mit
+    // kopierter Regel. Das macht "nur diese Instanz bearbeiten" trivial
+    // (jede Zeile ist ohnehin für sich bearbeitbar) ohne ein virtuelles
+    // Instanz-Modell wie bei iCal-RRULE zu brauchen.
+    id: "0016_task_recurrence",
+    up(db) {
+      db.exec(`ALTER TABLE tasks ADD COLUMN recurrence TEXT;`);
+    },
+  },
 ];
 
 export function runMigrations(db) {
