@@ -345,6 +345,20 @@ const MIGRATIONS = [
       db.exec(`ALTER TABLE tasks ADD COLUMN recurrence TEXT;`);
     },
   },
+  {
+    // "Regelmäßige selbst gewählte Überprüfung" für Ziele (Punkt 78):
+    // review_freq ist bewusst kein frei wählbares Intervall wie bei
+    // Aufgaben, sondern eine von drei festen Kadenzen - ein Ziel braucht
+    // keine tägliche/wöchentliche Wiederholung, eher einen ruhigen
+    // Rhythmus zum Innehalten.
+    id: "0017_goal_review",
+    up(db) {
+      db.exec(`
+        ALTER TABLE goals ADD COLUMN review_freq TEXT;
+        ALTER TABLE goals ADD COLUMN next_review_date TEXT;
+      `);
+    },
+  },
 ];
 
 export function runMigrations(db) {

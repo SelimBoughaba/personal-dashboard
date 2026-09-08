@@ -7,11 +7,14 @@ import { AreaBadge } from "../components/ui/AreaBadge";
 import { PageHeader } from "../components/ui/PageHeader";
 import { FilterChips } from "../components/ui/FilterChips";
 import { EmptyState } from "../components/ui/EmptyState";
+import { RelatedObjects } from "../components/RelatedObjects";
 import { useAreas } from "../context/AreasContext";
 import { useAsyncAction } from "../hooks/useAsyncAction";
+import { localIsoDate } from "../utils/date";
 
-const EMPTY_FORM = { title: "", description: "", area: "", target_date: "", status: "aktiv", progress: "0" };
+const EMPTY_FORM = { title: "", description: "", area: "", target_date: "", status: "aktiv", progress: "0", review_freq: "" };
 const STATUS_LABELS = { aktiv: "Aktiv", erreicht: "Erreicht", abgebrochen: "Abgebrochen" };
+const REVIEW_FREQ_LABELS = { monthly: "Monatlich", quarterly: "Vierteljährlich", yearly: "Jährlich" };
 
 function ProgressBar({ value }) {
   return (
@@ -106,6 +109,7 @@ export function Ziele() {
       target_date: g.target_date || "",
       status: g.status,
       progress: String(g.progress ?? 0),
+      review_freq: g.review_freq || "",
       _hasMilestones: g.milestones.length > 0,
     });
     setShowForm(true);
@@ -117,14 +121,22 @@ export function Ziele() {
     setShowForm(false);
   }
 
+  async function markReviewed(goal) {
+    await run(`review-${goal.id}`, async () => {
+      await apiFetch(`/goals/${goal.id}/mark-reviewed`, { method: "POST" });
+      await load();
+    });
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
+    const payload = { ...form, review_freq: form.review_freq || null };
     await run("submit", async () => {
       if (editingId) {
-        await apiFetch(`/goals/${editingId}`, { method: "PATCH", body: JSON.stringify(form) });
+        await apiFetch(`/goals/${editingId}`, { method: "PATCH", body: JSON.stringify(payload) });
       } else {
-        await apiFetch("/goals", { method: "POST", body: JSON.stringify(form) });
+        await apiFetch("/goals", { method: "POST", body: JSON.stringify(payload) });
       }
       resetForm();
       await load();
@@ -206,6 +218,16 @@ export function Ziele() {
                 ))}
               </Select>
             </FormField>
+            <FormField label="Überprüfungsturnus (optional)">
+              <Select value={form.review_freq} onChange={(e) => setForm({ ...form, review_freq: e.target.value })}>
+                <option value="">Kein Turnus</option>
+                {Object.entries(REVIEW_FREQ_LABELS).map(([k, l]) => (
+                  <option key={k} value={k}>
+                    {l}
+                  </option>
+                ))}
+              </Select>
+            </FormField>
             <div className="sm:col-span-2">
               <Label>Fortschritt (%)</Label>
               <Input
@@ -248,13 +270,36 @@ export function Ziele() {
                     <span className="text-xs text-ivory/55">Ziel: {new Date(g.target_date).toLocaleDateString("de-DE")}</span>
                   )}
                   <span className="text-xs font-bold text-ivory/90">{g.progress}%</span>
+                  {g.review_freq && (
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs ${
+                        g.next_review_date && g.next_review_date < localIsoDate()
+                          ? "bg-status-hoch/10 text-status-hoch"
+                          : "bg-white/5 text-ivory/55"
+                      }`}
+                    >
+                      Überprüfung ({REVIEW_FREQ_LABELS[g.review_freq]}):{" "}
+                      {g.next_review_date ? new Date(g.next_review_date).toLocaleDateString("de-DE") : "–"}
+                    </span>
+                  )}
                 </div>
                 <div className="mt-2">
                   <ProgressBar value={g.progress} />
                 </div>
                 <MilestoneChecklist goal={g} onChange={(milestones) => updateMilestones(g, milestones)} />
+                <RelatedObjects type="ziel" id={g.id} />
               </div>
-              <div className="flex shrink-0 gap-1">
+              <div className="flex shrink-0 flex-col gap-1">
+                {g.review_freq && (
+                  <Button
+                    variant="ghost"
+                    className="!px-2 !py-1 text-xs"
+                    onClick={() => markReviewed(g)}
+                    disabled={deleting || isPending(`review-${g.id}`)}
+                  >
+                    {isPending(`review-${g.id}`) ? "…" : "Jetzt überprüft"}
+                  </Button>
+                )}
                 <Button variant="ghost" className="!px-2 !py-1 text-xs" onClick={() => startEdit(g)} disabled={deleting}>
                   Bearbeiten
                 </Button>

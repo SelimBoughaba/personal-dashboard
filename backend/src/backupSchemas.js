@@ -18,6 +18,7 @@ import {
   CONTRACT_STATUSES,
   CONTRACT_BILLING_CYCLES,
   GOAL_STATUSES,
+  GOAL_REVIEW_FREQS,
   HEALTH_ENTRY_TYPES,
   LINKEDIN_POST_STATUSES,
   LINK_OBJECT_TYPES,
@@ -184,6 +185,10 @@ export const goalSchema = z.object({
   milestones: milestonesField,
   created_at: timestamp,
   updated_at: timestamp,
+  // Ältere Backups (vor dem Überprüfungsturnus, Punkt 78) kennen diese
+  // Felder noch nicht - null (kein Turnus festgelegt) ist dort korrekt.
+  review_freq: z.union([z.enum(GOAL_REVIEW_FREQS), z.null()]).optional().default(null),
+  next_review_date: nullableDateOnly.optional().default(null),
 });
 
 export const noteSchema = z.object({

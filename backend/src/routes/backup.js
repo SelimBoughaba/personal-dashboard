@@ -244,8 +244,8 @@ backupRouter.post("/restore", backupJsonParser, (req, res) => {
 
     if (data.goals) {
       const insertGoal = db.prepare(
-        `INSERT INTO goals (id, title, description, area, target_date, status, progress, milestones, created_at, updated_at)
-         VALUES (@id, @title, @description, @area, @target_date, @status, @progress, @milestones, @created_at, @updated_at)`,
+        `INSERT INTO goals (id, title, description, area, target_date, status, progress, milestones, created_at, updated_at, review_freq, next_review_date)
+         VALUES (@id, @title, @description, @area, @target_date, @status, @progress, @milestones, @created_at, @updated_at, @review_freq, @next_review_date)`,
       );
       for (const goal of data.goals) {
         insertGoal.run({ ...goal, milestones: typeof goal.milestones === "string" ? goal.milestones : JSON.stringify(goal.milestones) });

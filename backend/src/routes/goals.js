@@ -2,10 +2,22 @@ import { Router } from "express";
 import crypto from "node:crypto";
 import { z } from "zod";
 import { db, isValidArea, getDefaultAreaId } from "../db.js";
-import { GOAL_STATUSES as STATUSES } from "../constants.js";
+import { GOAL_STATUSES as STATUSES, GOAL_REVIEW_FREQS as REVIEW_FREQS } from "../constants.js";
 import { validateWithSchema, optionalNullableDateString, optionalTextDefaultEmpty } from "../validation.js";
+import { computeNextOccurrence, todayIso } from "../recurrence.js";
 
 export const goalsRouter = Router();
+
+// Feste Kadenzen statt eines frei wählbaren Intervalls wie bei
+// wiederkehrenden Aufgaben (Punkt 78 statt Punkt 66) - ein Ziel braucht
+// einen ruhigen Rhythmus zum Innehalten, keine tägliche/wöchentliche
+// Wiederholung. Wiederverwendet dieselbe Datumsarithmetik wie Aufgaben
+// (recurrence.js), nur mit anderen, gröberen Bausteinen.
+const REVIEW_FREQ_TO_RECURRENCE = {
+  monthly: { freq: "monthly", interval: 1 },
+  quarterly: { freq: "monthly", interval: 3 },
+  yearly: { freq: "monthly", interval: 12 },
+};
 
 function parseMilestones(raw) {
   try {
@@ -80,6 +92,8 @@ const goalSchema = z.object({
   // genau wie im ursprünglichen Code; computeProgress fängt einen
   // nicht-numerischen Wert selbst über Number()/isNaN ab.
   progress: z.any().optional(),
+  review_freq: z.enum(REVIEW_FREQS, { errorMap: () => ({ message: "Ungültiger Überprüfungsturnus." }) }).nullable().optional(),
+  next_review_date: optionalNullableDateString,
 });
 
 function validateGoalInput(body, options) {
@@ -112,10 +126,20 @@ goalsRouter.post("/", (req, res) => {
 
   const milestones = data.milestones ?? [];
   const progress = computeProgress(milestones, data.progress ?? 0);
+  const reviewFreq = data.review_freq ?? null;
+  // Ein neu festgelegter Turnus zählt ab heute, sofern kein explizites
+  // Startdatum mitgeschickt wurde - ohne das müsste die Nutzerin selbst
+  // ausrechnen, wann "in einem Monat" ist.
+  const nextReviewDate =
+    data.next_review_date !== undefined
+      ? data.next_review_date
+      : reviewFreq
+        ? computeNextOccurrence(todayIso(), REVIEW_FREQ_TO_RECURRENCE[reviewFreq])
+        : null;
 
   const stmt = db.prepare(`
-    INSERT INTO goals (title, description, area, target_date, status, progress, milestones)
-    VALUES (@title, @description, @area, @target_date, @status, @progress, @milestones)
+    INSERT INTO goals (title, description, area, target_date, status, progress, milestones, review_freq, next_review_date)
+    VALUES (@title, @description, @area, @target_date, @status, @progress, @milestones, @review_freq, @next_review_date)
   `);
   const info = stmt.run({
     title: data.title,
@@ -125,6 +149,8 @@ goalsRouter.post("/", (req, res) => {
     status: data.status ?? "aktiv",
     progress,
     milestones: JSON.stringify(milestones),
+    review_freq: reviewFreq,
+    next_review_date: nextReviewDate,
   });
 
   res.status(201).json(serialize(db.prepare("SELECT * FROM goals WHERE id = ?").get(info.lastInsertRowid)));
@@ -141,6 +167,20 @@ goalsRouter.patch("/:id", (req, res) => {
   const manualProgress = data.progress ?? existing.progress;
   const progress = computeProgress(milestones, manualProgress);
 
+  const reviewFreq = data.review_freq === undefined ? existing.review_freq : data.review_freq;
+  let nextReviewDate;
+  if (data.next_review_date !== undefined) {
+    nextReviewDate = data.next_review_date;
+  } else if (data.review_freq !== undefined && data.review_freq !== existing.review_freq) {
+    // Turnus wurde in diesem Request geändert (gesetzt, gewechselt oder
+    // entfernt) und kein eigenes Datum mitgeschickt: neu berechnen bzw.
+    // löschen, statt ein Datum stehen zu lassen, das zu keinem Turnus
+    // mehr passt.
+    nextReviewDate = reviewFreq ? computeNextOccurrence(todayIso(), REVIEW_FREQ_TO_RECURRENCE[reviewFreq]) : null;
+  } else {
+    nextReviewDate = existing.next_review_date;
+  }
+
   const merged = {
     id: req.params.id,
     title: data.title ?? existing.title,
@@ -150,14 +190,36 @@ goalsRouter.patch("/:id", (req, res) => {
     status: data.status ?? existing.status,
     progress,
     milestones: JSON.stringify(milestones),
+    review_freq: reviewFreq,
+    next_review_date: nextReviewDate,
   };
 
   db.prepare(`
     UPDATE goals SET title=@title, description=@description, area=@area, target_date=@target_date,
-      status=@status, progress=@progress, milestones=@milestones, updated_at=datetime('now')
+      status=@status, progress=@progress, milestones=@milestones, review_freq=@review_freq,
+      next_review_date=@next_review_date, updated_at=datetime('now')
     WHERE id=@id
   `).run(merged);
 
+  res.json(serialize(db.prepare("SELECT * FROM goals WHERE id = ?").get(req.params.id)));
+});
+
+// Eigener Endpunkt statt eines generischen PATCH-Feldes: das nächste
+// Überprüfungsdatum wird server-seitig aus dem Turnus berechnet (dieselbe
+// DST-/Monatsende-sichere Arithmetik wie bei wiederkehrenden Aufgaben),
+// nicht vom Client vorgerechnet und einfach übernommen.
+goalsRouter.post("/:id/mark-reviewed", (req, res) => {
+  const existing = db.prepare("SELECT * FROM goals WHERE id = ?").get(req.params.id);
+  if (!existing) return res.status(404).json({ error: "Ziel nicht gefunden." });
+  if (!existing.review_freq) return res.status(400).json({ error: "Kein Überprüfungsturnus festgelegt." });
+
+  const base = existing.next_review_date && existing.next_review_date >= todayIso() ? existing.next_review_date : todayIso();
+  const nextReviewDate = computeNextOccurrence(base, REVIEW_FREQ_TO_RECURRENCE[existing.review_freq]);
+
+  db.prepare("UPDATE goals SET next_review_date = ?, updated_at = datetime('now') WHERE id = ?").run(
+    nextReviewDate,
+    req.params.id,
+  );
   res.json(serialize(db.prepare("SELECT * FROM goals WHERE id = ?").get(req.params.id)));
 });
 
