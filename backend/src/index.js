@@ -156,7 +156,10 @@ export { app };
 // nicht, wenn sie (z. B. von Tests) importiert wird, um die fertig
 // konfigurierte app-Instanz gegen eine eigene, isolierte Testdatenbank
 // laufen zu lassen.
-if (import.meta.url === `file://${process.argv[1]}`) {
+// `import.meta.url` URL-encodiert Sonderzeichen (z. B. das Leerzeichen im
+// macOS-App-Namen "Personal Dashboard"), während `process.argv[1]` einen
+// normalen Dateipfad enthält. Beide Werte deshalb als Dateipfade vergleichen.
+if (fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
   const port = process.env.PORT || 4000;
   const host = process.env.HOST || "0.0.0.0";
   const server = app.listen(port, host, () => {

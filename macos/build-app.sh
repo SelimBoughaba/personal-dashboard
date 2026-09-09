@@ -94,14 +94,18 @@ xcrun swiftc \
   -o "$MACOS_DIR/PersonalDashboard"
 
 print "5/7 App-Icon erstellen"
-ICONSET_DIR="$STAGING_DIR/AppIcon.iconset"
-mkdir -p "$ICONSET_DIR"
-for spec in "16 icon_16x16.png" "32 icon_16x16@2x.png" "32 icon_32x32.png" "64 icon_32x32@2x.png" "128 icon_128x128.png" "256 icon_128x128@2x.png" "256 icon_256x256.png" "512 icon_256x256@2x.png" "512 icon_512x512.png" "1024 icon_512x512@2x.png"; do
-  size="${spec%% *}"
-  name="${spec#* }"
-  sips -z "$size" "$size" "$ICON_SOURCE" --out "$ICONSET_DIR/$name" >/dev/null
-done
-iconutil -c icns "$ICONSET_DIR" -o "$RESOURCES_DIR/AppIcon.icns"
+if [[ -n "${ICON_ICNS_SOURCE:-}" && -f "$ICON_ICNS_SOURCE" ]]; then
+  cp "$ICON_ICNS_SOURCE" "$RESOURCES_DIR/AppIcon.icns"
+else
+  ICONSET_DIR="$STAGING_DIR/AppIcon.iconset"
+  mkdir -p "$ICONSET_DIR"
+  for spec in "16 icon_16x16.png" "32 icon_16x16@2x.png" "32 icon_32x32.png" "64 icon_32x32@2x.png" "128 icon_128x128.png" "256 icon_128x128@2x.png" "256 icon_256x256.png" "512 icon_256x256@2x.png" "512 icon_512x512.png" "1024 icon_512x512@2x.png"; do
+    size="${spec%% *}"
+    name="${spec#* }"
+    sips -z "$size" "$size" "$ICON_SOURCE" --out "$ICONSET_DIR/$name" >/dev/null
+  done
+  iconutil -c icns "$ICONSET_DIR" -o "$RESOURCES_DIR/AppIcon.icns"
+fi
 
 print "6/7 App signieren und vollständig prüfen"
 # Ad-hoc-Signatur (-sign -): für lokale Einzelnutzung ausreichend, aber
